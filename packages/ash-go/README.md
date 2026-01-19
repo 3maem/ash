@@ -1,8 +1,8 @@
-# ASH Protocol - Go SDK
+# ASH SDK for Go
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH (Authenticated Secure Hash) is a deterministic integrity verification protocol for web requests. This SDK provides canonicalization, proof generation, and secure comparison utilities for Go applications.
+ASH SDK provides request integrity and anti-replay protection for web applications. This package offers canonicalization, proof generation, and secure comparison utilities for Go applications.
 
 ## Installation
 

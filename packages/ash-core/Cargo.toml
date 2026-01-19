@@ -7,7 +7,7 @@ repository.workspace = true
 authors.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "ASH Core - Request integrity and anti-replay protection library"
+description = "ASH SDK Core - Request integrity and anti-replay protection library for Rust"
 readme = "README.md"
 
 [lib]

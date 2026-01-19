@@ -1,13 +1,13 @@
-# ASH Protocol - PHP SDK
+# ASH SDK for PHP
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH (Authenticated Secure Hash) is a deterministic integrity verification protocol for web requests. This SDK provides request integrity protection, anti-replay mechanisms, and middleware for Laravel, CodeIgniter, WordPress, and Drupal.
+ASH SDK provides request integrity and anti-replay protection for web applications. This package offers request integrity protection, anti-replay mechanisms, and middleware for Laravel, CodeIgniter, WordPress, and Drupal.
 
 ## Installation
 
 ```bash
-composer require 3maem/ash-protocol
+composer require 3maem/ash-sdk
 ```
 
 **Requirements:**
@@ -502,4 +502,4 @@ MIT License
 
 - [Main Repository](https://github.com/3maem/ash)
 - [ASH Protocol Specification](https://github.com/3maem/ash/blob/main/SPEC.md)
-- [Packagist](https://packagist.org/packages/3maem/ash-protocol)
+- [Packagist](https://packagist.org/packages/3maem/ash-sdk)

@@ -1,7 +1,7 @@
 {
   "name": "@3meam/ash-node",
   "version": "1.0.0",
-  "description": "ASH (Anti-tamper Security Hash) Node.js SDK - Request integrity protection",
+  "description": "ASH SDK for Node.js - Request integrity and anti-replay protection library",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

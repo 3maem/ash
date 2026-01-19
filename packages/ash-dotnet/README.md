@@ -1,8 +1,8 @@
-# ASH Protocol - .NET SDK
+# ASH SDK for .NET
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH (Authenticated Secure Hash) is a deterministic integrity verification protocol for web requests. This SDK provides request integrity protection, anti-replay mechanisms, and ASP.NET Core middleware for .NET applications.
+ASH SDK provides request integrity and anti-replay protection for web applications. This package offers request integrity protection, anti-replay mechanisms, and ASP.NET Core middleware for .NET applications.
 
 ## Installation
 

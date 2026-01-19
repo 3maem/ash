@@ -10,7 +10,7 @@
     <Authors>3meam Co.</Authors>
     <Company>3meam Co. | شركة عمائم</Company>
     <Product>ASH Security</Product>
-    <Description>ASH (Anti-tamper Security Hash) .NET SDK - Request integrity protection</Description>
+    <Description>ASH SDK for .NET - Request integrity and anti-replay protection library</Description>
     <PackageTags>ash;security;integrity;anti-tamper;replay-prevention;cryptography;middleware;aspnetcore</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/3meam/ash</RepositoryUrl>

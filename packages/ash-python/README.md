@@ -1,26 +1,26 @@
-# ASH Protocol - Python SDK
+# ASH SDK for Python
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH (Authenticated Secure Hash) is a deterministic integrity verification protocol for web requests. This SDK provides request integrity protection, anti-replay mechanisms, and middleware for Flask, FastAPI, and Django.
+ASH SDK provides request integrity and anti-replay protection for web applications. This SDK provides request integrity protection, anti-replay mechanisms, and middleware for Flask, FastAPI, and Django.
 
 ## Installation
 
 ```bash
 # Basic installation
-pip install ash-protocol
+pip install ash-sdk
 
 # With Flask support
-pip install ash-protocol[flask]
+pip install ash-sdk[flask]
 
 # With FastAPI support
-pip install ash-protocol[fastapi]
+pip install ash-sdk[fastapi]
 
 # With Redis support
-pip install ash-protocol[redis]
+pip install ash-sdk[redis]
 
 # All features
-pip install ash-protocol[all]
+pip install ash-sdk[all]
 ```
 
 **Requirements:** Python 3.10 or later
@@ -482,4 +482,4 @@ MIT License
 
 - [Main Repository](https://github.com/3maem/ash)
 - [ASH Protocol Specification](https://github.com/3maem/ash/blob/main/SPEC.md)
-- [PyPI Package](https://pypi.org/project/ash-protocol/)
+- [PyPI Package](https://pypi.org/project/ash-sdk/)

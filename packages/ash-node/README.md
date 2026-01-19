@@ -1,8 +1,8 @@
-# ASH Protocol - Node.js SDK
+# ASH SDK for Node.js
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH (Authenticated Secure Hash) is a deterministic integrity verification protocol for web requests. This SDK provides request integrity protection, anti-replay mechanisms, and middleware for Express and Fastify.
+ASH SDK provides request integrity and anti-replay protection for web applications. This SDK provides request integrity protection, anti-replay mechanisms, and middleware for Express and Fastify.
 
 ## Installation
 

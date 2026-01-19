@@ -1,6 +1,6 @@
 {
-    "name": "3maem/ash-protocol",
-    "description": "ASH - Authenticity & Stateless Hardening Protocol for PHP",
+    "name": "3maem/ash-sdk",
+    "description": "ASH SDK for PHP - Request integrity and anti-replay protection library",
     "type": "library",
     "license": "proprietary",
     "authors": [

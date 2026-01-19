@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-description = "ASH WebAssembly bindings - Universal request integrity protection"
+description = "ASH SDK WebAssembly bindings - Request integrity and anti-replay protection library"
 readme = "README.md"
 
 [lib]

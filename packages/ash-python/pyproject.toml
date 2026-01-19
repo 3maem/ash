@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ash-protocol"
-version = "1.0.0"
-description = "ASH - Authenticity & Stateless Hardening Protocol for Python"
+name = "ash-sdk"
+version = "1.0.1"
+description = "ASH SDK for Python - Request integrity and anti-replay protection library"
 readme = "README.md"
 license = {text = "Proprietary"}
 authors = [
