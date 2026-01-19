@@ -8,9 +8,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from .binding import ash_normalize_binding
 from .canonicalize import ash_canonicalize_json, ash_canonicalize_urlencoded
 from .proof import ash_build_proof, ash_verify_proof
-from .binding import ash_normalize_binding
 from .stores import ContextStore
 
 

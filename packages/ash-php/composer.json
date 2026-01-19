@@ -3,7 +3,6 @@
     "description": "ASH - Authenticity & Stateless Hardening Protocol for PHP",
     "type": "library",
     "license": "proprietary",
-    "version": "1.0.0",
     "authors": [
         {
             "name": "3maem"

@@ -1,6 +1,7 @@
 """ASH Protocol Errors."""
 
 from typing import Optional
+
 from ash.core.types import AshErrorCode
 
 
