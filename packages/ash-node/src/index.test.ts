@@ -19,7 +19,7 @@ describe('ASH Node.js SDK', () => {
   describe('ashVersion', () => {
     it('returns protocol version', () => {
       const version = ashVersion();
-      expect(version).toBe('ASHv1');
+      expect(version).toBe('ASHv2.1');
     });
   });
 

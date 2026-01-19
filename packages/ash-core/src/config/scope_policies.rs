@@ -206,7 +206,9 @@ fn matches_pattern(binding: &str, pattern: &str) -> bool {
     regex_str = express_re.replace_all(&regex_str, "[^|/]+").to_string();
 
     // Replace {param} (Laravel/OpenAPI-style route params)
-    let laravel_re = Regex::new(r"\\{[a-zA-Z_][a-zA-Z0-9_]*\\}").unwrap();
+    // Note: { and } are escaped by regex::escape to \{ and \}, so we match \\{ and \\}
+    // Using character class [{}] to avoid regex quantifier interpretation
+    let laravel_re = Regex::new(r"\\[{][a-zA-Z_][a-zA-Z0-9_]*\\[}]").unwrap();
     regex_str = laravel_re.replace_all(&regex_str, "[^|/]+").to_string();
 
     // Match against the binding

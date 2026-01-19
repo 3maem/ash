@@ -600,6 +600,7 @@ pub fn build_proof_v21_scoped(
 }
 
 /// Verify v2.2 proof with scoped fields.
+#[allow(clippy::too_many_arguments)]
 pub fn verify_proof_v21_scoped(
     nonce: &str,
     context_id: &str,
@@ -825,6 +826,7 @@ pub fn build_proof_v21_unified(
 /// Verify unified v2.3 proof (server-side).
 ///
 /// Validates proof with optional scoping and chaining.
+#[allow(clippy::too_many_arguments)]
 pub fn verify_proof_v21_unified(
     nonce: &str,
     context_id: &str,
