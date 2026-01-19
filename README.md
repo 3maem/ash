@@ -227,10 +227,10 @@ modified in transit and are used only once within their intended context.
 
 By enforcing strict request integrity and single-use constraints, ASH
 may reduce the feasibility or impact of certain attack scenarios that
-rely on request tampering or replay.
+depend on request tampering or replay.
 
 However, ASH is not designed, represented, or intended to function as
-an attack prevention, detection, or mitigation system.
+an attack prevention, attack detection, or threat mitigation system.
 
 ASH must not be relied upon as a standalone security control for
 protecting applications against cybersecurity attacks.
