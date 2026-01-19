@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ash-security"
+version = "1.0.0"
+description = "ASH (Anti-tamper Security Hash) Python SDK - Request integrity protection"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "3meam Co. | شركة عمائم", email = "dev@3meam.com"}
+]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Framework :: FastAPI",
+    "Framework :: Flask",
+    "Framework :: Django",
+]
+keywords = ["ash", "security", "integrity", "anti-tamper", "replay-prevention", "cryptography"]
+dependencies = []
+
+[project.optional-dependencies]
+redis = ["redis>=4.0.0"]
+fastapi = ["fastapi>=0.100.0", "starlette>=0.27.0"]
+flask = ["flask>=2.0.0"]
+django = ["django>=4.0.0"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/3meam/ash"
+Documentation = "https://github.com/3meam/ash#readme"
+Repository = "https://github.com/3meam/ash.git"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

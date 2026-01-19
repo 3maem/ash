@@ -1,0 +1,54 @@
+{
+    "name": "3meam/ash-php",
+    "description": "ASH (Anti-tamper Security Hash) PHP SDK - Request integrity protection",
+    "type": "library",
+    "license": "MIT",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "3meam Co. | شركة عمائم",
+            "email": "dev@3meam.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "ext-json": "*",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "phpstan/phpstan": "^1.10",
+        "squizlabs/php_codesniffer": "^3.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ash\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ash\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "phpstan": "phpstan analyse src --level=8",
+        "cs": "phpcs src --standard=PSR12",
+        "cs-fix": "phpcbf src --standard=PSR12"
+    },
+    "keywords": [
+        "ash",
+        "security",
+        "integrity",
+        "anti-tamper",
+        "replay-prevention",
+        "cryptography",
+        "middleware",
+        "laravel",
+        "codeigniter",
+        "wordpress",
+        "drupal"
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

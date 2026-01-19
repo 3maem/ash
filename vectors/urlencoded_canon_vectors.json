@@ -1,0 +1,127 @@
+{
+  "description": "URL-Encoded Canonicalization Test Vectors for ASH",
+  "version": "1.0.0",
+  "vectors": [
+    {
+      "name": "simple_key_ordering",
+      "description": "Parameters must be sorted by key",
+      "input": "z=1&a=2",
+      "expected": "a=2&z=1"
+    },
+    {
+      "name": "numeric_string_keys",
+      "description": "Numeric string keys sorted lexicographically",
+      "input": "10=ten&2=two&1=one",
+      "expected": "1=one&10=ten&2=two"
+    },
+    {
+      "name": "empty_value",
+      "description": "Empty value preserved",
+      "input": "b=&a=1",
+      "expected": "a=1&b="
+    },
+    {
+      "name": "special_characters_encoded",
+      "description": "Special characters percent-encoded",
+      "input": "msg=hello world",
+      "expected": "msg=hello%20world"
+    },
+    {
+      "name": "already_encoded",
+      "description": "Already encoded values preserved",
+      "input": "msg=hello%20world",
+      "expected": "msg=hello%20world"
+    },
+    {
+      "name": "unicode_nfc_normalized",
+      "description": "Unicode NFC normalization applied",
+      "input": "name=café",
+      "expected": "name=caf%C3%A9"
+    },
+    {
+      "name": "plus_as_space",
+      "description": "Plus signs decoded as spaces then re-encoded",
+      "input": "msg=hello+world",
+      "expected": "msg=hello%20world"
+    },
+    {
+      "name": "multiple_values_same_key",
+      "description": "Multiple values for same key preserved in order",
+      "input": "tag=b&tag=a&name=test",
+      "expected": "name=test&tag=b&tag=a"
+    },
+    {
+      "name": "empty_input",
+      "description": "Empty input returns empty string",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "name": "single_param",
+      "description": "Single parameter unchanged",
+      "input": "key=value",
+      "expected": "key=value"
+    },
+    {
+      "name": "boolean_values",
+      "description": "Boolean-like string values",
+      "input": "b=true&a=false",
+      "expected": "a=false&b=true"
+    },
+    {
+      "name": "numeric_values",
+      "description": "Numeric string values",
+      "input": "count=42&amount=3.14",
+      "expected": "amount=3.14&count=42"
+    },
+    {
+      "name": "reserved_chars_encoded",
+      "description": "Reserved characters properly encoded",
+      "input": "url=https://example.com/path?q=1",
+      "expected": "url=https%3A%2F%2Fexample.com%2Fpath%3Fq%3D1"
+    },
+    {
+      "name": "ampersand_in_value",
+      "description": "Ampersand in value encoded",
+      "input": "text=a&b",
+      "note": "This is ambiguous - parser should handle as two params",
+      "expected": "b=&text=a"
+    },
+    {
+      "name": "equals_in_value",
+      "description": "Equals sign in value preserved after first",
+      "input": "expr=a=b",
+      "expected": "expr=a%3Db"
+    },
+    {
+      "name": "case_sensitive_keys",
+      "description": "Keys are case-sensitive",
+      "input": "Name=upper&name=lower",
+      "expected": "Name=upper&name=lower"
+    },
+    {
+      "name": "underscore_vs_dash",
+      "description": "Underscore and dash sorting",
+      "input": "a_b=1&a-c=2",
+      "expected": "a-c=2&a_b=1"
+    },
+    {
+      "name": "emoji_value",
+      "description": "Emoji in value encoded",
+      "input": "emoji=👋",
+      "expected": "emoji=%F0%9F%91%8B"
+    },
+    {
+      "name": "null_value",
+      "description": "Literal null string",
+      "input": "value=null",
+      "expected": "value=null"
+    },
+    {
+      "name": "json_value",
+      "description": "JSON object as value encoded",
+      "input": "data={\"a\":1}",
+      "expected": "data=%7B%22a%22%3A1%7D"
+    }
+  ]
+}
