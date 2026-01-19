@@ -191,11 +191,14 @@ final class Proof
     /**
      * Generate a cryptographically secure random nonce.
      *
-     * @param int $bytes Number of bytes (default 32)
+     * @param int<1, max> $bytes Number of bytes (default 32)
      * @return string Hex-encoded nonce
      */
     public static function generateNonce(int $bytes = 32): string
     {
+        if ($bytes < 1) {
+            $bytes = 32;
+        }
         return bin2hex(random_bytes($bytes));
     }
 
@@ -280,6 +283,9 @@ final class Proof
     ): array {
         $scopedPayload = self::extractScopedFields($payload, $scope);
         $canonicalScoped = json_encode($scopedPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($canonicalScoped === false) {
+            $canonicalScoped = '{}';
+        }
         $bodyHash = self::hashBody($canonicalScoped);
 
         $scopeStr = implode(',', $scope);
@@ -323,6 +329,9 @@ final class Proof
     {
         $scopedPayload = self::extractScopedFields($payload, $scope);
         $canonical = json_encode($scopedPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($canonical === false) {
+            $canonical = '{}';
+        }
         return self::hashBody($canonical);
     }
 
@@ -362,6 +371,9 @@ final class Proof
     ): array {
         $scopedPayload = self::extractScopedFields($payload, $scope);
         $canonicalScoped = json_encode($scopedPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($canonicalScoped === false) {
+            $canonicalScoped = '{}';
+        }
         $bodyHash = self::hashBody($canonicalScoped);
 
         $scopeHash = empty($scope) ? '' : self::hashBody(implode(',', $scope));

@@ -5,10 +5,14 @@ Deterministic hash-based integrity proof.
 Same inputs MUST produce identical proof across all implementations.
 """
 
+from __future__ import annotations
+
 import base64
 import hashlib
 import hmac
+import json
 import secrets
+from typing import Any
 
 from ash.core.types import BuildProofInput
 
@@ -210,7 +214,7 @@ def hash_body(canonical_body: str) -> str:
 # ASH v2.2 - Context Scoping (Selective Field Protection)
 # =========================================================================
 
-def extract_scoped_fields(payload: dict, scope: list[str]) -> dict:
+def extract_scoped_fields(payload: dict[str, Any], scope: list[str]) -> dict[str, Any]:
     """
     Extract scoped fields from a payload dictionary.
 
@@ -224,7 +228,7 @@ def extract_scoped_fields(payload: dict, scope: list[str]) -> dict:
     if not scope:
         return payload
 
-    result = {}
+    result: dict[str, Any] = {}
     for field_path in scope:
         value = _get_nested_value(payload, field_path)
         if value is not None:
@@ -232,10 +236,10 @@ def extract_scoped_fields(payload: dict, scope: list[str]) -> dict:
     return result
 
 
-def _get_nested_value(obj: dict, path: str):
+def _get_nested_value(obj: dict[str, Any], path: str) -> Any:
     """Get a nested value using dot notation."""
     keys = path.split(".")
-    current = obj
+    current: Any = obj
 
     for key in keys:
         if not isinstance(current, dict) or key not in current:
@@ -245,12 +249,12 @@ def _get_nested_value(obj: dict, path: str):
     return current
 
 
-def _set_nested_value(obj: dict, path: str, value) -> None:
+def _set_nested_value(obj: dict[str, Any], path: str, value: Any) -> None:
     """Set a nested value using dot notation."""
     keys = path.split(".")
-    current = obj
+    current: Any = obj
 
-    for i, key in enumerate(keys[:-1]):
+    for key in keys[:-1]:
         if key not in current:
             current[key] = {}
         current = current[key]
@@ -262,7 +266,7 @@ def build_proof_v21_scoped(
     client_secret: str,
     timestamp: str,
     binding: str,
-    payload: dict,
+    payload: dict[str, Any],
     scope: list[str],
 ) -> tuple[str, str]:
     """
@@ -278,8 +282,6 @@ def build_proof_v21_scoped(
     Returns:
         Tuple of (proof, scope_hash)
     """
-    import json
-
     scoped_payload = extract_scoped_fields(payload, scope)
     canonical_scoped = json.dumps(scoped_payload, separators=(",", ":"), sort_keys=True)
     body_hash = hash_body(canonical_scoped)
@@ -302,7 +304,7 @@ def verify_proof_v21_scoped(
     context_id: str,
     binding: str,
     timestamp: str,
-    payload: dict,
+    payload: dict[str, Any],
     scope: list[str],
     scope_hash: str,
     client_proof: str,
@@ -327,7 +329,7 @@ def verify_proof_v21_scoped(
     return hmac.compare_digest(expected_proof, client_proof)
 
 
-def hash_scoped_body(payload: dict, scope: list[str]) -> str:
+def hash_scoped_body(payload: dict[str, Any], scope: list[str]) -> str:
     """
     Hash scoped payload fields.
 
@@ -338,8 +340,6 @@ def hash_scoped_body(payload: dict, scope: list[str]) -> str:
     Returns:
         SHA-256 hash of scoped fields
     """
-    import json
-
     scoped_payload = extract_scoped_fields(payload, scope)
     canonical = json.dumps(scoped_payload, separators=(",", ":"), sort_keys=True)
     return hash_body(canonical)
@@ -367,7 +367,7 @@ def build_proof_unified(
     client_secret: str,
     timestamp: str,
     binding: str,
-    payload: dict,
+    payload: dict[str, Any],
     scope: list[str] | None = None,
     previous_proof: str | None = None,
 ) -> tuple[str, str, str]:
@@ -391,8 +391,6 @@ def build_proof_unified(
     Returns:
         Tuple of (proof, scope_hash, chain_hash)
     """
-    import json
-
     if scope is None:
         scope = []
 
@@ -423,7 +421,7 @@ def verify_proof_unified(
     context_id: str,
     binding: str,
     timestamp: str,
-    payload: dict,
+    payload: dict[str, Any],
     client_proof: str,
     scope: list[str] | None = None,
     scope_hash: str = "",
