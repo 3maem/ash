@@ -412,12 +412,13 @@ cannot be safely disclosed.
 
 | Language | Package | Install |
 |----------|---------|---------|
-| **Node.js** | `@3maem/ash-node` | `npm install @3maem/ash-node` |
-| **Python** | `ash-sdk` | `pip install ash-sdk` |
-| **Go** | `github.com/3maem/ash-go` | `go get github.com/3maem/ash-go` |
-| **PHP** | `3maem/ash-sdk-php` | `composer require 3maem/ash-sdk-php` |
-| **.NET** | `Ash.Core` | `dotnet add package Ash.Core` |
-| **Rust** | `ash-core` | `cargo add ash-core` |
+| **Node.js** | [`@3maem/ash-node`](https://www.npmjs.com/package/@3maem/ash-node) | `npm install @3maem/ash-node` |
+| **Python** | [`ash-sdk`](https://pypi.org/project/ash-sdk/) | `pip install ash-sdk` |
+| **Go** | [`github.com/3maem/ash-go`](https://github.com/3maem/ash-go) | `go get github.com/3maem/ash-go` |
+| **PHP** | [`3maem/ash-sdk-php`](https://packagist.org/packages/3maem/ash-sdk-php) | `composer require 3maem/ash-sdk-php` |
+| **.NET** | [`Ash.Core`](https://www.nuget.org/packages/Ash.Core) | `dotnet add package Ash.Core` |
+| **Rust** | [`ash-core`](https://crates.io/crates/ash-core) | `cargo add ash-core` |
+| **Rust WASM** | [`ash-wasm`](https://crates.io/crates/ash-wasm) | `cargo add ash-wasm` |
 
 ---
 
