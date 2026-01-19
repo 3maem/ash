@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ash-sdk"
-version = "2.1.0"
+version = "2.3.1"
 description = "ASH SDK for Python - Request integrity and anti-replay protection library"
 readme = "README.md"
 license = {text = "Proprietary"}

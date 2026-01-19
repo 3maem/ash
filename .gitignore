@@ -88,3 +88,22 @@ htmlcov/
 # Build artifacts
 *.wasm
 *.wasm.gz
+
+# ASH Project - Internal/Private
+enhancements/
+guidance/
+analysis/
+meetings/
+checklist/
+tutorials/
+docs/NEW_README*.md
+BUSINESS_PLAN.md
+outcome.md
+PUBLISHING.md
+
+# Temp files
+tmpclaude-*
+**/tmpclaude-*
+
+# Lock files
+package-lock.json
