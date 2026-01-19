@@ -424,6 +424,7 @@ pub fn ash_build_proof_scoped(
 /// @param scopeHash - Scope hash from client
 /// @param clientProof - Proof received from client
 /// @returns true if proof is valid
+#[allow(clippy::too_many_arguments)]
 #[wasm_bindgen(js_name = "ashVerifyProofScoped")]
 pub fn ash_verify_proof_scoped(
     nonce: &str,
@@ -537,6 +538,7 @@ pub fn ash_build_proof_unified(
 /// @param previousProof - Previous proof in chain (empty or null if no chaining)
 /// @param chainHash - Chain hash from client (empty if no chaining)
 /// @returns true if proof is valid
+#[allow(clippy::too_many_arguments)]
 #[wasm_bindgen(js_name = "ashVerifyProofUnified")]
 pub fn ash_verify_proof_unified(
     nonce: &str,
