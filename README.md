@@ -222,23 +222,18 @@ This naming convention applies across all SDKs (Node.js, Python, Go, .NET, PHP, 
 
 ## Security Scope and Explicit Boundaries
 
-ASH provides **request integrity validation** and **anti-replay protection** only.
+ASH provides deterministic validation that request inputs have not been
+modified in transit and are used only once within their intended context.
 
-ASH does **not** claim to prevent, detect, or mitigate cybersecurity attacks.
+By enforcing strict request integrity and single-use constraints, ASH
+may reduce the feasibility or impact of certain attack scenarios that
+rely on request tampering or replay.
 
-Specifically, ASH does **not** provide protection against:
+However, ASH is not designed, represented, or intended to function as
+an attack prevention, detection, or mitigation system.
 
-- Full client-side compromise
-- Malware or malicious code executing within trusted environments
-- Vulnerabilities arising from application logic or business rules
-- Input validation errors or injection-style vulnerabilities
-- Attacks originating from compromised credentials or identities
-
-These attack classes are **explicitly outside the security scope of ASH**.
-
-While ASH may reduce the feasibility or impact of certain attack
-scenarios by enforcing strict request usage rules, it must **not** be
-considered a standalone protection mechanism for such threats.
+ASH must not be relied upon as a standalone security control for
+protecting applications against cybersecurity attacks.
 
 ---
 
