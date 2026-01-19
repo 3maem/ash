@@ -15,26 +15,31 @@ use Ash\Core\Proof;
  *
  * A cryptographic protocol for tamper-proof, replay-resistant API requests.
  *
- * Example:
+ * v2.1.0 SECURITY IMPROVEMENT:
+ *   - Derived client secret (clientSecret = HMAC(nonce, contextId+binding))
+ *   - Client-side proof generation using clientSecret
+ *   - Cryptographic binding between context and request body
+ *   - Nonce NEVER leaves server (clientSecret is derived, one-way)
+ *
+ * Example (v2.1):
  *     use Ash\Ash;
- *     use Ash\Core\AshMode;
- *     use Ash\Core\BuildProofInput;
  *
- *     // Canonicalize JSON payload
- *     $canonical = Ash::canonicalizeJson(['key' => 'value']);
+ *     // Server: Create context and derive clientSecret
+ *     $nonce = Ash::generateNonce();
+ *     $contextId = Ash::generateContextId();
+ *     $clientSecret = Ash::deriveClientSecret($nonce, $contextId, 'POST /login');
+ *     // Send contextId + clientSecret to client (NOT the nonce!)
  *
- *     // Build proof
- *     $input = new BuildProofInput(
- *         mode: AshMode::Balanced,
- *         binding: 'POST /api/update',
- *         contextId: 'ctx_abc123',
- *         canonicalPayload: $canonical
- *     );
- *     $proof = Ash::buildProof($input);
+ *     // Client: Build proof
+ *     $bodyHash = Ash::hashBody($canonicalBody);
+ *     $proof = Ash::buildProofV21($clientSecret, $timestamp, $binding, $bodyHash);
+ *
+ *     // Server: Verify proof
+ *     $valid = Ash::verifyProofV21($nonce, $contextId, $binding, $timestamp, $bodyHash, $proof);
  */
 final class Ash
 {
-    public const VERSION = '1.0.0';
+    public const VERSION = '2.1.0';
 
     /**
      * Canonicalize a JSON value to a deterministic string.
@@ -115,5 +120,97 @@ final class Ash
     public static function base64UrlDecode(string $input): string
     {
         return Proof::base64UrlDecode($input);
+    }
+
+    // =========================================================================
+    // ASH v2.1 - Derived Client Secret & Cryptographic Proof
+    // =========================================================================
+
+    /**
+     * Generate a cryptographically secure random nonce.
+     *
+     * @param int $bytes Number of bytes (default 32)
+     * @return string Hex-encoded nonce (64 chars for 32 bytes)
+     */
+    public static function generateNonce(int $bytes = 32): string
+    {
+        return Proof::generateNonce($bytes);
+    }
+
+    /**
+     * Generate a unique context ID.
+     *
+     * @return string Context ID with "ash_" prefix
+     */
+    public static function generateContextId(): string
+    {
+        return Proof::generateContextId();
+    }
+
+    /**
+     * Derive client secret from server nonce (v2.1).
+     *
+     * SECURITY: The nonce MUST stay server-side only.
+     * The derived clientSecret is safe to send to the client.
+     *
+     * @param string $nonce Server-side secret nonce
+     * @param string $contextId Context identifier
+     * @param string $binding Request binding (e.g., "POST /login")
+     * @return string Derived client secret (64 hex chars)
+     */
+    public static function deriveClientSecret(string $nonce, string $contextId, string $binding): string
+    {
+        return Proof::deriveClientSecret($nonce, $contextId, $binding);
+    }
+
+    /**
+     * Build v2.1 cryptographic proof (client-side).
+     *
+     * @param string $clientSecret Derived client secret
+     * @param string $timestamp Request timestamp (milliseconds)
+     * @param string $binding Request binding
+     * @param string $bodyHash SHA-256 hash of canonical request body
+     * @return string Proof (64 hex chars)
+     */
+    public static function buildProofV21(
+        string $clientSecret,
+        string $timestamp,
+        string $binding,
+        string $bodyHash
+    ): string {
+        return Proof::buildV21($clientSecret, $timestamp, $binding, $bodyHash);
+    }
+
+    /**
+     * Verify v2.1 proof (server-side).
+     *
+     * @param string $nonce Server-side secret nonce
+     * @param string $contextId Context identifier
+     * @param string $binding Request binding
+     * @param string $timestamp Request timestamp
+     * @param string $bodyHash SHA-256 hash of canonical body
+     * @param string $clientProof Proof received from client
+     * @return bool True if proof is valid
+     */
+    public static function verifyProofV21(
+        string $nonce,
+        string $contextId,
+        string $binding,
+        string $timestamp,
+        string $bodyHash,
+        string $clientProof
+    ): bool {
+        return Proof::verifyV21($nonce, $contextId, $binding, $timestamp, $bodyHash, $clientProof);
+    }
+
+    /**
+     * Compute SHA-256 hash of canonical body.
+     *
+     * @param string $canonicalBody Canonicalized request body
+     * @return string SHA-256 hash (64 hex chars)
+     */
+    public static function hashBody(string $canonicalBody): string
+    {
+        return Proof::hashBody($canonicalBody);
     }
 }

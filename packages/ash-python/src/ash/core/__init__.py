@@ -16,7 +16,17 @@ from ash.core.errors import (
     ReplayDetectedError,
     UnsupportedContentTypeError,
 )
-from ash.core.proof import base64url_decode, base64url_encode, build_proof
+from ash.core.proof import (
+    base64url_decode,
+    base64url_encode,
+    build_proof,
+    build_proof_v21,
+    derive_client_secret,
+    generate_context_id,
+    generate_nonce,
+    hash_body,
+    verify_proof_v21,
+)
 from ash.core.types import (
     AshErrorCode,
     AshMode,
@@ -35,6 +45,13 @@ __all__ = [
     "build_proof",
     "base64url_encode",
     "base64url_decode",
+    # v2.1 functions
+    "generate_nonce",
+    "generate_context_id",
+    "derive_client_secret",
+    "build_proof_v21",
+    "verify_proof_v21",
+    "hash_body",
     # Compare
     "timing_safe_compare",
     # Errors

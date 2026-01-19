@@ -24,7 +24,7 @@ import (
 )
 
 // Version is the ASH protocol version.
-const Version = "1.0.0"
+const Version = "2.1.0"
 
 // ASH protocol version prefix used in proof generation.
 const ashVersionPrefix = "ASHv1"
@@ -676,4 +676,103 @@ func IsASCII(s string) bool {
 		}
 	}
 	return true
+}
+
+// =========================================================================
+// ASH v2.1 - Derived Client Secret & Cryptographic Proof
+// =========================================================================
+
+import (
+	"crypto/hmac"
+	"crypto/rand"
+	"encoding/hex"
+)
+
+// GenerateNonce generates a cryptographically secure random nonce.
+// Returns hex-encoded nonce (64 chars for 32 bytes).
+func GenerateNonce(bytes int) (string, error) {
+	if bytes <= 0 {
+		bytes = 32
+	}
+	b := make([]byte, bytes)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// GenerateContextID generates a unique context ID with "ash_" prefix.
+func GenerateContextID() (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return "ash_" + hex.EncodeToString(b), nil
+}
+
+// DeriveClientSecret derives client secret from server nonce (v2.1).
+//
+// SECURITY PROPERTIES:
+// - One-way: Cannot derive nonce from clientSecret (HMAC is irreversible)
+// - Context-bound: Unique per contextId + binding combination
+// - Safe to expose: Client can use it but cannot forge other contexts
+//
+// Formula: clientSecret = HMAC-SHA256(nonce, contextId + "|" + binding)
+func DeriveClientSecret(nonce, contextID, binding string) string {
+	h := hmac.New(sha256.New, []byte(nonce))
+	h.Write([]byte(contextID + "|" + binding))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// BuildProofV21 builds a v2.1 cryptographic proof (client-side).
+//
+// Formula: proof = HMAC-SHA256(clientSecret, timestamp + "|" + binding + "|" + bodyHash)
+func BuildProofV21(clientSecret, timestamp, binding, bodyHash string) string {
+	message := timestamp + "|" + binding + "|" + bodyHash
+	h := hmac.New(sha256.New, []byte(clientSecret))
+	h.Write([]byte(message))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// VerifyProofV21 verifies a v2.1 proof (server-side).
+func VerifyProofV21(nonce, contextID, binding, timestamp, bodyHash, clientProof string) bool {
+	// Derive the same client secret server-side
+	clientSecret := DeriveClientSecret(nonce, contextID, binding)
+
+	// Compute expected proof
+	expectedProof := BuildProofV21(clientSecret, timestamp, binding, bodyHash)
+
+	// Constant-time comparison
+	return TimingSafeCompare(expectedProof, clientProof)
+}
+
+// HashBody computes SHA-256 hash of canonical body.
+func HashBody(canonicalBody string) string {
+	hash := sha256.Sum256([]byte(canonicalBody))
+	return hex.EncodeToString(hash[:])
+}
+
+// StoredContextV21 represents context as stored on server (v2.1).
+type StoredContextV21 struct {
+	StoredContext
+	// ClientSecret is the v2.1 derived secret (safe to expose to client).
+	ClientSecret string
+	// Fingerprint is the optional device fingerprint hash.
+	Fingerprint string
+	// IPAddress is the client IP address for binding.
+	IPAddress string
+	// UserID is the optional user ID for binding.
+	UserID int64
+}
+
+// ToClientInfo converts to client-safe format (v2.1).
+// SECURITY: nonce is NEVER included, only clientSecret.
+func (c *StoredContextV21) ToClientInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"contextId":    c.ContextID,
+		"binding":      c.Binding,
+		"mode":         c.Mode,
+		"expiresAt":    c.ExpiresAt,
+		"clientSecret": c.ClientSecret,
+	}
 }

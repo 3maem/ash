@@ -115,3 +115,127 @@ public static class Proof
         return Convert.FromBase64String(base64);
     }
 }
+
+// =========================================================================
+// ASH v2.1 - Derived Client Secret & Cryptographic Proof
+// =========================================================================
+
+/// <summary>
+/// ASH Protocol Proof v2.1 functions.
+/// </summary>
+public static partial class ProofV21
+{
+    /// <summary>
+    /// ASH v2.1 protocol version prefix.
+    /// </summary>
+    public const string AshVersionPrefixV21 = "ASHv2.1";
+
+    /// <summary>
+    /// Generate a cryptographically secure random nonce.
+    /// </summary>
+    /// <param name="bytes">Number of bytes (default 32).</param>
+    /// <returns>Hex-encoded nonce (64 chars for 32 bytes).</returns>
+    public static string GenerateNonce(int bytes = 32)
+    {
+        var buffer = new byte[bytes];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(buffer);
+        return Convert.ToHexString(buffer).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Generate a unique context ID with "ash_" prefix.
+    /// </summary>
+    /// <returns>Context ID string.</returns>
+    public static string GenerateContextId()
+    {
+        var buffer = new byte[16];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(buffer);
+        return "ash_" + Convert.ToHexString(buffer).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Derive client secret from server nonce (v2.1).
+    /// </summary>
+    /// <remarks>
+    /// SECURITY PROPERTIES:
+    /// - One-way: Cannot derive nonce from clientSecret (HMAC is irreversible)
+    /// - Context-bound: Unique per contextId + binding combination
+    /// - Safe to expose: Client can use it but cannot forge other contexts
+    ///
+    /// Formula: clientSecret = HMAC-SHA256(nonce, contextId + "|" + binding)
+    /// </remarks>
+    /// <param name="nonce">Server-side secret nonce (64 hex chars).</param>
+    /// <param name="contextId">Context identifier.</param>
+    /// <param name="binding">Request binding (e.g., "POST /login").</param>
+    /// <returns>Derived client secret (64 hex chars).</returns>
+    public static string DeriveClientSecret(string nonce, string contextId, string binding)
+    {
+        var key = Encoding.UTF8.GetBytes(nonce);
+        var message = Encoding.UTF8.GetBytes(contextId + "|" + binding);
+        using var hmac = new HMACSHA256(key);
+        var hash = hmac.ComputeHash(message);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Build v2.1 cryptographic proof (client-side).
+    /// </summary>
+    /// <remarks>
+    /// Formula: proof = HMAC-SHA256(clientSecret, timestamp + "|" + binding + "|" + bodyHash)
+    /// </remarks>
+    /// <param name="clientSecret">Derived client secret.</param>
+    /// <param name="timestamp">Request timestamp (milliseconds as string).</param>
+    /// <param name="binding">Request binding (e.g., "POST /login").</param>
+    /// <param name="bodyHash">SHA-256 hash of canonical request body.</param>
+    /// <returns>Proof (64 hex chars).</returns>
+    public static string BuildProofV21(string clientSecret, string timestamp, string binding, string bodyHash)
+    {
+        var key = Encoding.UTF8.GetBytes(clientSecret);
+        var message = Encoding.UTF8.GetBytes(timestamp + "|" + binding + "|" + bodyHash);
+        using var hmac = new HMACSHA256(key);
+        var hash = hmac.ComputeHash(message);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Verify v2.1 proof (server-side).
+    /// </summary>
+    /// <param name="nonce">Server-side secret nonce.</param>
+    /// <param name="contextId">Context identifier.</param>
+    /// <param name="binding">Request binding.</param>
+    /// <param name="timestamp">Request timestamp.</param>
+    /// <param name="bodyHash">SHA-256 hash of canonical body.</param>
+    /// <param name="clientProof">Proof received from client.</param>
+    /// <returns>True if proof is valid.</returns>
+    public static bool VerifyProofV21(
+        string nonce,
+        string contextId,
+        string binding,
+        string timestamp,
+        string bodyHash,
+        string clientProof)
+    {
+        // Derive the same client secret server-side
+        var derivedClientSecret = DeriveClientSecret(nonce, contextId, binding);
+
+        // Compute expected proof
+        var expectedProof = BuildProofV21(derivedClientSecret, timestamp, binding, bodyHash);
+
+        // Constant-time comparison
+        return Compare.TimingSafe(expectedProof, clientProof);
+    }
+
+    /// <summary>
+    /// Compute SHA-256 hash of canonical body.
+    /// </summary>
+    /// <param name="canonicalBody">Canonicalized request body.</param>
+    /// <returns>SHA-256 hash (64 hex chars).</returns>
+    public static string HashBody(string canonicalBody)
+    {
+        var bytes = Encoding.UTF8.GetBytes(canonicalBody);
+        var hash = SHA256.HashData(bytes);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+}
