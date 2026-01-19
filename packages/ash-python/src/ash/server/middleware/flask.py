@@ -32,7 +32,7 @@ Example:
 
 import asyncio
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from ash.core.errors import AshError
 from ash.core.types import SupportedContentType
@@ -76,7 +76,7 @@ def flask(
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Import Flask request here to avoid import errors when Flask not installed
             try:
-                from flask import request, jsonify
+                from flask import jsonify, request
             except ImportError:
                 raise ImportError(
                     "Flask is required for this middleware. "

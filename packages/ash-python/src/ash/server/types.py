@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional
 
-from ash.core.types import StoredContext, AshMode, SupportedContentType
+from ash.core.types import AshMode, StoredContext, SupportedContentType
 
 # Result of consuming a context
 ConsumeResult = Literal["consumed", "already_consumed", "missing"]

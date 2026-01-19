@@ -7,10 +7,10 @@ Requires: pip install ash-protocol[redis]
 
 import json
 import time
-from typing import Optional, Any
+from typing import Any, Optional
 
 from ash.core.types import StoredContext
-from ash.server.types import ContextStore, ConsumeResult
+from ash.server.types import ConsumeResult, ContextStore
 
 
 class Redis(ContextStore):

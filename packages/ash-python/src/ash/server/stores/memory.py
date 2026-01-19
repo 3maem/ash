@@ -5,13 +5,13 @@ WARNING: For development and testing ONLY.
 NOT suitable for production - no persistence, no atomic guarantees across processes.
 """
 
+import os
 import time
 import warnings
-import os
 from typing import Dict, Optional
 
 from ash.core.types import StoredContext
-from ash.server.types import ContextStore, ConsumeResult
+from ash.server.types import ConsumeResult, ContextStore
 
 
 class Memory(ContextStore):
