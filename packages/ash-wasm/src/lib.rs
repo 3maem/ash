@@ -154,7 +154,7 @@ pub fn ash_timing_safe_equal(a: &str, b: &str) -> bool {
 /// @returns Version string (e.g., "ASHv1")
 #[wasm_bindgen(js_name = "ashVersion")]
 pub fn ash_version() -> String {
-    "ASHv1".to_string()
+    "ASHv2.1".to_string()
 }
 
 /// Get the library version.
@@ -236,4 +236,76 @@ mod tests {
     fn test_version() {
         assert_eq!(ash_version(), "ASHv1");
     }
+}
+
+// =========================================================================
+// ASH v2.1 - Derived Client Secret & Cryptographic Proof (WASM Bindings)
+// =========================================================================
+
+/// Generate a cryptographically secure random nonce.
+/// @param bytes - Number of bytes (default 32)
+/// @returns Hex-encoded nonce
+#[wasm_bindgen(js_name = "ashGenerateNonce")]
+pub fn ash_generate_nonce(bytes: Option<usize>) -> String {
+    ash_core::generate_nonce(bytes.unwrap_or(32))
+}
+
+/// Generate a unique context ID with "ash_" prefix.
+#[wasm_bindgen(js_name = "ashGenerateContextId")]
+pub fn ash_generate_context_id() -> String {
+    ash_core::generate_context_id()
+}
+
+/// Derive client secret from server nonce (v2.1).
+/// @param nonce - Server-side secret nonce
+/// @param contextId - Context identifier  
+/// @param binding - Request binding (e.g., "POST /login")
+/// @returns Derived client secret (64 hex chars)
+#[wasm_bindgen(js_name = "ashDeriveClientSecret")]
+pub fn ash_derive_client_secret(nonce: &str, context_id: &str, binding: &str) -> String {
+    ash_core::derive_client_secret(nonce, context_id, binding)
+}
+
+/// Build v2.1 cryptographic proof.
+/// @param clientSecret - Derived client secret
+/// @param timestamp - Request timestamp (milliseconds as string)
+/// @param binding - Request binding
+/// @param bodyHash - SHA-256 hash of canonical body
+/// @returns Proof (64 hex chars)
+#[wasm_bindgen(js_name = "ashBuildProofV21")]
+pub fn ash_build_proof_v21(
+    client_secret: &str,
+    timestamp: &str,
+    binding: &str,
+    body_hash: &str,
+) -> String {
+    ash_core::build_proof_v21(client_secret, timestamp, binding, body_hash)
+}
+
+/// Verify v2.1 proof.
+/// @param nonce - Server-side secret nonce
+/// @param contextId - Context identifier
+/// @param binding - Request binding
+/// @param timestamp - Request timestamp
+/// @param bodyHash - SHA-256 hash of canonical body
+/// @param clientProof - Proof received from client
+/// @returns true if proof is valid
+#[wasm_bindgen(js_name = "ashVerifyProofV21")]
+pub fn ash_verify_proof_v21(
+    nonce: &str,
+    context_id: &str,
+    binding: &str,
+    timestamp: &str,
+    body_hash: &str,
+    client_proof: &str,
+) -> bool {
+    ash_core::verify_proof_v21(nonce, context_id, binding, timestamp, body_hash, client_proof)
+}
+
+/// Compute SHA-256 hash of canonical body.
+/// @param canonicalBody - Canonicalized request body
+/// @returns SHA-256 hash (64 hex chars)
+#[wasm_bindgen(js_name = "ashHashBody")]
+pub fn ash_hash_body(canonical_body: &str) -> String {
+    ash_core::hash_body(canonical_body)
 }

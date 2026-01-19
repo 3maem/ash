@@ -48,7 +48,13 @@ mod types;
 pub use canonicalize::{canonicalize_json, canonicalize_urlencoded};
 pub use compare::timing_safe_equal;
 pub use errors::{AshError, AshErrorCode};
-pub use proof::{build_proof, verify_proof};
+pub use proof::{
+    build_proof, verify_proof,
+    // v2.1 functions
+    generate_nonce, generate_context_id,
+    derive_client_secret, build_proof_v21,
+    verify_proof_v21, hash_body,
+};
 pub use types::{AshMode, BuildProofInput, VerifyInput};
 
 /// Normalize a binding string to canonical form.

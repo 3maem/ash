@@ -350,3 +350,133 @@ mod tests {
         assert_eq!(proof.len(), 43);
     }
 }
+
+// =========================================================================
+// ASH v2.1 - Derived Client Secret & Cryptographic Proof
+// =========================================================================
+
+use hmac::{Hmac, Mac};
+use sha2::Sha256 as HmacSha256;
+
+type HmacSha256Type = Hmac<HmacSha256>;
+
+/// ASH v2.1 protocol version.
+#[allow(dead_code)]
+const ASH_VERSION_V21: &str = "ASHv2.1";
+
+/// Generate a cryptographically secure random nonce.
+///
+/// # Arguments
+/// * `bytes` - Number of bytes (default 32)
+///
+/// # Returns
+/// Hex-encoded nonce (64 chars for 32 bytes)
+pub fn generate_nonce(bytes: usize) -> String {
+    use getrandom::getrandom;
+    let mut buf = vec![0u8; bytes];
+    getrandom(&mut buf).expect("Failed to generate random bytes");
+    hex::encode(buf)
+}
+
+/// Generate a unique context ID with "ash_" prefix.
+pub fn generate_context_id() -> String {
+    format!("ash_{}", generate_nonce(16))
+}
+
+/// Derive client secret from server nonce (v2.1).
+///
+/// SECURITY PROPERTIES:
+/// - One-way: Cannot derive nonce from clientSecret (HMAC is irreversible)
+/// - Context-bound: Unique per contextId + binding combination
+/// - Safe to expose: Client can use it but cannot forge other contexts
+///
+/// Formula: clientSecret = HMAC-SHA256(nonce, contextId + "|" + binding)
+pub fn derive_client_secret(nonce: &str, context_id: &str, binding: &str) -> String {
+    let mut mac = HmacSha256Type::new_from_slice(nonce.as_bytes())
+        .expect("HMAC can take key of any size");
+    mac.update(format!("{}|{}", context_id, binding).as_bytes());
+    hex::encode(mac.finalize().into_bytes())
+}
+
+/// Build v2.1 cryptographic proof (client-side).
+///
+/// Formula: proof = HMAC-SHA256(clientSecret, timestamp + "|" + binding + "|" + bodyHash)
+pub fn build_proof_v21(
+    client_secret: &str,
+    timestamp: &str,
+    binding: &str,
+    body_hash: &str,
+) -> String {
+    let message = format!("{}|{}|{}", timestamp, binding, body_hash);
+    let mut mac = HmacSha256Type::new_from_slice(client_secret.as_bytes())
+        .expect("HMAC can take key of any size");
+    mac.update(message.as_bytes());
+    hex::encode(mac.finalize().into_bytes())
+}
+
+/// Verify v2.1 proof (server-side).
+pub fn verify_proof_v21(
+    nonce: &str,
+    context_id: &str,
+    binding: &str,
+    timestamp: &str,
+    body_hash: &str,
+    client_proof: &str,
+) -> bool {
+    let client_secret = derive_client_secret(nonce, context_id, binding);
+    let expected_proof = build_proof_v21(&client_secret, timestamp, binding, body_hash);
+    timing_safe_equal(expected_proof.as_bytes(), client_proof.as_bytes())
+}
+
+/// Compute SHA-256 hash of canonical body.
+pub fn hash_body(canonical_body: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(canonical_body.as_bytes());
+    hex::encode(hasher.finalize())
+}
+
+#[cfg(test)]
+mod tests_v21 {
+    use super::*;
+
+    #[test]
+    fn test_derive_client_secret_deterministic() {
+        let secret1 = derive_client_secret("nonce123", "ctx_abc", "POST /login");
+        let secret2 = derive_client_secret("nonce123", "ctx_abc", "POST /login");
+        assert_eq!(secret1, secret2);
+    }
+
+    #[test]
+    fn test_derive_client_secret_different_inputs() {
+        let secret1 = derive_client_secret("nonce123", "ctx_abc", "POST /login");
+        let secret2 = derive_client_secret("nonce456", "ctx_abc", "POST /login");
+        assert_ne!(secret1, secret2);
+    }
+
+    #[test]
+    fn test_build_proof_v21_deterministic() {
+        let proof1 = build_proof_v21("secret", "1234567890", "POST /login", "bodyhash");
+        let proof2 = build_proof_v21("secret", "1234567890", "POST /login", "bodyhash");
+        assert_eq!(proof1, proof2);
+    }
+
+    #[test]
+    fn test_verify_proof_v21() {
+        let nonce = "nonce123";
+        let context_id = "ctx_abc";
+        let binding = "POST /login";
+        let timestamp = "1234567890";
+        let body_hash = "bodyhash123";
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+        let proof = build_proof_v21(&client_secret, timestamp, binding, body_hash);
+
+        assert!(verify_proof_v21(nonce, context_id, binding, timestamp, body_hash, &proof));
+    }
+
+    #[test]
+    fn test_hash_body() {
+        let hash = hash_body(r#"{"name":"John"}"#);
+        assert_eq!(hash.len(), 64); // SHA-256 produces 32 bytes = 64 hex chars
+    }
+}

@@ -21,6 +21,9 @@ base64.workspace = true
 unicode-normalization.workspace = true
 subtle.workspace = true
 thiserror.workspace = true
+hex.workspace = true
+hmac.workspace = true
+getrandom.workspace = true
 
 [dev-dependencies]
 # criterion = { version = "0.5", optional = true }
