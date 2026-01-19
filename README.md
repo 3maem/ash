@@ -86,6 +86,53 @@ This mechanism allows the server to determine whether a request:
 
 ---
 
+## API Naming Convention
+
+All public APIs use the `ash` prefix for consistency and to avoid naming conflicts.
+
+### Functions
+
+| Function | Purpose |
+|----------|---------|
+| `ashInit()` | Initialize the library |
+| `ashCanonicalizeJson()` | Canonicalize JSON to deterministic form |
+| `ashCanonicalizeUrlencoded()` | Canonicalize URL-encoded form data |
+| `ashBuildProof()` | Generate cryptographic proof |
+| `ashVerifyProof()` | Verify proof matches expected value |
+| `ashNormalizeBinding()` | Normalize HTTP method and path |
+| `ashTimingSafeEqual()` | Constant-time string comparison |
+| `ashVersion()` | Get protocol version (e.g., "ASHv1") |
+| `ashLibraryVersion()` | Get library semantic version |
+
+### Types and Interfaces
+
+| Type | Purpose |
+|------|---------|
+| `AshMode` | Security mode: `minimal`, `balanced`, `strict` |
+| `AshContext` | Context object with ID, binding, expiry, mode |
+| `AshContextOptions` | Options for creating a new context |
+| `AshVerifyResult` | Verification result with status and error info |
+| `AshContextStore` | Interface for context storage backends |
+
+### Classes
+
+| Class | Purpose |
+|-------|---------|
+| `AshMemoryStore` | In-memory context store (development/testing) |
+| `AshRedisStore` | Redis-backed context store (production) |
+| `AshSqlStore` | SQL database context store |
+
+### Middleware
+
+| Middleware | Purpose |
+|------------|---------|
+| `ashExpressMiddleware()` | Express.js request verification |
+| `ashFastifyPlugin()` | Fastify request verification |
+
+This naming convention applies across all SDKs (Node.js, Python, Go, .NET, PHP, Rust).
+
+---
+
 ## Security Scope and Explicit Boundaries
 
 ASH provides **request integrity validation** and **anti-replay protection** only.
