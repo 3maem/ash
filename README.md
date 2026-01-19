@@ -1,0 +1,231 @@
+# ASH SDK
+
+**Developed by 3maem Co. | شركة عمائم**
+
+---
+
+## Introduction
+
+**ASH** is an acronym for **Application Security Hash**.
+
+ASH is a security software development kit (SDK) created to address a
+specific, narrowly scoped security problem:
+**ensuring the integrity and single-use validity of individual HTTP requests**.
+
+ASH was developed in response to a recurring gap observed in modern web
+architectures, where existing security mechanisms focus primarily on
+transport security, identity verification, and access control, while
+leaving the **request itself** vulnerable to reuse, duplication, or
+manipulation within short attack windows.
+
+---
+
+## Purpose and Motivation
+
+ASH was developed to solve the following problem:
+
+> Even when HTTPS, authentication, and authorization are correctly
+> implemented, application requests can still be **captured, replayed,
+> duplicated, or misused** without being altered in a detectable way.
+
+ASH does **not** attempt to prevent attacks by analyzing intent,
+validating business logic, inspecting input semantics, or detecting
+malicious behavior.
+
+Instead, ASH focuses exclusively on **verifying that a request is
+authentic, unmodified, context-bound, and valid for a single use**.
+
+This intentionally narrow scope is fundamental to ASH's design.
+
+---
+
+## What ASH Is — and Is Not
+
+ASH is **not**:
+
+- An authentication mechanism
+- An authorization or access-control framework
+- A transport security protocol
+- A firewall or intrusion detection system
+- An input validation or injection prevention solution
+- A replacement for any existing security library or standard
+
+ASH does **not** replace:
+- TLS / HTTPS
+- JWT, OAuth, sessions, or API keys
+- Secure coding practices
+- Application-layer security controls
+
+ASH is designed as an **additional, complementary security layer**
+within a **defense-in-depth architecture**.
+
+---
+
+## How ASH Works (Conceptual Overview)
+
+ASH operates at the **request level**, not the user or session level.
+
+For each protected operation:
+
+1. The server issues a short-lived context identifier.
+2. The client generates a deterministic cryptographic proof.
+3. The proof is bound to:
+   - The HTTP method
+   - The target endpoint
+   - The issued context identifier
+   - A strict time-to-live (TTL)
+   - A canonical representation of the request payload
+4. The server verifies the proof before processing the request.
+5. Once validated, the proof is immediately invalidated and cannot be reused.
+
+This mechanism allows the server to determine whether a request:
+- Has been modified
+- Has been replayed
+- Has been reused outside its intended context
+- Has expired or already been consumed
+
+---
+
+## Security Scope and Explicit Boundaries
+
+ASH provides **request integrity validation** and **anti-replay protection** only.
+
+ASH does **not** claim to prevent, detect, or mitigate cybersecurity attacks.
+
+Specifically, ASH does **not** provide protection against:
+
+- Full client-side compromise
+- Malware or malicious code executing within trusted environments
+- Vulnerabilities arising from application logic or business rules
+- Input validation errors or injection-style vulnerabilities
+- Attacks originating from compromised credentials or identities
+
+These attack classes are **explicitly outside the security scope of ASH**.
+
+While ASH may reduce the feasibility or impact of certain attack
+scenarios by enforcing strict request usage rules, it must **not** be
+considered a standalone protection mechanism for such threats.
+
+---
+
+## Intended Role in a Secure Architecture
+
+ASH is intended to be deployed **alongside** existing security controls.
+
+A typical secure architecture includes:
+
+- TLS for transport-level security
+- Authentication and authorization mechanisms for identity and access
+- Secure coding practices and input validation
+- ASH for request integrity and replay protection
+
+This layered approach ensures that ASH enhances overall security
+without assuming responsibilities beyond its defined scope.
+
+---
+
+## Quick Start
+
+### Server (Node.js / Express)
+
+```javascript
+import express from 'express';
+import { ashInit, AshMemoryStore, ashExpressMiddleware } from '@3maem/ash-node';
+
+ashInit();
+const app = express();
+const store = new AshMemoryStore();
+
+app.use(express.json());
+
+// Issue context
+app.post('/ash/context', async (req, res) => {
+  const ctx = await store.create({
+    binding: 'POST /api/transfer',
+    ttlMs: 30000,
+    mode: 'balanced'
+  });
+  res.json({ contextId: ctx.id, mode: ctx.mode });
+});
+
+// Protected endpoint
+app.post(
+  '/api/transfer',
+  ashExpressMiddleware({ store, expectedBinding: 'POST /api/transfer' }),
+  (req, res) => {
+    // Request verified — safe to process
+    res.json({ success: true });
+  }
+);
+
+app.listen(3000);
+```
+
+### Client (Browser / Node.js)
+
+```javascript
+import { ashInit, ashCanonicalizeJson, ashBuildProof } from '@3maem/ash-node';
+
+ashInit();
+
+// 1. Get context
+const { contextId, mode } = await fetch('/ash/context', {
+  method: 'POST'
+}).then(r => r.json());
+
+// 2. Prepare payload
+const payload = { amount: 100, to: 'account123' };
+const canonical = ashCanonicalizeJson(JSON.stringify(payload));
+
+// 3. Build proof
+const proof = ashBuildProof(
+  mode,
+  'POST /api/transfer',
+  contextId,
+  null,
+  canonical
+);
+
+// 4. Send protected request
+await fetch('/api/transfer', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-ASH-Context-ID': contextId,
+    'X-ASH-Proof': proof
+  },
+  body: JSON.stringify(payload)
+});
+```
+
+---
+
+## Available SDKs
+
+| Language | Package | Install |
+|----------|---------|---------|
+| **Node.js** | `@3maem/ash-node` | `npm install @3maem/ash-node` |
+| **Python** | `ash-sdk` | `pip install ash-sdk` |
+| **Go** | `github.com/3maem/ash-go` | `go get github.com/3maem/ash-go` |
+| **PHP** | `3maem/ash-sdk` | `composer require 3maem/ash-sdk` |
+| **.NET** | `Ash.Security` | `dotnet add package Ash.Security` |
+| **Rust** | `ash-core` | `cargo add ash-core` |
+
+---
+
+## Legal and Operational Notice
+
+ASH does not provide attack prevention, attack detection, or threat
+mitigation capabilities.
+
+Its purpose is strictly limited to validating request integrity and
+enforcing single-use request constraints. Any security benefit beyond
+this scope is incidental and must not be relied upon.
+
+---
+
+## License
+
+**Proprietary - All Rights Reserved**
+
+© 3maem Co. | شركة عمائم
