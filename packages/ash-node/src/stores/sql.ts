@@ -192,7 +192,7 @@ export class AshSqlStore implements AshContextStore {
     const result = await this.query.execute<{ rowCount?: number }>(sql, [Date.now()]);
 
     // Return count of deleted rows if available
-    return 0;
+    return result.rowCount ?? 0;
   }
 
   private rowToContext(row: ContextRow): AshContext {
