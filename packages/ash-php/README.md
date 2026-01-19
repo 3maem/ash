@@ -496,7 +496,9 @@ $response = file_get_contents('https://api.example.com/api/update', false, $cont
 
 ## License
 
-Proprietary - All Rights Reserved
+**ASH Source-Available License (ASAL-1.0)**
+
+See the [LICENSE](https://github.com/3maem/ash/blob/main/LICENSE) for full terms.
 
 ## Links
 

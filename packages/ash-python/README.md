@@ -476,7 +476,9 @@ def process_context(ctx: AshContext) -> None:
 
 ## License
 
-Proprietary - All Rights Reserved
+**ASH Source-Available License (ASAL-1.0)**
+
+See the [LICENSE](https://github.com/3maem/ash/blob/main/LICENSE) for full terms.
 
 ## Links
 
