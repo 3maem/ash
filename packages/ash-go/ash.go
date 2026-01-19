@@ -439,10 +439,12 @@ func CanonicalizeURLEncoded(input string) (string, error) {
 		return pairs[i].Key < pairs[j].Key
 	})
 
-	// Encode and join
+	// Encode and join (use %20 for spaces instead of +)
 	var parts []string
 	for _, pair := range pairs {
-		parts = append(parts, url.QueryEscape(pair.Key)+"="+url.QueryEscape(pair.Value))
+		key := strings.ReplaceAll(url.QueryEscape(pair.Key), "+", "%20")
+		value := strings.ReplaceAll(url.QueryEscape(pair.Value), "+", "%20")
+		parts = append(parts, key+"="+value)
 	}
 
 	return strings.Join(parts, "&"), nil
@@ -520,10 +522,12 @@ func CanonicalizeURLEncodedFromMap(data map[string][]string) string {
 		return pairs[i].Key < pairs[j].Key
 	})
 
-	// Encode and join
+	// Encode and join (use %20 for spaces instead of +)
 	var parts []string
 	for _, pair := range pairs {
-		parts = append(parts, url.QueryEscape(pair.Key)+"="+url.QueryEscape(pair.Value))
+		key := strings.ReplaceAll(url.QueryEscape(pair.Key), "+", "%20")
+		value := strings.ReplaceAll(url.QueryEscape(pair.Value), "+", "%20")
+		parts = append(parts, key+"="+value)
 	}
 
 	return strings.Join(parts, "&")

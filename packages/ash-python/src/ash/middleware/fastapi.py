@@ -98,9 +98,10 @@ class AshFastAPIMiddleware:
         result = self.ash.ash_verify(context_id, proof, binding, payload, content_type)
 
         if not result.valid:
+            error_code = result.error_code.value if result.error_code else "VERIFICATION_FAILED"
             response = JSONResponse(
                 {
-                    "error": result.error_code.value if result.error_code else "VERIFICATION_FAILED",
+                    "error": error_code,
                     "message": result.error_message or "Verification failed",
                 },
                 status_code=403,

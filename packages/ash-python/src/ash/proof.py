@@ -69,9 +69,14 @@ def ash_build_proof(
 
     # Handle the case where there's no nonce - adjust the format
     if nonce is None:
-        input_str = f"{ASH_VERSION}\n{mode.value}\n{binding}\n{context_id}\n{canonical_payload}"
+        input_str = (
+            f"{ASH_VERSION}\n{mode.value}\n{binding}\n{context_id}\n{canonical_payload}"
+        )
     else:
-        input_str = f"{ASH_VERSION}\n{mode.value}\n{binding}\n{context_id}\n{nonce}\n{canonical_payload}"
+        input_str = (
+            f"{ASH_VERSION}\n{mode.value}\n{binding}\n"
+            f"{context_id}\n{nonce}\n{canonical_payload}"
+        )
 
     # Compute SHA-256 hash
     hash_bytes = hashlib.sha256(input_str.encode("utf-8")).digest()

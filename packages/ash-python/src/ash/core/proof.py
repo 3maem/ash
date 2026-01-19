@@ -7,7 +7,6 @@ Same inputs MUST produce identical proof across all implementations.
 
 import base64
 import hashlib
-from typing import Optional
 
 from ash.core.types import BuildProofInput
 

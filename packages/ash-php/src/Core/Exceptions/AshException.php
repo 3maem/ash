@@ -12,11 +12,16 @@ use Exception;
  */
 class AshException extends Exception
 {
+    public readonly AshErrorCode $errorCode;
+    public readonly int $httpStatus;
+
     public function __construct(
-        public readonly AshErrorCode $code,
-        public readonly int $httpStatus,
+        AshErrorCode $errorCode,
+        int $httpStatus,
         string $message = 'ASH error',
     ) {
         parent::__construct($message);
+        $this->errorCode = $errorCode;
+        $this->httpStatus = $httpStatus;
     }
 }
