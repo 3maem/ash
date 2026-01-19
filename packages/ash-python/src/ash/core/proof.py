@@ -205,3 +205,142 @@ def hash_body(canonical_body: str) -> str:
         SHA-256 hash (64 hex chars)
     """
     return hashlib.sha256(canonical_body.encode("utf-8")).hexdigest()
+
+
+# =========================================================================
+# ASH v2.2 - Context Scoping (Selective Field Protection)
+# =========================================================================
+
+def extract_scoped_fields(payload: dict, scope: list[str]) -> dict:
+    """
+    Extract scoped fields from a payload dictionary.
+
+    Args:
+        payload: Full payload dictionary
+        scope: List of field paths (supports dot notation)
+
+    Returns:
+        Dictionary containing only scoped fields
+    """
+    if not scope:
+        return payload
+
+    result = {}
+    for field_path in scope:
+        value = _get_nested_value(payload, field_path)
+        if value is not None:
+            _set_nested_value(result, field_path, value)
+    return result
+
+
+def _get_nested_value(obj: dict, path: str):
+    """Get a nested value using dot notation."""
+    keys = path.split(".")
+    current = obj
+
+    for key in keys:
+        if not isinstance(current, dict) or key not in current:
+            return None
+        current = current[key]
+
+    return current
+
+
+def _set_nested_value(obj: dict, path: str, value) -> None:
+    """Set a nested value using dot notation."""
+    keys = path.split(".")
+    current = obj
+
+    for i, key in enumerate(keys[:-1]):
+        if key not in current:
+            current[key] = {}
+        current = current[key]
+
+    current[keys[-1]] = value
+
+
+def build_proof_v21_scoped(
+    client_secret: str,
+    timestamp: str,
+    binding: str,
+    payload: dict,
+    scope: list[str],
+) -> tuple[str, str]:
+    """
+    Build v2.2 proof with scoped fields.
+
+    Args:
+        client_secret: Derived client secret
+        timestamp: Request timestamp (milliseconds)
+        binding: Request binding
+        payload: Full payload dictionary
+        scope: Fields to protect (empty = all)
+
+    Returns:
+        Tuple of (proof, scope_hash)
+    """
+    import json
+
+    scoped_payload = extract_scoped_fields(payload, scope)
+    canonical_scoped = json.dumps(scoped_payload, separators=(",", ":"), sort_keys=True)
+    body_hash = hash_body(canonical_scoped)
+
+    scope_str = ",".join(scope)
+    scope_hash = hash_body(scope_str)
+
+    message = f"{timestamp}|{binding}|{body_hash}|{scope_hash}"
+    proof = hmac.new(
+        client_secret.encode("utf-8"),
+        message.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    return proof, scope_hash
+
+
+def verify_proof_v21_scoped(
+    nonce: str,
+    context_id: str,
+    binding: str,
+    timestamp: str,
+    payload: dict,
+    scope: list[str],
+    scope_hash: str,
+    client_proof: str,
+) -> bool:
+    """
+    Verify v2.2 proof with scoped fields.
+
+    Returns:
+        True if proof is valid
+    """
+    # Verify scope hash
+    scope_str = ",".join(scope)
+    expected_scope_hash = hash_body(scope_str)
+    if not hmac.compare_digest(expected_scope_hash, scope_hash):
+        return False
+
+    client_secret = derive_client_secret(nonce, context_id, binding)
+    expected_proof, _ = build_proof_v21_scoped(
+        client_secret, timestamp, binding, payload, scope
+    )
+
+    return hmac.compare_digest(expected_proof, client_proof)
+
+
+def hash_scoped_body(payload: dict, scope: list[str]) -> str:
+    """
+    Hash scoped payload fields.
+
+    Args:
+        payload: Full payload dictionary
+        scope: Fields to hash
+
+    Returns:
+        SHA-256 hash of scoped fields
+    """
+    import json
+
+    scoped_payload = extract_scoped_fields(payload, scope)
+    canonical = json.dumps(scoped_payload, separators=(",", ":"), sort_keys=True)
+    return hash_body(canonical)

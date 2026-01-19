@@ -208,4 +208,121 @@ final class Proof
     {
         return 'ash_' . bin2hex(random_bytes(16));
     }
+
+    // =========================================================================
+    // ASH v2.2 - Context Scoping (Selective Field Protection)
+    // =========================================================================
+
+    /**
+     * Extract scoped fields from a payload array.
+     *
+     * @param array<string, mixed> $payload Full payload array
+     * @param array<string> $scope Fields to extract (empty = all)
+     * @return array<string, mixed> Extracted fields
+     */
+    public static function extractScopedFields(array $payload, array $scope): array
+    {
+        if (empty($scope)) {
+            return $payload;
+        }
+
+        $result = [];
+        foreach ($scope as $fieldPath) {
+            $value = self::getNestedValue($payload, $fieldPath);
+            if ($value !== null) {
+                self::setNestedValue($result, $fieldPath, $value);
+            }
+        }
+        return $result;
+    }
+
+    private static function getNestedValue(array $array, string $path): mixed
+    {
+        $keys = explode('.', $path);
+        $current = $array;
+
+        foreach ($keys as $key) {
+            if (!is_array($current) || !array_key_exists($key, $current)) {
+                return null;
+            }
+            $current = $current[$key];
+        }
+
+        return $current;
+    }
+
+    private static function setNestedValue(array &$array, string $path, mixed $value): void
+    {
+        $keys = explode('.', $path);
+        $current = &$array;
+
+        foreach ($keys as $i => $key) {
+            if ($i === count($keys) - 1) {
+                $current[$key] = $value;
+            } else {
+                if (!isset($current[$key]) || !is_array($current[$key])) {
+                    $current[$key] = [];
+                }
+                $current = &$current[$key];
+            }
+        }
+    }
+
+    /**
+     * Build v2.2 proof with scoped fields.
+     */
+    public static function buildV21Scoped(
+        string $clientSecret,
+        string $timestamp,
+        string $binding,
+        array $payload,
+        array $scope
+    ): array {
+        $scopedPayload = self::extractScopedFields($payload, $scope);
+        $canonicalScoped = json_encode($scopedPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $bodyHash = self::hashBody($canonicalScoped);
+
+        $scopeStr = implode(',', $scope);
+        $scopeHash = self::hashBody($scopeStr);
+
+        $message = $timestamp . '|' . $binding . '|' . $bodyHash . '|' . $scopeHash;
+        $proof = hash_hmac('sha256', $message, $clientSecret);
+
+        return ['proof' => $proof, 'scopeHash' => $scopeHash];
+    }
+
+    /**
+     * Verify v2.2 proof with scoped fields.
+     */
+    public static function verifyV21Scoped(
+        string $nonce,
+        string $contextId,
+        string $binding,
+        string $timestamp,
+        array $payload,
+        array $scope,
+        string $scopeHash,
+        string $clientProof
+    ): bool {
+        $scopeStr = implode(',', $scope);
+        $expectedScopeHash = self::hashBody($scopeStr);
+        if (!Compare::timingSafe($expectedScopeHash, $scopeHash)) {
+            return false;
+        }
+
+        $clientSecret = self::deriveClientSecret($nonce, $contextId, $binding);
+        $result = self::buildV21Scoped($clientSecret, $timestamp, $binding, $payload, $scope);
+
+        return Compare::timingSafe($result['proof'], $clientProof);
+    }
+
+    /**
+     * Hash scoped payload fields.
+     */
+    public static function hashScopedBody(array $payload, array $scope): string
+    {
+        $scopedPayload = self::extractScopedFields($payload, $scope);
+        $canonical = json_encode($scopedPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return self::hashBody($canonical);
+    }
 }

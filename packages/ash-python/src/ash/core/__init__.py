@@ -17,6 +17,10 @@ from ash.core.errors import (
     UnsupportedContentTypeError,
 )
 from ash.core.proof import (
+    extract_scoped_fields,
+    build_proof_v21_scoped,
+    verify_proof_v21_scoped,
+    hash_scoped_body,
     base64url_decode,
     base64url_encode,
     build_proof,

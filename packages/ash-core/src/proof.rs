@@ -480,3 +480,269 @@ mod tests_v21 {
         assert_eq!(hash.len(), 64); // SHA-256 produces 32 bytes = 64 hex chars
     }
 }
+
+// =========================================================================
+// ASH v2.2 - Context Scoping (Selective Field Protection)
+// =========================================================================
+
+use serde_json::{Map, Value};
+
+/// Extract scoped fields from a JSON value.
+pub fn extract_scoped_fields(payload: &Value, scope: &[&str]) -> Result<Value, AshError> {
+    if scope.is_empty() {
+        return Ok(payload.clone());
+    }
+
+    let mut result = Map::new();
+
+    for field_path in scope {
+        let value = get_nested_value(payload, field_path);
+        if let Some(v) = value {
+            set_nested_value(&mut result, field_path, v);
+        }
+    }
+
+    Ok(Value::Object(result))
+}
+
+fn get_nested_value(payload: &Value, path: &str) -> Option<Value> {
+    let parts: Vec<&str> = path.split('.').collect();
+    let mut current = payload;
+
+    for part in parts {
+        let (key, index) = parse_array_notation(part);
+
+        match current {
+            Value::Object(map) => {
+                current = map.get(key)?;
+                if let Some(idx) = index {
+                    if let Value::Array(arr) = current {
+                        current = arr.get(idx)?;
+                    } else {
+                        return None;
+                    }
+                }
+            }
+            Value::Array(arr) => {
+                let idx: usize = key.parse().ok()?;
+                current = arr.get(idx)?;
+            }
+            _ => return None,
+        }
+    }
+
+    Some(current.clone())
+}
+
+fn parse_array_notation(part: &str) -> (&str, Option<usize>) {
+    if let Some(bracket_start) = part.find('[') {
+        if let Some(bracket_end) = part.find(']') {
+            let key = &part[..bracket_start];
+            let index_str = &part[bracket_start + 1..bracket_end];
+            if let Ok(index) = index_str.parse::<usize>() {
+                return (key, Some(index));
+            }
+        }
+    }
+    (part, None)
+}
+
+fn set_nested_value(result: &mut Map<String, Value>, path: &str, value: Value) {
+    let parts: Vec<&str> = path.split('.').collect();
+
+    if parts.len() == 1 {
+        let (key, _) = parse_array_notation(parts[0]);
+        result.insert(key.to_string(), value);
+        return;
+    }
+
+    let (first_key, _) = parse_array_notation(parts[0]);
+    let remaining_path = parts[1..].join(".");
+
+    let nested = result
+        .entry(first_key.to_string())
+        .or_insert_with(|| Value::Object(Map::new()));
+
+    if let Value::Object(nested_map) = nested {
+        set_nested_value(nested_map, &remaining_path, value);
+    }
+}
+/// Build v2.2 cryptographic proof with scoped fields.
+pub fn build_proof_v21_scoped(
+    client_secret: &str,
+    timestamp: &str,
+    binding: &str,
+    payload: &str,
+    scope: &[&str],
+) -> Result<(String, String), AshError> {
+    let json_payload: Value = serde_json::from_str(payload)
+        .map_err(|e| AshError::Canonicalization(format\!("Invalid JSON: {}", e)))?;
+
+    let scoped_payload = extract_scoped_fields(&json_payload, scope)?;
+
+    let canonical_scoped = serde_json::to_string(&scoped_payload)
+        .map_err(|e| AshError::Canonicalization(format\!("Failed to serialize: {}", e)))?;
+
+    let body_hash = hash_body(&canonical_scoped);
+
+    let scope_str = scope.join(",");
+    let scope_hash = hash_body(&scope_str);
+
+    let message = format\!("{}|{}|{}|{}", timestamp, binding, body_hash, scope_hash);
+    let mut mac = HmacSha256Type::new_from_slice(client_secret.as_bytes())
+        .expect("HMAC can take key of any size");
+    mac.update(message.as_bytes());
+    let proof = hex::encode(mac.finalize().into_bytes());
+
+    Ok((proof, scope_hash))
+}
+
+/// Verify v2.2 proof with scoped fields.
+pub fn verify_proof_v21_scoped(
+    nonce: &str,
+    context_id: &str,
+    binding: &str,
+    timestamp: &str,
+    payload: &str,
+    scope: &[&str],
+    scope_hash: &str,
+    client_proof: &str,
+) -> Result<bool, AshError> {
+    let scope_str = scope.join(",");
+    let expected_scope_hash = hash_body(&scope_str);
+    if \!timing_safe_equal(expected_scope_hash.as_bytes(), scope_hash.as_bytes()) {
+        return Ok(false);
+    }
+
+    let client_secret = derive_client_secret(nonce, context_id, binding);
+
+    let (expected_proof, _) = build_proof_v21_scoped(
+        &client_secret,
+        timestamp,
+        binding,
+        payload,
+        scope,
+    )?;
+
+    Ok(timing_safe_equal(expected_proof.as_bytes(), client_proof.as_bytes()))
+}
+
+/// Hash scoped payload for client-side use.
+pub fn hash_scoped_body(payload: &str, scope: &[&str]) -> Result<String, AshError> {
+    let json_payload: Value = serde_json::from_str(payload)
+        .map_err(|e| AshError::Canonicalization(format\!("Invalid JSON: {}", e)))?;
+
+    let scoped_payload = extract_scoped_fields(&json_payload, scope)?;
+
+    let canonical_scoped = serde_json::to_string(&scoped_payload)
+        .map_err(|e| AshError::Canonicalization(format\!("Failed to serialize: {}", e)))?;
+
+    Ok(hash_body(&canonical_scoped))
+}
+
+#[cfg(test)]
+mod tests_v22_scoping {
+    use super::*;
+
+    #[test]
+    fn test_build_verify_scoped_proof() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /transfer";
+        let timestamp = "1234567890";
+        let payload = r#"{"amount":1000,"recipient":"user1","notes":"hi"}"#;
+        let scope = vec\!["amount", "recipient"];
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+        let (proof, scope_hash) = build_proof_v21_scoped(
+            &client_secret,
+            timestamp,
+            binding,
+            payload,
+            &scope,
+        ).unwrap();
+
+        let is_valid = verify_proof_v21_scoped(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload,
+            &scope,
+            &scope_hash,
+            &proof,
+        ).unwrap();
+
+        assert\!(is_valid);
+    }
+
+    #[test]
+    fn test_scoped_proof_ignores_unscoped_changes() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /transfer";
+        let timestamp = "1234567890";
+        let scope = vec\!["amount", "recipient"];
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+
+        let payload1 = r#"{"amount":1000,"recipient":"user1","notes":"hello"}"#;
+        let (proof, scope_hash) = build_proof_v21_scoped(
+            &client_secret,
+            timestamp,
+            binding,
+            payload1,
+            &scope,
+        ).unwrap();
+
+        let payload2 = r#"{"amount":1000,"recipient":"user1","notes":"world"}"#;
+
+        let is_valid = verify_proof_v21_scoped(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload2,
+            &scope,
+            &scope_hash,
+            &proof,
+        ).unwrap();
+
+        assert\!(is_valid);
+    }
+
+    #[test]
+    fn test_scoped_proof_detects_scoped_changes() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /transfer";
+        let timestamp = "1234567890";
+        let scope = vec\!["amount", "recipient"];
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+
+        let payload1 = r#"{"amount":1000,"recipient":"user1","notes":"hello"}"#;
+        let (proof, scope_hash) = build_proof_v21_scoped(
+            &client_secret,
+            timestamp,
+            binding,
+            payload1,
+            &scope,
+        ).unwrap();
+
+        let payload2 = r#"{"amount":9999,"recipient":"user1","notes":"hello"}"#;
+
+        let is_valid = verify_proof_v21_scoped(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload2,
+            &scope,
+            &scope_hash,
+            &proof,
+        ).unwrap();
+
+        assert\!(\!is_valid);
+    }
+}

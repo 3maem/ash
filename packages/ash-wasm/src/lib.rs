@@ -309,3 +309,99 @@ pub fn ash_verify_proof_v21(
 pub fn ash_hash_body(canonical_body: &str) -> String {
     ash_core::hash_body(canonical_body)
 }
+
+// =========================================================================
+// ASH v2.2 - Context Scoping WASM Bindings
+// =========================================================================
+
+/// Build v2.2 cryptographic proof with scoped fields.
+/// @param clientSecret - Derived client secret
+/// @param timestamp - Request timestamp (milliseconds as string)
+/// @param binding - Request binding
+/// @param payload - Full JSON payload
+/// @param scope - Comma-separated list of fields to protect (e.g., "amount,recipient")
+/// @returns Object with { proof, scopeHash }
+#[wasm_bindgen(js_name = "ashBuildProofScoped")]
+pub fn ash_build_proof_scoped(
+    client_secret: &str,
+    timestamp: &str,
+    binding: &str,
+    payload: &str,
+    scope: &str,
+) -> Result<JsValue, JsValue> {
+    let scope_vec: Vec<&str> = if scope.is_empty() {
+        vec![]
+    } else {
+        scope.split(',').collect()
+    };
+
+    let (proof, scope_hash) = ash_core::build_proof_v21_scoped(
+        client_secret,
+        timestamp,
+        binding,
+        payload,
+        &scope_vec,
+    ).map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    let result = serde_json::json!({
+        "proof": proof,
+        "scopeHash": scope_hash
+    });
+
+    Ok(JsValue::from_str(&result.to_string()))
+}
+
+/// Verify v2.2 proof with scoped fields.
+/// @param nonce - Server-side secret nonce
+/// @param contextId - Context identifier
+/// @param binding - Request binding
+/// @param timestamp - Request timestamp
+/// @param payload - Full JSON payload
+/// @param scope - Comma-separated list of protected fields
+/// @param scopeHash - Scope hash from client
+/// @param clientProof - Proof received from client
+/// @returns true if proof is valid
+#[wasm_bindgen(js_name = "ashVerifyProofScoped")]
+pub fn ash_verify_proof_scoped(
+    nonce: &str,
+    context_id: &str,
+    binding: &str,
+    timestamp: &str,
+    payload: &str,
+    scope: &str,
+    scope_hash: &str,
+    client_proof: &str,
+) -> Result<bool, JsValue> {
+    let scope_vec: Vec<&str> = if scope.is_empty() {
+        vec![]
+    } else {
+        scope.split(',').collect()
+    };
+
+    ash_core::verify_proof_v21_scoped(
+        nonce,
+        context_id,
+        binding,
+        timestamp,
+        payload,
+        &scope_vec,
+        scope_hash,
+        client_proof,
+    ).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// Hash scoped payload fields.
+/// @param payload - Full JSON payload
+/// @param scope - Comma-separated list of fields to hash
+/// @returns SHA-256 hash of scoped fields
+#[wasm_bindgen(js_name = "ashHashScopedBody")]
+pub fn ash_hash_scoped_body(payload: &str, scope: &str) -> Result<String, JsValue> {
+    let scope_vec: Vec<&str> = if scope.is_empty() {
+        vec![]
+    } else {
+        scope.split(',').collect()
+    };
+
+    ash_core::hash_scoped_body(payload, &scope_vec)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+}

@@ -239,3 +239,140 @@ public static partial class ProofV21
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }
+
+// =========================================================================
+// ASH v2.2 - Context Scoping (Selective Field Protection)
+// =========================================================================
+
+/// <summary>
+/// ASH Protocol Proof v2.2 scoping functions.
+/// </summary>
+public static partial class ProofV22
+{
+    /// <summary>
+    /// Scoped proof result.
+    /// </summary>
+    public record ScopedProofResult(string Proof, string ScopeHash);
+
+    /// <summary>
+    /// Extract scoped fields from a dictionary.
+    /// Supports dot notation for nested fields.
+    /// </summary>
+    public static Dictionary<string, object?> ExtractScopedFields(
+        Dictionary<string, object?> payload,
+        string[] scope)
+    {
+        if (scope.Length == 0)
+            return payload;
+
+        var result = new Dictionary<string, object?>();
+        foreach (var fieldPath in scope)
+        {
+            var value = GetNestedValue(payload, fieldPath);
+            if (value != null)
+            {
+                SetNestedValue(result, fieldPath, value);
+            }
+        }
+        return result;
+    }
+
+    private static object? GetNestedValue(Dictionary<string, object?> obj, string path)
+    {
+        var keys = path.Split('.');
+        object? current = obj;
+
+        foreach (var key in keys)
+        {
+            if (current is Dictionary<string, object?> dict && dict.TryGetValue(key, out var value))
+            {
+                current = value;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        return current;
+    }
+
+    private static void SetNestedValue(Dictionary<string, object?> obj, string path, object? value)
+    {
+        var keys = path.Split('.');
+        var current = obj;
+
+        for (int i = 0; i < keys.Length - 1; i++)
+        {
+            var key = keys[i];
+            if (!current.ContainsKey(key))
+            {
+                current[key] = new Dictionary<string, object?>();
+            }
+            current = (Dictionary<string, object?>)current[key]!;
+        }
+
+        current[keys[^1]] = value;
+    }
+
+    /// <summary>
+    /// Build v2.2 proof with scoped fields.
+    /// </summary>
+    public static ScopedProofResult BuildProofV21Scoped(
+        string clientSecret,
+        string timestamp,
+        string binding,
+        Dictionary<string, object?> payload,
+        string[] scope)
+    {
+        var scopedPayload = ExtractScopedFields(payload, scope);
+        var canonicalScoped = System.Text.Json.JsonSerializer.Serialize(scopedPayload);
+        var bodyHash = ProofV21.HashBody(canonicalScoped);
+
+        var scopeStr = string.Join(",", scope);
+        var scopeHash = ProofV21.HashBody(scopeStr);
+
+        var message = $"{timestamp}|{binding}|{bodyHash}|{scopeHash}";
+        var key = Encoding.UTF8.GetBytes(clientSecret);
+        var messageBytes = Encoding.UTF8.GetBytes(message);
+        using var hmac = new HMACSHA256(key);
+        var hash = hmac.ComputeHash(messageBytes);
+        var proof = Convert.ToHexString(hash).ToLowerInvariant();
+
+        return new ScopedProofResult(proof, scopeHash);
+    }
+
+    /// <summary>
+    /// Verify v2.2 proof with scoped fields.
+    /// </summary>
+    public static bool VerifyProofV21Scoped(
+        string nonce,
+        string contextId,
+        string binding,
+        string timestamp,
+        Dictionary<string, object?> payload,
+        string[] scope,
+        string scopeHash,
+        string clientProof)
+    {
+        var scopeStr = string.Join(",", scope);
+        var expectedScopeHash = ProofV21.HashBody(scopeStr);
+        if (!Compare.TimingSafe(expectedScopeHash, scopeHash))
+            return false;
+
+        var clientSecret = ProofV21.DeriveClientSecret(nonce, contextId, binding);
+        var result = BuildProofV21Scoped(clientSecret, timestamp, binding, payload, scope);
+
+        return Compare.TimingSafe(result.Proof, clientProof);
+    }
+
+    /// <summary>
+    /// Hash scoped payload fields.
+    /// </summary>
+    public static string HashScopedBody(Dictionary<string, object?> payload, string[] scope)
+    {
+        var scopedPayload = ExtractScopedFields(payload, scope);
+        var canonical = System.Text.Json.JsonSerializer.Serialize(scopedPayload);
+        return ProofV21.HashBody(canonical);
+    }
+}

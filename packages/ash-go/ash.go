@@ -776,3 +776,101 @@ func (c *StoredContextV21) ToClientInfo() map[string]interface{} {
 		"clientSecret": c.ClientSecret,
 	}
 }
+
+// =========================================================================
+// ASH v2.2 - Context Scoping (Selective Field Protection)
+// =========================================================================
+
+// ScopedProofResult contains proof and scope hash
+type ScopedProofResult struct {
+	Proof     string
+	ScopeHash string
+}
+
+// ExtractScopedFields extracts specified fields from a payload map.
+// Supports dot notation for nested fields (e.g., "user.address.city").
+func ExtractScopedFields(payload map[string]interface{}, scope []string) map[string]interface{} {
+	if len(scope) == 0 {
+		return payload
+	}
+
+	result := make(map[string]interface{})
+	for _, fieldPath := range scope {
+		value := getNestedValue(payload, fieldPath)
+		if value != nil {
+			setNestedValue(result, fieldPath, value)
+		}
+	}
+	return result
+}
+
+func getNestedValue(obj map[string]interface{}, path string) interface{} {
+	keys := strings.Split(path, ".")
+	var current interface{} = obj
+
+	for _, key := range keys {
+		if currentMap, ok := current.(map[string]interface{}); ok {
+			current = currentMap[key]
+		} else {
+			return nil
+		}
+	}
+
+	return current
+}
+
+func setNestedValue(obj map[string]interface{}, path string, value interface{}) {
+	keys := strings.Split(path, ".")
+	current := obj
+
+	for i := 0; i < len(keys)-1; i++ {
+		key := keys[i]
+		if _, exists := current[key]; !exists {
+			current[key] = make(map[string]interface{})
+		}
+		current = current[key].(map[string]interface{})
+	}
+
+	current[keys[len(keys)-1]] = value
+}
+
+// BuildProofV21Scoped builds a v2.2 proof with scoped fields.
+func BuildProofV21Scoped(clientSecret, timestamp, binding string, payload map[string]interface{}, scope []string) ScopedProofResult {
+	scopedPayload := ExtractScopedFields(payload, scope)
+
+	// Canonicalize (JSON encode)
+	canonicalBytes, _ := json.Marshal(scopedPayload)
+	bodyHash := HashBody(string(canonicalBytes))
+
+	scopeStr := strings.Join(scope, ",")
+	scopeHash := HashBody(scopeStr)
+
+	message := timestamp + "|" + binding + "|" + bodyHash + "|" + scopeHash
+	h := hmac.New(sha256.New, []byte(clientSecret))
+	h.Write([]byte(message))
+	proof := hex.EncodeToString(h.Sum(nil))
+
+	return ScopedProofResult{Proof: proof, ScopeHash: scopeHash}
+}
+
+// VerifyProofV21Scoped verifies a v2.2 proof with scoped fields.
+func VerifyProofV21Scoped(nonce, contextID, binding, timestamp string, payload map[string]interface{}, scope []string, scopeHash, clientProof string) bool {
+	// Verify scope hash
+	scopeStr := strings.Join(scope, ",")
+	expectedScopeHash := HashBody(scopeStr)
+	if !TimingSafeCompare(expectedScopeHash, scopeHash) {
+		return false
+	}
+
+	clientSecret := DeriveClientSecret(nonce, contextID, binding)
+	result := BuildProofV21Scoped(clientSecret, timestamp, binding, payload, scope)
+
+	return TimingSafeCompare(result.Proof, clientProof)
+}
+
+// HashScopedBody hashes the scoped payload fields.
+func HashScopedBody(payload map[string]interface{}, scope []string) string {
+	scopedPayload := ExtractScopedFields(payload, scope)
+	canonicalBytes, _ := json.Marshal(scopedPayload)
+	return HashBody(string(canonicalBytes))
+}

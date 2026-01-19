@@ -54,6 +54,9 @@ pub use proof::{
     generate_nonce, generate_context_id,
     derive_client_secret, build_proof_v21,
     verify_proof_v21, hash_body,
+    // v2.2 scoping functions
+    extract_scoped_fields, build_proof_v21_scoped,
+    verify_proof_v21_scoped, hash_scoped_body,
 };
 pub use types::{AshMode, BuildProofInput, VerifyInput};
 

@@ -193,3 +193,160 @@ export function ashContextToClient(context: AshContext): AshClientContext {
 
 export * from './middleware';
 export * from './stores';
+
+// =========================================================================
+// ASH v2.2 - Context Scoping (Selective Field Protection)
+// =========================================================================
+
+/**
+ * Scoped proof result.
+ */
+export interface AshScopedProofResult {
+  proof: string;
+  scopeHash: string;
+}
+
+/**
+ * Extract scoped fields from a payload object.
+ *
+ * @param payload Full payload object
+ * @param scope Array of field paths (supports dot notation)
+ * @returns Object containing only scoped fields
+ */
+export function ashExtractScopedFields(
+  payload: Record<string, unknown>,
+  scope: string[]
+): Record<string, unknown> {
+  if (scope.length === 0) {
+    return payload;
+  }
+
+  const result: Record<string, unknown> = {};
+
+  for (const fieldPath of scope) {
+    const value = getNestedValue(payload, fieldPath);
+    if (value !== undefined) {
+      setNestedValue(result, fieldPath, value);
+    }
+  }
+
+  return result;
+}
+
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+  const keys = path.split('.');
+  let current: unknown = obj;
+
+  for (const key of keys) {
+    if (current === null || typeof current !== 'object') {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[key];
+  }
+
+  return current;
+}
+
+function setNestedValue(
+  obj: Record<string, unknown>,
+  path: string,
+  value: unknown
+): void {
+  const keys = path.split('.');
+  let current = obj;
+
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!(key in current) || typeof current[key] !== 'object') {
+      current[key] = {};
+    }
+    current = current[key] as Record<string, unknown>;
+  }
+
+  current[keys[keys.length - 1]] = value;
+}
+
+/**
+ * Build v2.2 proof with scoped fields.
+ *
+ * @param clientSecret Derived client secret
+ * @param timestamp Request timestamp (milliseconds)
+ * @param binding Request binding
+ * @param payload Full payload object
+ * @param scope Fields to protect (empty = all)
+ * @returns Proof and scope hash
+ */
+export function ashBuildProofV21Scoped(
+  clientSecret: string,
+  timestamp: string,
+  binding: string,
+  payload: Record<string, unknown>,
+  scope: string[]
+): AshScopedProofResult {
+  const scopedPayload = ashExtractScopedFields(payload, scope);
+  const canonicalScoped = JSON.stringify(scopedPayload);
+  const bodyHash = ashHashBody(canonicalScoped);
+
+  const scopeStr = scope.join(',');
+  const scopeHash = ashHashBody(scopeStr);
+
+  const message = timestamp + '|' + binding + '|' + bodyHash + '|' + scopeHash;
+  const proof = crypto.createHmac('sha256', clientSecret)
+    .update(message)
+    .digest('hex');
+
+  return { proof, scopeHash };
+}
+
+/**
+ * Verify v2.2 proof with scoped fields.
+ */
+export function ashVerifyProofV21Scoped(
+  nonce: string,
+  contextId: string,
+  binding: string,
+  timestamp: string,
+  payload: Record<string, unknown>,
+  scope: string[],
+  scopeHash: string,
+  clientProof: string
+): boolean {
+  // Verify scope hash
+  const scopeStr = scope.join(',');
+  const expectedScopeHash = ashHashBody(scopeStr);
+
+  try {
+    if (!crypto.timingSafeEqual(
+      Buffer.from(expectedScopeHash, 'hex'),
+      Buffer.from(scopeHash, 'hex')
+    )) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  const clientSecret = ashDeriveClientSecret(nonce, contextId, binding);
+  const result = ashBuildProofV21Scoped(clientSecret, timestamp, binding, payload, scope);
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(result.proof, 'hex'),
+      Buffer.from(clientProof, 'hex')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Hash scoped payload fields.
+ */
+export function ashHashScopedBody(
+  payload: Record<string, unknown>,
+  scope: string[]
+): string {
+  const scopedPayload = ashExtractScopedFields(payload, scope);
+  const canonical = JSON.stringify(scopedPayload);
+  return ashHashBody(canonical);
+}
