@@ -46,21 +46,29 @@ mod errors;
 mod proof;
 mod types;
 
-pub use canonicalize::{canonicalize_json, canonicalize_urlencoded, canonicalize_query};
+pub use canonicalize::{canonicalize_json, canonicalize_query, canonicalize_urlencoded};
 pub use compare::timing_safe_equal;
 pub use errors::{AshError, AshErrorCode};
 pub use proof::{
-    build_proof, verify_proof,
-    // v2.1 functions
-    generate_nonce, generate_context_id,
-    derive_client_secret, build_proof_v21,
-    verify_proof_v21, hash_body,
+    build_proof,
+    build_proof_v21,
+    build_proof_v21_scoped,
+    build_proof_v21_unified,
+    derive_client_secret,
     // v2.2 scoping functions
-    extract_scoped_fields, build_proof_v21_scoped,
-    verify_proof_v21_scoped, hash_scoped_body,
+    extract_scoped_fields,
+    generate_context_id,
+    // v2.1 functions
+    generate_nonce,
+    hash_body,
+    hash_proof,
+    hash_scoped_body,
+    verify_proof,
+    verify_proof_v21,
+    verify_proof_v21_scoped,
+    verify_proof_v21_unified,
     // v2.3 unified functions (scoping + chaining)
-    UnifiedProofResult, hash_proof,
-    build_proof_v21_unified, verify_proof_v21_unified,
+    UnifiedProofResult,
 };
 pub use types::{AshMode, BuildProofInput, VerifyInput};
 
@@ -138,7 +146,10 @@ pub fn normalize_binding(method: &str, path: &str, query: &str) -> Result<String
     };
 
     // v2.3.2 format: METHOD|PATH|CANONICAL_QUERY
-    Ok(format!("{}|{}|{}", method, normalized_path, canonical_query))
+    Ok(format!(
+        "{}|{}|{}",
+        method, normalized_path, canonical_query
+    ))
 }
 
 /// Normalize a binding from a full URL path (including query string).

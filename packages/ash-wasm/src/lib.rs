@@ -165,7 +165,8 @@ pub fn ash_normalize_binding(method: &str, path: &str, query: &str) -> Result<St
 /// @throws Error if method is empty or path doesn't start with /
 #[wasm_bindgen(js_name = "ashNormalizeBindingFromUrl")]
 pub fn ash_normalize_binding_from_url(method: &str, full_path: &str) -> Result<String, JsValue> {
-    ash_core::normalize_binding_from_url(method, full_path).map_err(|e| JsValue::from_str(&e.to_string()))
+    ash_core::normalize_binding_from_url(method, full_path)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Constant-time comparison of two strings.
@@ -358,7 +359,14 @@ pub fn ash_verify_proof_v21(
     body_hash: &str,
     client_proof: &str,
 ) -> bool {
-    ash_core::verify_proof_v21(nonce, context_id, binding, timestamp, body_hash, client_proof)
+    ash_core::verify_proof_v21(
+        nonce,
+        context_id,
+        binding,
+        timestamp,
+        body_hash,
+        client_proof,
+    )
 }
 
 /// Compute SHA-256 hash of canonical body.
@@ -394,13 +402,9 @@ pub fn ash_build_proof_scoped(
         scope.split(',').collect()
     };
 
-    let (proof, scope_hash) = ash_core::build_proof_v21_scoped(
-        client_secret,
-        timestamp,
-        binding,
-        payload,
-        &scope_vec,
-    ).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let (proof, scope_hash) =
+        ash_core::build_proof_v21_scoped(client_secret, timestamp, binding, payload, &scope_vec)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     let result = serde_json::json!({
         "proof": proof,
@@ -446,7 +450,8 @@ pub fn ash_verify_proof_scoped(
         &scope_vec,
         scope_hash,
         client_proof,
-    ).map_err(|e| JsValue::from_str(&e.to_string()))
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Hash scoped payload fields.
@@ -461,8 +466,7 @@ pub fn ash_hash_scoped_body(payload: &str, scope: &str) -> Result<String, JsValu
         scope.split(',').collect()
     };
 
-    ash_core::hash_scoped_body(payload, &scope_vec)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+    ash_core::hash_scoped_body(payload, &scope_vec).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 // =========================================================================
@@ -509,7 +513,8 @@ pub fn ash_build_proof_unified(
         payload,
         &scope_vec,
         prev_proof,
-    ).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     let json_result = serde_json::json!({
         "proof": result.proof,
@@ -564,5 +569,6 @@ pub fn ash_verify_proof_unified(
         scope_hash,
         prev_proof,
         chain_hash,
-    ).map_err(|e| JsValue::from_str(&e.to_string()))
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))
 }

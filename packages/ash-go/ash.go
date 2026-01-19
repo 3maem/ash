@@ -8,9 +8,12 @@
 package ash
 
 import (
+	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -767,12 +770,6 @@ func IsASCII(s string) bool {
 // =========================================================================
 // ASH v2.1 - Derived Client Secret & Cryptographic Proof
 // =========================================================================
-
-import (
-	"crypto/hmac"
-	"crypto/rand"
-	"encoding/hex"
-)
 
 // GenerateNonce generates a cryptographically secure random nonce.
 // Returns hex-encoded nonce (64 chars for 32 bytes).

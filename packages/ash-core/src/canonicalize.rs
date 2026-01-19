@@ -306,7 +306,13 @@ pub fn canonicalize_query(input: &str) -> Result<String, AshError> {
     // Rule 8 & 9: Re-encode with uppercase hex and join
     let encoded: Vec<String> = pairs
         .into_iter()
-        .map(|(k, v)| format!("{}={}", percent_encode_uppercase(&k), percent_encode_uppercase(&v)))
+        .map(|(k, v)| {
+            format!(
+                "{}={}",
+                percent_encode_uppercase(&k),
+                percent_encode_uppercase(&v)
+            )
+        })
         .collect();
 
     Ok(encoded.join("&"))

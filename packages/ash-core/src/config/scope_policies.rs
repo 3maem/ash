@@ -21,9 +21,9 @@
 //! assert_eq!(scope, vec!["amount", "recipient"]);
 //! ```
 
+use regex::Regex;
 use std::collections::HashMap;
 use std::sync::RwLock;
-use regex::Regex;
 
 lazy_static::lazy_static! {
     /// Internal storage for scope policies
@@ -48,7 +48,10 @@ lazy_static::lazy_static! {
 /// ```
 pub fn register_scope_policy(binding: &str, fields: &[&str]) {
     let mut policies = POLICIES.write().unwrap();
-    policies.insert(binding.to_string(), fields.iter().map(|s| s.to_string()).collect());
+    policies.insert(
+        binding.to_string(),
+        fields.iter().map(|s| s.to_string()).collect(),
+    );
 }
 
 /// Register multiple scope policies at once.
@@ -177,7 +180,11 @@ pub fn clear_scope_policies() {
 /// - `**` for multi-segment wildcard
 fn matches_pattern(binding: &str, pattern: &str) -> bool {
     // If no wildcards or params, must be exact match
-    if !pattern.contains('*') && !pattern.contains('<') && !pattern.contains(':') && !pattern.contains('{') {
+    if !pattern.contains('*')
+        && !pattern.contains('<')
+        && !pattern.contains(':')
+        && !pattern.contains('{')
+    {
         return binding == pattern;
     }
 

@@ -392,8 +392,8 @@ pub fn generate_context_id() -> String {
 ///
 /// Formula: clientSecret = HMAC-SHA256(nonce, contextId + "|" + binding)
 pub fn derive_client_secret(nonce: &str, context_id: &str, binding: &str) -> String {
-    let mut mac = HmacSha256Type::new_from_slice(nonce.as_bytes())
-        .expect("HMAC can take key of any size");
+    let mut mac =
+        HmacSha256Type::new_from_slice(nonce.as_bytes()).expect("HMAC can take key of any size");
     mac.update(format!("{}|{}", context_id, binding).as_bytes());
     hex::encode(mac.finalize().into_bytes())
 }
@@ -471,7 +471,9 @@ mod tests_v21 {
         let client_secret = derive_client_secret(nonce, context_id, binding);
         let proof = build_proof_v21(&client_secret, timestamp, binding, body_hash);
 
-        assert!(verify_proof_v21(nonce, context_id, binding, timestamp, body_hash, &proof));
+        assert!(verify_proof_v21(
+            nonce, context_id, binding, timestamp, body_hash, &proof
+        ));
     }
 
     #[test]
@@ -616,15 +618,13 @@ pub fn verify_proof_v21_scoped(
 
     let client_secret = derive_client_secret(nonce, context_id, binding);
 
-    let (expected_proof, _) = build_proof_v21_scoped(
-        &client_secret,
-        timestamp,
-        binding,
-        payload,
-        scope,
-    )?;
+    let (expected_proof, _) =
+        build_proof_v21_scoped(&client_secret, timestamp, binding, payload, scope)?;
 
-    Ok(timing_safe_equal(expected_proof.as_bytes(), client_proof.as_bytes()))
+    Ok(timing_safe_equal(
+        expected_proof.as_bytes(),
+        client_proof.as_bytes(),
+    ))
 }
 
 /// Hash scoped payload for client-side use.
@@ -654,13 +654,8 @@ mod tests_v22_scoping {
         let scope = vec!["amount", "recipient"];
 
         let client_secret = derive_client_secret(nonce, context_id, binding);
-        let (proof, scope_hash) = build_proof_v21_scoped(
-            &client_secret,
-            timestamp,
-            binding,
-            payload,
-            &scope,
-        ).unwrap();
+        let (proof, scope_hash) =
+            build_proof_v21_scoped(&client_secret, timestamp, binding, payload, &scope).unwrap();
 
         let is_valid = verify_proof_v21_scoped(
             nonce,
@@ -671,7 +666,8 @@ mod tests_v22_scoping {
             &scope,
             &scope_hash,
             &proof,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(is_valid);
     }
@@ -687,13 +683,8 @@ mod tests_v22_scoping {
         let client_secret = derive_client_secret(nonce, context_id, binding);
 
         let payload1 = r#"{"amount":1000,"recipient":"user1","notes":"hello"}"#;
-        let (proof, scope_hash) = build_proof_v21_scoped(
-            &client_secret,
-            timestamp,
-            binding,
-            payload1,
-            &scope,
-        ).unwrap();
+        let (proof, scope_hash) =
+            build_proof_v21_scoped(&client_secret, timestamp, binding, payload1, &scope).unwrap();
 
         let payload2 = r#"{"amount":1000,"recipient":"user1","notes":"world"}"#;
 
@@ -706,7 +697,8 @@ mod tests_v22_scoping {
             &scope,
             &scope_hash,
             &proof,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(is_valid);
     }
@@ -722,13 +714,8 @@ mod tests_v22_scoping {
         let client_secret = derive_client_secret(nonce, context_id, binding);
 
         let payload1 = r#"{"amount":1000,"recipient":"user1","notes":"hello"}"#;
-        let (proof, scope_hash) = build_proof_v21_scoped(
-            &client_secret,
-            timestamp,
-            binding,
-            payload1,
-            &scope,
-        ).unwrap();
+        let (proof, scope_hash) =
+            build_proof_v21_scoped(&client_secret, timestamp, binding, payload1, &scope).unwrap();
 
         let payload2 = r#"{"amount":9999,"recipient":"user1","notes":"hello"}"#;
 
@@ -741,7 +728,8 @@ mod tests_v22_scoping {
             &scope,
             &scope_hash,
             &proof,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(!is_valid);
     }
@@ -879,7 +867,10 @@ pub fn verify_proof_v21_unified(
         previous_proof,
     )?;
 
-    Ok(timing_safe_equal(result.proof.as_bytes(), client_proof.as_bytes()))
+    Ok(timing_safe_equal(
+        result.proof.as_bytes(),
+        client_proof.as_bytes(),
+    ))
 }
 
 #[cfg(test)]
@@ -902,7 +893,8 @@ mod tests_v23_unified {
             payload,
             &[],  // No scoping
             None, // No chaining
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(!result.proof.is_empty());
         assert!(result.scope_hash.is_empty());
@@ -919,7 +911,8 @@ mod tests_v23_unified {
             "",
             None,
             "",
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(is_valid);
     }
@@ -941,7 +934,8 @@ mod tests_v23_unified {
             payload,
             &scope,
             None, // No chaining
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(!result.proof.is_empty());
         assert!(!result.scope_hash.is_empty());
@@ -958,7 +952,8 @@ mod tests_v23_unified {
             &result.scope_hash,
             None,
             "",
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(is_valid);
     }
@@ -978,9 +973,10 @@ mod tests_v23_unified {
             timestamp,
             binding,
             payload,
-            &[],  // No scoping
+            &[], // No scoping
             Some(previous_proof),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(!result.proof.is_empty());
         assert!(result.scope_hash.is_empty());
@@ -997,7 +993,8 @@ mod tests_v23_unified {
             "",
             Some(previous_proof),
             &result.chain_hash,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(is_valid);
     }
@@ -1020,7 +1017,8 @@ mod tests_v23_unified {
             payload,
             &scope,
             Some(previous_proof),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(!result.proof.is_empty());
         assert!(!result.scope_hash.is_empty());
@@ -1037,7 +1035,8 @@ mod tests_v23_unified {
             &result.scope_hash,
             Some(previous_proof),
             &result.chain_hash,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(is_valid);
     }
@@ -1059,7 +1058,8 @@ mod tests_v23_unified {
             payload,
             &[],
             Some(previous_proof),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Try to verify with wrong previous proof
         let is_valid = verify_proof_v21_unified(
@@ -1071,9 +1071,10 @@ mod tests_v23_unified {
             &result.proof,
             &[],
             "",
-            Some("tampered_proof"),  // Wrong previous proof
+            Some("tampered_proof"), // Wrong previous proof
             &result.chain_hash,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(!is_valid);
     }
@@ -1088,14 +1089,9 @@ mod tests_v23_unified {
         let scope = vec!["amount"];
 
         let client_secret = derive_client_secret(nonce, context_id, binding);
-        let result = build_proof_v21_unified(
-            &client_secret,
-            timestamp,
-            binding,
-            payload,
-            &scope,
-            None,
-        ).unwrap();
+        let result =
+            build_proof_v21_unified(&client_secret, timestamp, binding, payload, &scope, None)
+                .unwrap();
 
         // Try to verify with different scope
         let tampered_scope = vec!["recipient"];
@@ -1106,11 +1102,12 @@ mod tests_v23_unified {
             timestamp,
             payload,
             &result.proof,
-            &tampered_scope,  // Different scope
-            &result.scope_hash,  // Original scope hash
+            &tampered_scope,    // Different scope
+            &result.scope_hash, // Original scope hash
             None,
             "",
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(!is_valid);
     }

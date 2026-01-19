@@ -17,15 +17,8 @@ fn test_unified_basic() {
 
     let client_secret = derive_client_secret(nonce, context_id, binding);
 
-    let result = build_proof_v21_unified(
-        &client_secret,
-        timestamp,
-        binding,
-        payload,
-        &[],
-        None,
-    )
-    .expect("build should succeed");
+    let result = build_proof_v21_unified(&client_secret, timestamp, binding, payload, &[], None)
+        .expect("build should succeed");
 
     assert!(result.scope_hash.is_empty(), "scope_hash should be empty");
     assert!(result.chain_hash.is_empty(), "chain_hash should be empty");
@@ -61,17 +54,13 @@ fn test_unified_scoped_single() {
     let client_secret = derive_client_secret(nonce, context_id, binding);
     let scope = ["amount"];
 
-    let result = build_proof_v21_unified(
-        &client_secret,
-        timestamp,
-        binding,
-        payload,
-        &scope,
-        None,
-    )
-    .expect("build should succeed");
+    let result = build_proof_v21_unified(&client_secret, timestamp, binding, payload, &scope, None)
+        .expect("build should succeed");
 
-    assert!(!result.scope_hash.is_empty(), "scope_hash should not be empty");
+    assert!(
+        !result.scope_hash.is_empty(),
+        "scope_hash should not be empty"
+    );
     assert!(result.chain_hash.is_empty(), "chain_hash should be empty");
 
     // Verify the proof
@@ -104,15 +93,8 @@ fn test_unified_scoped_multiple() {
     let client_secret = derive_client_secret(nonce, context_id, binding);
     let scope = ["amount", "recipient"];
 
-    let result = build_proof_v21_unified(
-        &client_secret,
-        timestamp,
-        binding,
-        payload,
-        &scope,
-        None,
-    )
-    .expect("build should succeed");
+    let result = build_proof_v21_unified(&client_secret, timestamp, binding, payload, &scope, None)
+        .expect("build should succeed");
 
     assert!(!result.scope_hash.is_empty());
 
@@ -156,7 +138,10 @@ fn test_unified_chained() {
     .expect("build should succeed");
 
     assert!(result.scope_hash.is_empty());
-    assert!(!result.chain_hash.is_empty(), "chain_hash should not be empty");
+    assert!(
+        !result.chain_hash.is_empty(),
+        "chain_hash should not be empty"
+    );
 
     // Verify chain hash is SHA256 of previous proof
     let expected_chain_hash = hash_proof(previous_proof);
@@ -234,15 +219,8 @@ fn test_unified_wrong_scope_hash_fails() {
 
     let client_secret = derive_client_secret(nonce, context_id, binding);
 
-    let result = build_proof_v21_unified(
-        &client_secret,
-        timestamp,
-        binding,
-        payload,
-        &scope,
-        None,
-    )
-    .expect("build should succeed");
+    let result = build_proof_v21_unified(&client_secret, timestamp, binding, payload, &scope, None)
+        .expect("build should succeed");
 
     // Use wrong scope hash
     let valid = verify_proof_v21_unified(
