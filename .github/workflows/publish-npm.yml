@@ -15,12 +15,20 @@ jobs:
   publish:
     name: Publish @3meam/ash-node
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/ash-node
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM package
+        run: wasm-pack build packages/ash-wasm --target nodejs --release
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,24 +37,30 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
+        working-directory: packages/ash-node
         run: npm install
 
       - name: Build package
+        working-directory: packages/ash-node
         run: npm run build
 
       - name: Run tests
+        working-directory: packages/ash-node
         run: npm test
 
       - name: Update version (if specified)
         if: ${{ inputs.version != '' }}
+        working-directory: packages/ash-node
         run: npm version ${{ inputs.version }} --no-git-tag-version
 
       - name: Publish to npm
+        working-directory: packages/ash-node
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create publish summary
+        working-directory: packages/ash-node
         run: |
           echo "## Published to npm" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
