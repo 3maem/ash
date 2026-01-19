@@ -2,7 +2,7 @@
 name = "ash-wasm"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+license-file = "LICENSE"
 repository.workspace = true
 authors.workspace = true
 description = "ASH SDK WebAssembly bindings - Request integrity and anti-replay protection library"
