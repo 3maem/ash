@@ -405,3 +405,105 @@ pub fn ash_hash_scoped_body(payload: &str, scope: &str) -> Result<String, JsValu
     ash_core::hash_scoped_body(payload, &scope_vec)
         .map_err(|e| JsValue::from_str(&e.to_string()))
 }
+
+// =========================================================================
+// ASH v2.3 - Unified Proof Functions (Scoping + Chaining) WASM Bindings
+// =========================================================================
+
+/// Hash a proof for chaining purposes.
+/// @param proof - Proof to hash
+/// @returns SHA-256 hash of the proof (64 hex chars)
+#[wasm_bindgen(js_name = "ashHashProof")]
+pub fn ash_hash_proof(proof: &str) -> String {
+    ash_core::hash_proof(proof)
+}
+
+/// Build unified v2.3 cryptographic proof with optional scoping and chaining.
+/// @param clientSecret - Derived client secret
+/// @param timestamp - Request timestamp (milliseconds as string)
+/// @param binding - Request binding
+/// @param payload - Full JSON payload
+/// @param scope - Comma-separated list of fields to protect (empty for full payload)
+/// @param previousProof - Previous proof in chain (empty or null for no chaining)
+/// @returns Object with { proof, scopeHash, chainHash }
+#[wasm_bindgen(js_name = "ashBuildProofUnified")]
+pub fn ash_build_proof_unified(
+    client_secret: &str,
+    timestamp: &str,
+    binding: &str,
+    payload: &str,
+    scope: &str,
+    previous_proof: Option<String>,
+) -> Result<JsValue, JsValue> {
+    let scope_vec: Vec<&str> = if scope.is_empty() {
+        vec![]
+    } else {
+        scope.split(',').collect()
+    };
+
+    let prev_proof = previous_proof.as_deref().filter(|s| !s.is_empty());
+
+    let result = ash_core::build_proof_v21_unified(
+        client_secret,
+        timestamp,
+        binding,
+        payload,
+        &scope_vec,
+        prev_proof,
+    ).map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    let json_result = serde_json::json!({
+        "proof": result.proof,
+        "scopeHash": result.scope_hash,
+        "chainHash": result.chain_hash
+    });
+
+    Ok(JsValue::from_str(&json_result.to_string()))
+}
+
+/// Verify unified v2.3 proof with optional scoping and chaining.
+/// @param nonce - Server-side secret nonce
+/// @param contextId - Context identifier
+/// @param binding - Request binding
+/// @param timestamp - Request timestamp
+/// @param payload - Full JSON payload
+/// @param clientProof - Proof received from client
+/// @param scope - Comma-separated list of protected fields (empty for full payload)
+/// @param scopeHash - Scope hash from client (empty if no scoping)
+/// @param previousProof - Previous proof in chain (empty or null if no chaining)
+/// @param chainHash - Chain hash from client (empty if no chaining)
+/// @returns true if proof is valid
+#[wasm_bindgen(js_name = "ashVerifyProofUnified")]
+pub fn ash_verify_proof_unified(
+    nonce: &str,
+    context_id: &str,
+    binding: &str,
+    timestamp: &str,
+    payload: &str,
+    client_proof: &str,
+    scope: &str,
+    scope_hash: &str,
+    previous_proof: Option<String>,
+    chain_hash: &str,
+) -> Result<bool, JsValue> {
+    let scope_vec: Vec<&str> = if scope.is_empty() {
+        vec![]
+    } else {
+        scope.split(',').collect()
+    };
+
+    let prev_proof = previous_proof.as_deref().filter(|s| !s.is_empty());
+
+    ash_core::verify_proof_v21_unified(
+        nonce,
+        context_id,
+        binding,
+        timestamp,
+        payload,
+        client_proof,
+        &scope_vec,
+        scope_hash,
+        prev_proof,
+        chain_hash,
+    ).map_err(|e| JsValue::from_str(&e.to_string()))
+}

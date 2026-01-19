@@ -576,19 +576,19 @@ pub fn build_proof_v21_scoped(
     scope: &[&str],
 ) -> Result<(String, String), AshError> {
     let json_payload: Value = serde_json::from_str(payload)
-        .map_err(|e| AshError::Canonicalization(format\!("Invalid JSON: {}", e)))?;
+        .map_err(|e| AshError::canonicalization_failed(&format!("Invalid JSON: {}", e)))?;
 
     let scoped_payload = extract_scoped_fields(&json_payload, scope)?;
 
     let canonical_scoped = serde_json::to_string(&scoped_payload)
-        .map_err(|e| AshError::Canonicalization(format\!("Failed to serialize: {}", e)))?;
+        .map_err(|e| AshError::canonicalization_failed(&format!("Failed to serialize: {}", e)))?;
 
     let body_hash = hash_body(&canonical_scoped);
 
     let scope_str = scope.join(",");
     let scope_hash = hash_body(&scope_str);
 
-    let message = format\!("{}|{}|{}|{}", timestamp, binding, body_hash, scope_hash);
+    let message = format!("{}|{}|{}|{}", timestamp, binding, body_hash, scope_hash);
     let mut mac = HmacSha256Type::new_from_slice(client_secret.as_bytes())
         .expect("HMAC can take key of any size");
     mac.update(message.as_bytes());
@@ -610,7 +610,7 @@ pub fn verify_proof_v21_scoped(
 ) -> Result<bool, AshError> {
     let scope_str = scope.join(",");
     let expected_scope_hash = hash_body(&scope_str);
-    if \!timing_safe_equal(expected_scope_hash.as_bytes(), scope_hash.as_bytes()) {
+    if !timing_safe_equal(expected_scope_hash.as_bytes(), scope_hash.as_bytes()) {
         return Ok(false);
     }
 
@@ -630,12 +630,12 @@ pub fn verify_proof_v21_scoped(
 /// Hash scoped payload for client-side use.
 pub fn hash_scoped_body(payload: &str, scope: &[&str]) -> Result<String, AshError> {
     let json_payload: Value = serde_json::from_str(payload)
-        .map_err(|e| AshError::Canonicalization(format\!("Invalid JSON: {}", e)))?;
+        .map_err(|e| AshError::canonicalization_failed(&format!("Invalid JSON: {}", e)))?;
 
     let scoped_payload = extract_scoped_fields(&json_payload, scope)?;
 
     let canonical_scoped = serde_json::to_string(&scoped_payload)
-        .map_err(|e| AshError::Canonicalization(format\!("Failed to serialize: {}", e)))?;
+        .map_err(|e| AshError::canonicalization_failed(&format!("Failed to serialize: {}", e)))?;
 
     Ok(hash_body(&canonical_scoped))
 }
@@ -651,7 +651,7 @@ mod tests_v22_scoping {
         let binding = "POST /transfer";
         let timestamp = "1234567890";
         let payload = r#"{"amount":1000,"recipient":"user1","notes":"hi"}"#;
-        let scope = vec\!["amount", "recipient"];
+        let scope = vec!["amount", "recipient"];
 
         let client_secret = derive_client_secret(nonce, context_id, binding);
         let (proof, scope_hash) = build_proof_v21_scoped(
@@ -673,7 +673,7 @@ mod tests_v22_scoping {
             &proof,
         ).unwrap();
 
-        assert\!(is_valid);
+        assert!(is_valid);
     }
 
     #[test]
@@ -682,7 +682,7 @@ mod tests_v22_scoping {
         let context_id = "ctx_abc123";
         let binding = "POST /transfer";
         let timestamp = "1234567890";
-        let scope = vec\!["amount", "recipient"];
+        let scope = vec!["amount", "recipient"];
 
         let client_secret = derive_client_secret(nonce, context_id, binding);
 
@@ -708,7 +708,7 @@ mod tests_v22_scoping {
             &proof,
         ).unwrap();
 
-        assert\!(is_valid);
+        assert!(is_valid);
     }
 
     #[test]
@@ -717,7 +717,7 @@ mod tests_v22_scoping {
         let context_id = "ctx_abc123";
         let binding = "POST /transfer";
         let timestamp = "1234567890";
-        let scope = vec\!["amount", "recipient"];
+        let scope = vec!["amount", "recipient"];
 
         let client_secret = derive_client_secret(nonce, context_id, binding);
 
@@ -743,6 +743,385 @@ mod tests_v22_scoping {
             &proof,
         ).unwrap();
 
-        assert\!(\!is_valid);
+        assert!(!is_valid);
+    }
+}
+
+// =========================================================================
+// ASH v2.3 - Unified Proof Functions (Scoping + Chaining)
+// =========================================================================
+
+/// Result from unified proof generation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnifiedProofResult {
+    /// The cryptographic proof.
+    pub proof: String,
+    /// Hash of the scope (empty if no scoping).
+    pub scope_hash: String,
+    /// Hash of the previous proof (empty if no chaining).
+    pub chain_hash: String,
+}
+
+/// Hash a proof for chaining purposes.
+///
+/// Used to create chain links between sequential requests.
+pub fn hash_proof(proof: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(proof.as_bytes());
+    hex::encode(hasher.finalize())
+}
+
+/// Build unified v2.3 cryptographic proof (client-side).
+///
+/// Supports optional scoping and chaining:
+/// - `scope`: Fields to protect (empty = full payload)
+/// - `previous_proof`: Previous proof in chain (None = no chaining)
+///
+/// Formula:
+/// ```text
+/// scopeHash  = scope.len() > 0 ? SHA256(scope.join(",")) : ""
+/// bodyHash   = SHA256(canonicalize(scopedPayload))
+/// chainHash  = previous_proof.is_some() ? SHA256(previous_proof) : ""
+/// proof      = HMAC-SHA256(clientSecret, timestamp|binding|bodyHash|scopeHash|chainHash)
+/// ```
+pub fn build_proof_v21_unified(
+    client_secret: &str,
+    timestamp: &str,
+    binding: &str,
+    payload: &str,
+    scope: &[&str],
+    previous_proof: Option<&str>,
+) -> Result<UnifiedProofResult, AshError> {
+    // Parse and scope the payload
+    let json_payload: Value = serde_json::from_str(payload)
+        .map_err(|e| AshError::canonicalization_failed(&format!("Invalid JSON: {}", e)))?;
+
+    let scoped_payload = extract_scoped_fields(&json_payload, scope)?;
+
+    let canonical_scoped = serde_json::to_string(&scoped_payload)
+        .map_err(|e| AshError::canonicalization_failed(&format!("Failed to serialize: {}", e)))?;
+
+    let body_hash = hash_body(&canonical_scoped);
+
+    // Compute scope hash (empty string if no scope)
+    let scope_hash = if scope.is_empty() {
+        String::new()
+    } else {
+        hash_body(&scope.join(","))
+    };
+
+    // Compute chain hash (empty string if no previous proof)
+    let chain_hash = match previous_proof {
+        Some(prev) if !prev.is_empty() => hash_proof(prev),
+        _ => String::new(),
+    };
+
+    // Build proof message: timestamp|binding|bodyHash|scopeHash|chainHash
+    let message = format!(
+        "{}|{}|{}|{}|{}",
+        timestamp, binding, body_hash, scope_hash, chain_hash
+    );
+
+    let mut mac = HmacSha256Type::new_from_slice(client_secret.as_bytes())
+        .expect("HMAC can take key of any size");
+    mac.update(message.as_bytes());
+    let proof = hex::encode(mac.finalize().into_bytes());
+
+    Ok(UnifiedProofResult {
+        proof,
+        scope_hash,
+        chain_hash,
+    })
+}
+
+/// Verify unified v2.3 proof (server-side).
+///
+/// Validates proof with optional scoping and chaining.
+pub fn verify_proof_v21_unified(
+    nonce: &str,
+    context_id: &str,
+    binding: &str,
+    timestamp: &str,
+    payload: &str,
+    client_proof: &str,
+    scope: &[&str],
+    scope_hash: &str,
+    previous_proof: Option<&str>,
+    chain_hash: &str,
+) -> Result<bool, AshError> {
+    // Validate scope hash if scoping is used
+    if !scope.is_empty() {
+        let expected_scope_hash = hash_body(&scope.join(","));
+        if !timing_safe_equal(expected_scope_hash.as_bytes(), scope_hash.as_bytes()) {
+            return Ok(false);
+        }
+    }
+
+    // Validate chain hash if chaining is used
+    if let Some(prev) = previous_proof {
+        if !prev.is_empty() {
+            let expected_chain_hash = hash_proof(prev);
+            if !timing_safe_equal(expected_chain_hash.as_bytes(), chain_hash.as_bytes()) {
+                return Ok(false);
+            }
+        }
+    }
+
+    // Derive client secret and compute expected proof
+    let client_secret = derive_client_secret(nonce, context_id, binding);
+
+    let result = build_proof_v21_unified(
+        &client_secret,
+        timestamp,
+        binding,
+        payload,
+        scope,
+        previous_proof,
+    )?;
+
+    Ok(timing_safe_equal(result.proof.as_bytes(), client_proof.as_bytes()))
+}
+
+#[cfg(test)]
+mod tests_v23_unified {
+    use super::*;
+
+    #[test]
+    fn test_unified_basic() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /api/test";
+        let timestamp = "1234567890";
+        let payload = r#"{"name":"John","age":30}"#;
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+        let result = build_proof_v21_unified(
+            &client_secret,
+            timestamp,
+            binding,
+            payload,
+            &[],  // No scoping
+            None, // No chaining
+        ).unwrap();
+
+        assert!(!result.proof.is_empty());
+        assert!(result.scope_hash.is_empty());
+        assert!(result.chain_hash.is_empty());
+
+        let is_valid = verify_proof_v21_unified(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload,
+            &result.proof,
+            &[],
+            "",
+            None,
+            "",
+        ).unwrap();
+
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_unified_scoped_only() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /transfer";
+        let timestamp = "1234567890";
+        let payload = r#"{"amount":1000,"recipient":"user1","notes":"hi"}"#;
+        let scope = vec!["amount", "recipient"];
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+        let result = build_proof_v21_unified(
+            &client_secret,
+            timestamp,
+            binding,
+            payload,
+            &scope,
+            None, // No chaining
+        ).unwrap();
+
+        assert!(!result.proof.is_empty());
+        assert!(!result.scope_hash.is_empty());
+        assert!(result.chain_hash.is_empty());
+
+        let is_valid = verify_proof_v21_unified(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload,
+            &result.proof,
+            &scope,
+            &result.scope_hash,
+            None,
+            "",
+        ).unwrap();
+
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_unified_chained_only() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /checkout";
+        let timestamp = "1234567890";
+        let payload = r#"{"cart_id":"cart_123"}"#;
+        let previous_proof = "abc123def456";
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+        let result = build_proof_v21_unified(
+            &client_secret,
+            timestamp,
+            binding,
+            payload,
+            &[],  // No scoping
+            Some(previous_proof),
+        ).unwrap();
+
+        assert!(!result.proof.is_empty());
+        assert!(result.scope_hash.is_empty());
+        assert!(!result.chain_hash.is_empty());
+
+        let is_valid = verify_proof_v21_unified(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload,
+            &result.proof,
+            &[],
+            "",
+            Some(previous_proof),
+            &result.chain_hash,
+        ).unwrap();
+
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_unified_full() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /payment";
+        let timestamp = "1234567890";
+        let payload = r#"{"amount":500,"currency":"USD","notes":"tip"}"#;
+        let scope = vec!["amount", "currency"];
+        let previous_proof = "checkout_proof_xyz";
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+        let result = build_proof_v21_unified(
+            &client_secret,
+            timestamp,
+            binding,
+            payload,
+            &scope,
+            Some(previous_proof),
+        ).unwrap();
+
+        assert!(!result.proof.is_empty());
+        assert!(!result.scope_hash.is_empty());
+        assert!(!result.chain_hash.is_empty());
+
+        let is_valid = verify_proof_v21_unified(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload,
+            &result.proof,
+            &scope,
+            &result.scope_hash,
+            Some(previous_proof),
+            &result.chain_hash,
+        ).unwrap();
+
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_unified_chain_broken() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /payment";
+        let timestamp = "1234567890";
+        let payload = r#"{"amount":500}"#;
+        let previous_proof = "original_proof";
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+        let result = build_proof_v21_unified(
+            &client_secret,
+            timestamp,
+            binding,
+            payload,
+            &[],
+            Some(previous_proof),
+        ).unwrap();
+
+        // Try to verify with wrong previous proof
+        let is_valid = verify_proof_v21_unified(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload,
+            &result.proof,
+            &[],
+            "",
+            Some("tampered_proof"),  // Wrong previous proof
+            &result.chain_hash,
+        ).unwrap();
+
+        assert!(!is_valid);
+    }
+
+    #[test]
+    fn test_unified_scope_tampered() {
+        let nonce = "test_nonce_12345";
+        let context_id = "ctx_abc123";
+        let binding = "POST /transfer";
+        let timestamp = "1234567890";
+        let payload = r#"{"amount":1000,"recipient":"user1"}"#;
+        let scope = vec!["amount"];
+
+        let client_secret = derive_client_secret(nonce, context_id, binding);
+        let result = build_proof_v21_unified(
+            &client_secret,
+            timestamp,
+            binding,
+            payload,
+            &scope,
+            None,
+        ).unwrap();
+
+        // Try to verify with different scope
+        let tampered_scope = vec!["recipient"];
+        let is_valid = verify_proof_v21_unified(
+            nonce,
+            context_id,
+            binding,
+            timestamp,
+            payload,
+            &result.proof,
+            &tampered_scope,  // Different scope
+            &result.scope_hash,  // Original scope hash
+            None,
+            "",
+        ).unwrap();
+
+        assert!(!is_valid);
+    }
+
+    #[test]
+    fn test_hash_proof() {
+        let proof = "test_proof_123";
+        let hash1 = hash_proof(proof);
+        let hash2 = hash_proof(proof);
+
+        assert_eq!(hash1, hash2);
+        assert_eq!(hash1.len(), 64); // SHA-256 = 64 hex chars
     }
 }

@@ -874,3 +874,85 @@ func HashScopedBody(payload map[string]interface{}, scope []string) string {
 	canonicalBytes, _ := json.Marshal(scopedPayload)
 	return HashBody(string(canonicalBytes))
 }
+
+// =========================================================================
+// ASH v2.3 - Unified Proof Functions (Scoping + Chaining)
+// =========================================================================
+
+// UnifiedProofResult contains proof, scope hash, and chain hash.
+type UnifiedProofResult struct {
+	Proof     string
+	ScopeHash string
+	ChainHash string
+}
+
+// HashProof hashes a proof for chaining purposes.
+func HashProof(proof string) string {
+	hash := sha256.Sum256([]byte(proof))
+	return hex.EncodeToString(hash[:])
+}
+
+// BuildProofUnified builds a unified v2.3 proof with optional scoping and chaining.
+//
+// Formula:
+//   scopeHash  = len(scope) > 0 ? SHA256(scope.join(",")) : ""
+//   bodyHash   = SHA256(canonicalize(scopedPayload))
+//   chainHash  = previousProof != "" ? SHA256(previousProof) : ""
+//   proof      = HMAC-SHA256(clientSecret, timestamp|binding|bodyHash|scopeHash|chainHash)
+func BuildProofUnified(clientSecret, timestamp, binding string, payload map[string]interface{}, scope []string, previousProof string) UnifiedProofResult {
+	// Extract and hash scoped payload
+	scopedPayload := ExtractScopedFields(payload, scope)
+	canonicalBytes, _ := json.Marshal(scopedPayload)
+	bodyHash := HashBody(string(canonicalBytes))
+
+	// Compute scope hash (empty string if no scope)
+	scopeHash := ""
+	if len(scope) > 0 {
+		scopeStr := strings.Join(scope, ",")
+		scopeHash = HashBody(scopeStr)
+	}
+
+	// Compute chain hash (empty string if no previous proof)
+	chainHash := ""
+	if previousProof != "" {
+		chainHash = HashProof(previousProof)
+	}
+
+	// Build proof message: timestamp|binding|bodyHash|scopeHash|chainHash
+	message := timestamp + "|" + binding + "|" + bodyHash + "|" + scopeHash + "|" + chainHash
+	h := hmac.New(sha256.New, []byte(clientSecret))
+	h.Write([]byte(message))
+	proof := hex.EncodeToString(h.Sum(nil))
+
+	return UnifiedProofResult{
+		Proof:     proof,
+		ScopeHash: scopeHash,
+		ChainHash: chainHash,
+	}
+}
+
+// VerifyProofUnified verifies a unified v2.3 proof with optional scoping and chaining.
+func VerifyProofUnified(nonce, contextID, binding, timestamp string, payload map[string]interface{}, clientProof string, scope []string, scopeHash, previousProof, chainHash string) bool {
+	// Validate scope hash if scoping is used
+	if len(scope) > 0 {
+		scopeStr := strings.Join(scope, ",")
+		expectedScopeHash := HashBody(scopeStr)
+		if !TimingSafeCompare(expectedScopeHash, scopeHash) {
+			return false
+		}
+	}
+
+	// Validate chain hash if chaining is used
+	if previousProof != "" {
+		expectedChainHash := HashProof(previousProof)
+		if !TimingSafeCompare(expectedChainHash, chainHash) {
+			return false
+		}
+	}
+
+	// Derive client secret and compute expected proof
+	clientSecret := DeriveClientSecret(nonce, contextID, binding)
+	result := BuildProofUnified(clientSecret, timestamp, binding, payload, scope, previousProof)
+
+	return TimingSafeCompare(result.Proof, clientProof)
+}

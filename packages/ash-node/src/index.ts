@@ -350,3 +350,151 @@ export function ashHashScopedBody(
   const canonical = JSON.stringify(scopedPayload);
   return ashHashBody(canonical);
 }
+
+// =========================================================================
+// ASH v2.3 - Unified Proof Functions (Scoping + Chaining)
+// =========================================================================
+
+/**
+ * Unified proof result.
+ */
+export interface AshUnifiedProofResult {
+  proof: string;
+  scopeHash: string;
+  chainHash: string;
+}
+
+/**
+ * Hash a proof for chaining purposes.
+ *
+ * @param proof Proof to hash
+ * @returns SHA-256 hash of the proof (64 hex chars)
+ */
+export function ashHashProof(proof: string): string {
+  return crypto.createHash('sha256').update(proof).digest('hex');
+}
+
+/**
+ * Build unified v2.3 cryptographic proof with optional scoping and chaining.
+ *
+ * Formula:
+ *   scopeHash  = scope.length > 0 ? SHA256(scope.join(",")) : ""
+ *   bodyHash   = SHA256(canonicalize(scopedPayload))
+ *   chainHash  = previousProof ? SHA256(previousProof) : ""
+ *   proof      = HMAC-SHA256(clientSecret, timestamp|binding|bodyHash|scopeHash|chainHash)
+ *
+ * @param clientSecret Derived client secret
+ * @param timestamp Request timestamp (milliseconds)
+ * @param binding Request binding
+ * @param payload Full payload object
+ * @param scope Fields to protect (empty = full payload)
+ * @param previousProof Previous proof in chain (null/undefined = no chaining)
+ * @returns Unified proof result with proof, scopeHash, and chainHash
+ */
+export function ashBuildProofUnified(
+  clientSecret: string,
+  timestamp: string,
+  binding: string,
+  payload: Record<string, unknown>,
+  scope: string[] = [],
+  previousProof?: string | null
+): AshUnifiedProofResult {
+  // Extract and hash scoped payload
+  const scopedPayload = ashExtractScopedFields(payload, scope);
+  const canonicalScoped = JSON.stringify(scopedPayload);
+  const bodyHash = ashHashBody(canonicalScoped);
+
+  // Compute scope hash (empty string if no scope)
+  const scopeHash = scope.length > 0 ? ashHashBody(scope.join(',')) : '';
+
+  // Compute chain hash (empty string if no previous proof)
+  const chainHash = (previousProof && previousProof !== '')
+    ? ashHashProof(previousProof)
+    : '';
+
+  // Build proof message: timestamp|binding|bodyHash|scopeHash|chainHash
+  const message = `${timestamp}|${binding}|${bodyHash}|${scopeHash}|${chainHash}`;
+  const proof = crypto.createHmac('sha256', clientSecret)
+    .update(message)
+    .digest('hex');
+
+  return { proof, scopeHash, chainHash };
+}
+
+/**
+ * Verify unified v2.3 proof with optional scoping and chaining.
+ *
+ * @param nonce Server-side secret nonce
+ * @param contextId Context identifier
+ * @param binding Request binding
+ * @param timestamp Request timestamp
+ * @param payload Full payload object
+ * @param clientProof Proof received from client
+ * @param scope Fields that were protected (empty = full payload)
+ * @param scopeHash Scope hash from client (empty if no scoping)
+ * @param previousProof Previous proof in chain (null if no chaining)
+ * @param chainHash Chain hash from client (empty if no chaining)
+ * @returns true if proof is valid
+ */
+export function ashVerifyProofUnified(
+  nonce: string,
+  contextId: string,
+  binding: string,
+  timestamp: string,
+  payload: Record<string, unknown>,
+  clientProof: string,
+  scope: string[] = [],
+  scopeHash: string = '',
+  previousProof?: string | null,
+  chainHash: string = ''
+): boolean {
+  // Validate scope hash if scoping is used
+  if (scope.length > 0) {
+    const expectedScopeHash = ashHashBody(scope.join(','));
+    try {
+      if (!crypto.timingSafeEqual(
+        Buffer.from(expectedScopeHash, 'hex'),
+        Buffer.from(scopeHash, 'hex')
+      )) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  // Validate chain hash if chaining is used
+  if (previousProof && previousProof !== '') {
+    const expectedChainHash = ashHashProof(previousProof);
+    try {
+      if (!crypto.timingSafeEqual(
+        Buffer.from(expectedChainHash, 'hex'),
+        Buffer.from(chainHash, 'hex')
+      )) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  // Derive client secret and compute expected proof
+  const clientSecret = ashDeriveClientSecret(nonce, contextId, binding);
+  const result = ashBuildProofUnified(
+    clientSecret,
+    timestamp,
+    binding,
+    payload,
+    scope,
+    previousProof
+  );
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(result.proof, 'hex'),
+      Buffer.from(clientProof, 'hex')
+    );
+  } catch {
+    return false;
+  }
+}

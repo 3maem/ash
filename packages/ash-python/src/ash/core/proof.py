@@ -344,3 +344,130 @@ def hash_scoped_body(payload: dict, scope: list[str]) -> str:
     scoped_payload = extract_scoped_fields(payload, scope)
     canonical = json.dumps(scoped_payload, separators=(",", ":"), sort_keys=True)
     return hash_body(canonical)
+
+
+# =========================================================================
+# ASH v2.3 - Unified Proof Functions (Scoping + Chaining)
+# =========================================================================
+
+
+def hash_proof(proof: str) -> str:
+    """
+    Hash a proof for chaining purposes.
+
+    Args:
+        proof: Proof to hash
+
+    Returns:
+        SHA-256 hash of the proof (64 hex chars)
+    """
+    return hashlib.sha256(proof.encode("utf-8")).hexdigest()
+
+
+def build_proof_unified(
+    client_secret: str,
+    timestamp: str,
+    binding: str,
+    payload: dict,
+    scope: list[str] | None = None,
+    previous_proof: str | None = None,
+) -> tuple[str, str, str]:
+    """
+    Build unified v2.3 cryptographic proof with optional scoping and chaining.
+
+    Formula:
+        scopeHash  = len(scope) > 0 ? SHA256(scope.join(",")) : ""
+        bodyHash   = SHA256(canonicalize(scopedPayload))
+        chainHash  = previous_proof ? SHA256(previous_proof) : ""
+        proof      = HMAC-SHA256(clientSecret, timestamp|binding|bodyHash|scopeHash|chainHash)
+
+    Args:
+        client_secret: Derived client secret
+        timestamp: Request timestamp (milliseconds)
+        binding: Request binding
+        payload: Full payload dictionary
+        scope: Fields to protect (None/empty = full payload)
+        previous_proof: Previous proof in chain (None = no chaining)
+
+    Returns:
+        Tuple of (proof, scope_hash, chain_hash)
+    """
+    import json
+
+    if scope is None:
+        scope = []
+
+    # Extract and hash scoped payload
+    scoped_payload = extract_scoped_fields(payload, scope)
+    canonical_scoped = json.dumps(scoped_payload, separators=(",", ":"), sort_keys=True)
+    body_hash = hash_body(canonical_scoped)
+
+    # Compute scope hash (empty string if no scope)
+    scope_hash = hash_body(",".join(scope)) if scope else ""
+
+    # Compute chain hash (empty string if no previous proof)
+    chain_hash = hash_proof(previous_proof) if previous_proof else ""
+
+    # Build proof message: timestamp|binding|bodyHash|scopeHash|chainHash
+    message = f"{timestamp}|{binding}|{body_hash}|{scope_hash}|{chain_hash}"
+    proof = hmac.new(
+        client_secret.encode("utf-8"),
+        message.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    return proof, scope_hash, chain_hash
+
+
+def verify_proof_unified(
+    nonce: str,
+    context_id: str,
+    binding: str,
+    timestamp: str,
+    payload: dict,
+    client_proof: str,
+    scope: list[str] | None = None,
+    scope_hash: str = "",
+    previous_proof: str | None = None,
+    chain_hash: str = "",
+) -> bool:
+    """
+    Verify unified v2.3 proof with optional scoping and chaining.
+
+    Args:
+        nonce: Server-side secret nonce
+        context_id: Context identifier
+        binding: Request binding
+        timestamp: Request timestamp
+        payload: Full payload dictionary
+        client_proof: Proof received from client
+        scope: Fields that were protected (None/empty = full payload)
+        scope_hash: Scope hash from client (empty if no scoping)
+        previous_proof: Previous proof in chain (None if no chaining)
+        chain_hash: Chain hash from client (empty if no chaining)
+
+    Returns:
+        True if proof is valid
+    """
+    if scope is None:
+        scope = []
+
+    # Validate scope hash if scoping is used
+    if scope:
+        expected_scope_hash = hash_body(",".join(scope))
+        if not hmac.compare_digest(expected_scope_hash, scope_hash):
+            return False
+
+    # Validate chain hash if chaining is used
+    if previous_proof:
+        expected_chain_hash = hash_proof(previous_proof)
+        if not hmac.compare_digest(expected_chain_hash, chain_hash):
+            return False
+
+    # Derive client secret and compute expected proof
+    client_secret = derive_client_secret(nonce, context_id, binding)
+    expected_proof, _, _ = build_proof_unified(
+        client_secret, timestamp, binding, payload, scope, previous_proof
+    )
+
+    return hmac.compare_digest(expected_proof, client_proof)

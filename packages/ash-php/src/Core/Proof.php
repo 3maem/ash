@@ -325,4 +325,104 @@ final class Proof
         $canonical = json_encode($scopedPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         return self::hashBody($canonical);
     }
+
+    // =========================================================================
+    // ASH v2.3 - Unified Proof Functions (Scoping + Chaining)
+    // =========================================================================
+
+    /**
+     * Hash a proof for chaining purposes.
+     *
+     * @param string $proof Proof to hash
+     * @return string SHA-256 hash of the proof (64 hex chars)
+     */
+    public static function hashProof(string $proof): string
+    {
+        return hash('sha256', $proof);
+    }
+
+    /**
+     * Build unified v2.3 cryptographic proof with optional scoping and chaining.
+     *
+     * @param string $clientSecret Derived client secret
+     * @param string $timestamp Request timestamp (milliseconds)
+     * @param string $binding Request binding
+     * @param array<string, mixed> $payload Full payload array
+     * @param array<string> $scope Fields to protect (empty = full payload)
+     * @param string|null $previousProof Previous proof in chain (null = no chaining)
+     * @return array{proof: string, scopeHash: string, chainHash: string}
+     */
+    public static function buildUnified(
+        string $clientSecret,
+        string $timestamp,
+        string $binding,
+        array $payload,
+        array $scope = [],
+        ?string $previousProof = null
+    ): array {
+        $scopedPayload = self::extractScopedFields($payload, $scope);
+        $canonicalScoped = json_encode($scopedPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $bodyHash = self::hashBody($canonicalScoped);
+
+        $scopeHash = empty($scope) ? '' : self::hashBody(implode(',', $scope));
+        $chainHash = ($previousProof !== null && $previousProof !== '')
+            ? self::hashProof($previousProof)
+            : '';
+
+        $message = $timestamp . '|' . $binding . '|' . $bodyHash . '|' . $scopeHash . '|' . $chainHash;
+        $proof = hash_hmac('sha256', $message, $clientSecret);
+
+        return [
+            'proof' => $proof,
+            'scopeHash' => $scopeHash,
+            'chainHash' => $chainHash,
+        ];
+    }
+
+    /**
+     * Verify unified v2.3 proof with optional scoping and chaining.
+     *
+     * @param string $nonce Server-side secret nonce
+     * @param string $contextId Context identifier
+     * @param string $binding Request binding
+     * @param string $timestamp Request timestamp
+     * @param array<string, mixed> $payload Full payload array
+     * @param string $clientProof Proof received from client
+     * @param array<string> $scope Fields that were protected (empty = full payload)
+     * @param string $scopeHash Scope hash from client (empty if no scoping)
+     * @param string|null $previousProof Previous proof in chain (null if no chaining)
+     * @param string $chainHash Chain hash from client (empty if no chaining)
+     * @return bool True if proof is valid
+     */
+    public static function verifyUnified(
+        string $nonce,
+        string $contextId,
+        string $binding,
+        string $timestamp,
+        array $payload,
+        string $clientProof,
+        array $scope = [],
+        string $scopeHash = '',
+        ?string $previousProof = null,
+        string $chainHash = ''
+    ): bool {
+        if (!empty($scope)) {
+            $expectedScopeHash = self::hashBody(implode(',', $scope));
+            if (!Compare::timingSafe($expectedScopeHash, $scopeHash)) {
+                return false;
+            }
+        }
+
+        if ($previousProof !== null && $previousProof !== '') {
+            $expectedChainHash = self::hashProof($previousProof);
+            if (!Compare::timingSafe($expectedChainHash, $chainHash)) {
+                return false;
+            }
+        }
+
+        $clientSecret = self::deriveClientSecret($nonce, $contextId, $binding);
+        $result = self::buildUnified($clientSecret, $timestamp, $binding, $payload, $scope, $previousProof);
+
+        return Compare::timingSafe($result['proof'], $clientProof);
+    }
 }

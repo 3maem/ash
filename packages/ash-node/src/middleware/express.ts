@@ -1,5 +1,9 @@
 /**
  * Express.js middleware for ASH verification.
+ *
+ * Supports ASH v2.3 unified proof features:
+ * - Context scoping (selective field protection)
+ * - Request chaining (workflow integrity)
  */
 
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
@@ -10,6 +14,9 @@ import {
   ashCanonicalizeUrlencoded,
   ashNormalizeBinding,
   ashVerifyProof,
+  ashHashBody,
+  ashVerifyProofUnified,
+  ashExtractScopedFields,
 } from '../index';
 
 /**
@@ -26,6 +33,8 @@ export interface AshExpressOptions {
   onError?: (error: AshVerifyError, req: Request, res: Response, next: NextFunction) => void;
   /** Skip verification for certain requests */
   skip?: (req: Request) => boolean;
+  /** Enable v2.3 unified verification (scoping + chaining) */
+  enableUnified?: boolean;
 }
 
 /**
@@ -39,7 +48,9 @@ export type AshVerifyErrorCode =
   | 'CONTEXT_USED'
   | 'BINDING_MISMATCH'
   | 'PROOF_MISMATCH'
-  | 'CANONICALIZATION_FAILED';
+  | 'CANONICALIZATION_FAILED'
+  | 'SCOPE_MISMATCH'
+  | 'CHAIN_BROKEN';
 
 /**
  * Verification error.
@@ -57,12 +68,16 @@ export class AshVerifyError extends Error {
 }
 
 /**
- * Header names for ASH protocol.
+ * Header names for ASH protocol (v2.3 unified).
  */
 const HEADERS = {
   CONTEXT_ID: 'x-ash-context-id',
   PROOF: 'x-ash-proof',
   MODE: 'x-ash-mode',
+  TIMESTAMP: 'x-ash-timestamp',
+  SCOPE: 'x-ash-scope',
+  SCOPE_HASH: 'x-ash-scope-hash',
+  CHAIN_HASH: 'x-ash-chain-hash',
 };
 
 /**
@@ -102,10 +117,24 @@ function defaultErrorHandler(
  *     res.json({ success: true });
  *   }
  * );
+ *
+ * // With v2.3 unified features (scoping + chaining)
+ * app.post(
+ *   '/api/transfer',
+ *   ashExpressMiddleware({
+ *     store,
+ *     enableUnified: true,  // Enable v2.3 features
+ *   }),
+ *   (req, res) => {
+ *     // Access scope and chain info
+ *     const { ashScope, ashChainHash } = req;
+ *     res.json({ success: true });
+ *   }
+ * );
  * ```
  */
 export function ashExpressMiddleware(options: AshExpressOptions): RequestHandler {
-  const { store, mode = 'balanced', onError = defaultErrorHandler, skip } = options;
+  const { store, mode = 'balanced', onError = defaultErrorHandler, skip, enableUnified = false } = options;
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -115,9 +144,20 @@ export function ashExpressMiddleware(options: AshExpressOptions): RequestHandler
         return;
       }
 
-      // Get headers
+      // Get required headers
       const contextId = req.get(HEADERS.CONTEXT_ID);
       const proof = req.get(HEADERS.PROOF);
+
+      // Get optional v2.3 headers
+      const timestamp = req.get(HEADERS.TIMESTAMP) ?? '';
+      const scopeHeader = req.get(HEADERS.SCOPE) ?? '';
+      const scopeHash = req.get(HEADERS.SCOPE_HASH) ?? '';
+      const chainHash = req.get(HEADERS.CHAIN_HASH) ?? '';
+
+      // Parse scope fields
+      const scope: string[] = scopeHeader
+        ? scopeHeader.split(',').map(s => s.trim()).filter(s => s !== '')
+        : [];
 
       if (!contextId) {
         throw new AshVerifyError('MISSING_CONTEXT_ID', 'Missing X-ASH-Context-ID header');
@@ -173,9 +213,54 @@ export function ashExpressMiddleware(options: AshExpressOptions): RequestHandler
         canonicalPayload
       );
 
-      // Verify proof
-      if (!ashVerifyProof(expectedProof, proof)) {
-        throw new AshVerifyError('PROOF_MISMATCH', 'Proof verification failed');
+      // Verify proof (v2.3 unified or legacy)
+      let verificationPassed = false;
+
+      if (enableUnified && (scope.length > 0 || chainHash !== '')) {
+        // v2.3 unified verification with scoping/chaining
+        if (!context.nonce) {
+          throw new AshVerifyError('INVALID_CONTEXT', 'Context missing nonce for unified verification');
+        }
+
+        // Parse payload for scoping
+        let payload: Record<string, unknown> = {};
+        try {
+          if (contentType.includes('application/json') && req.body) {
+            payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+          }
+        } catch {
+          payload = {};
+        }
+
+        verificationPassed = ashVerifyProofUnified(
+          context.nonce,
+          contextId,
+          context.binding,
+          timestamp,
+          payload,
+          proof,
+          scope,
+          scopeHash,
+          context.metadata?.previousProof as string | undefined,
+          chainHash
+        );
+
+        if (!verificationPassed) {
+          // Determine specific error
+          if (scope.length > 0 && scopeHash !== '') {
+            throw new AshVerifyError('SCOPE_MISMATCH', 'Scope hash verification failed');
+          }
+          if (chainHash !== '') {
+            throw new AshVerifyError('CHAIN_BROKEN', 'Chain hash verification failed');
+          }
+          throw new AshVerifyError('PROOF_MISMATCH', 'Proof verification failed');
+        }
+      } else {
+        // Legacy verification
+        if (!ashVerifyProof(expectedProof, proof)) {
+          throw new AshVerifyError('PROOF_MISMATCH', 'Proof verification failed');
+        }
+        verificationPassed = true;
       }
 
       // Consume context (mark as used)
@@ -185,7 +270,9 @@ export function ashExpressMiddleware(options: AshExpressOptions): RequestHandler
       }
 
       // Attach context metadata to request for downstream use
-      (req as unknown as { ashContext: typeof context }).ashContext = context;
+      (req as unknown as { ashContext: typeof context; ashScope: string[]; ashChainHash: string }).ashContext = context;
+      (req as unknown as { ashScope: string[] }).ashScope = scope;
+      (req as unknown as { ashChainHash: string }).ashChainHash = chainHash;
 
       next();
     } catch (error) {

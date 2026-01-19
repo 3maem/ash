@@ -376,3 +376,137 @@ public static partial class ProofV22
         return ProofV21.HashBody(canonical);
     }
 }
+
+
+// =========================================================================
+// ASH v2.3 - Unified Proof Functions (Scoping + Chaining)
+// =========================================================================
+
+/// <summary>
+/// ASH Protocol Unified Proof v2.3 functions.
+/// </summary>
+public static partial class ProofV23
+{
+    /// <summary>
+    /// Unified proof result.
+    /// </summary>
+    public record UnifiedProofResult(string Proof, string ScopeHash, string ChainHash);
+
+    /// <summary>
+    /// Hash a proof for chaining purposes.
+    /// </summary>
+    /// <param name="proof">Proof to hash.</param>
+    /// <returns>SHA-256 hash of the proof (64 hex chars).</returns>
+    public static string HashProof(string proof)
+    {
+        var bytes = Encoding.UTF8.GetBytes(proof);
+        var hash = SHA256.HashData(bytes);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Build unified v2.3 cryptographic proof with optional scoping and chaining.
+    /// </summary>
+    /// <remarks>
+    /// Formula:
+    /// <code>
+    /// scopeHash  = scope.Length > 0 ? SHA256(scope.join(",")) : ""
+    /// bodyHash   = SHA256(canonicalize(scopedPayload))
+    /// chainHash  = previousProof != null ? SHA256(previousProof) : ""
+    /// proof      = HMAC-SHA256(clientSecret, timestamp|binding|bodyHash|scopeHash|chainHash)
+    /// </code>
+    /// </remarks>
+    /// <param name="clientSecret">Derived client secret.</param>
+    /// <param name="timestamp">Request timestamp (milliseconds).</param>
+    /// <param name="binding">Request binding.</param>
+    /// <param name="payload">Full payload dictionary.</param>
+    /// <param name="scope">Fields to protect (empty = full payload).</param>
+    /// <param name="previousProof">Previous proof in chain (null = no chaining).</param>
+    /// <returns>Unified proof result with proof, scopeHash, and chainHash.</returns>
+    public static UnifiedProofResult BuildProofUnified(
+        string clientSecret,
+        string timestamp,
+        string binding,
+        Dictionary<string, object?> payload,
+        string[]? scope = null,
+        string? previousProof = null)
+    {
+        scope ??= Array.Empty<string>();
+
+        // Extract and hash scoped payload
+        var scopedPayload = ProofV22.ExtractScopedFields(payload, scope);
+        var canonicalScoped = System.Text.Json.JsonSerializer.Serialize(scopedPayload);
+        var bodyHash = ProofV21.HashBody(canonicalScoped);
+
+        // Compute scope hash (empty string if no scope)
+        var scopeHash = scope.Length > 0
+            ? ProofV21.HashBody(string.Join(",", scope))
+            : "";
+
+        // Compute chain hash (empty string if no previous proof)
+        var chainHash = !string.IsNullOrEmpty(previousProof)
+            ? HashProof(previousProof)
+            : "";
+
+        // Build proof message: timestamp|binding|bodyHash|scopeHash|chainHash
+        var message = $"{timestamp}|{binding}|{bodyHash}|{scopeHash}|{chainHash}";
+        var key = Encoding.UTF8.GetBytes(clientSecret);
+        var messageBytes = Encoding.UTF8.GetBytes(message);
+        using var hmac = new HMACSHA256(key);
+        var hash = hmac.ComputeHash(messageBytes);
+        var proof = Convert.ToHexString(hash).ToLowerInvariant();
+
+        return new UnifiedProofResult(proof, scopeHash, chainHash);
+    }
+
+    /// <summary>
+    /// Verify unified v2.3 proof with optional scoping and chaining.
+    /// </summary>
+    /// <param name="nonce">Server-side secret nonce.</param>
+    /// <param name="contextId">Context identifier.</param>
+    /// <param name="binding">Request binding.</param>
+    /// <param name="timestamp">Request timestamp.</param>
+    /// <param name="payload">Full payload dictionary.</param>
+    /// <param name="clientProof">Proof received from client.</param>
+    /// <param name="scope">Fields that were protected (empty = full payload).</param>
+    /// <param name="scopeHash">Scope hash from client (empty if no scoping).</param>
+    /// <param name="previousProof">Previous proof in chain (null if no chaining).</param>
+    /// <param name="chainHash">Chain hash from client (empty if no chaining).</param>
+    /// <returns>True if proof is valid.</returns>
+    public static bool VerifyProofUnified(
+        string nonce,
+        string contextId,
+        string binding,
+        string timestamp,
+        Dictionary<string, object?> payload,
+        string clientProof,
+        string[]? scope = null,
+        string scopeHash = "",
+        string? previousProof = null,
+        string chainHash = "")
+    {
+        scope ??= Array.Empty<string>();
+
+        // Validate scope hash if scoping is used
+        if (scope.Length > 0)
+        {
+            var expectedScopeHash = ProofV21.HashBody(string.Join(",", scope));
+            if (!Compare.TimingSafe(expectedScopeHash, scopeHash))
+                return false;
+        }
+
+        // Validate chain hash if chaining is used
+        if (!string.IsNullOrEmpty(previousProof))
+        {
+            var expectedChainHash = HashProof(previousProof);
+            if (!Compare.TimingSafe(expectedChainHash, chainHash))
+                return false;
+        }
+
+        // Derive client secret and compute expected proof
+        var clientSecret = ProofV21.DeriveClientSecret(nonce, contextId, binding);
+        var result = BuildProofUnified(clientSecret, timestamp, binding, payload, scope, previousProof);
+
+        return Compare.TimingSafe(result.Proof, clientProof);
+    }
+}

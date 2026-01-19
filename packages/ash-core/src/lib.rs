@@ -57,6 +57,9 @@ pub use proof::{
     // v2.2 scoping functions
     extract_scoped_fields, build_proof_v21_scoped,
     verify_proof_v21_scoped, hash_scoped_body,
+    // v2.3 unified functions (scoping + chaining)
+    UnifiedProofResult, hash_proof,
+    build_proof_v21_unified, verify_proof_v21_unified,
 };
 pub use types::{AshMode, BuildProofInput, VerifyInput};
 

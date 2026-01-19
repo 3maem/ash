@@ -30,6 +30,10 @@ from ash.core.proof import (
     generate_nonce,
     hash_body,
     verify_proof_v21,
+    # v2.3 unified functions
+    build_proof_unified,
+    verify_proof_unified,
+    hash_proof,
 )
 from ash.core.types import (
     AshErrorCode,
@@ -56,6 +60,15 @@ __all__ = [
     "build_proof_v21",
     "verify_proof_v21",
     "hash_body",
+    # v2.2 scoped functions
+    "extract_scoped_fields",
+    "build_proof_v21_scoped",
+    "verify_proof_v21_scoped",
+    "hash_scoped_body",
+    # v2.3 unified functions
+    "build_proof_unified",
+    "verify_proof_unified",
+    "hash_proof",
     # Compare
     "timing_safe_compare",
     # Errors
