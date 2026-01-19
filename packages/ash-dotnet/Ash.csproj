@@ -12,7 +12,7 @@
     <Product>ASH Security</Product>
     <Description>ASH SDK for .NET - Request integrity and anti-replay protection library</Description>
     <PackageTags>ash;security;integrity;anti-tamper;replay-prevention;cryptography;middleware;aspnetcore</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>Proprietary</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/3meam/ash</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>

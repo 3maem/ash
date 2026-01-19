@@ -4,7 +4,7 @@
   "private": true,
   "description": "ASH (Anti-tamper Security Hash) Monorepo",
   "author": "3meam Co. | شركة عمائم",
-  "license": "MIT",
+  "license": "Proprietary",
   "workspaces": [
     "packages/ash-node",
     "packages/ash-wasm",

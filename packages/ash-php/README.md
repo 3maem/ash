@@ -496,7 +496,7 @@ $response = file_get_contents('https://api.example.com/api/update', false, $cont
 
 ## License
 
-MIT License
+Proprietary - All Rights Reserved
 
 ## Links
 

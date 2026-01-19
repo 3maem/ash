@@ -476,7 +476,7 @@ def process_context(ctx: AshContext) -> None:
 
 ## License
 
-MIT License
+Proprietary - All Rights Reserved
 
 ## Links
 

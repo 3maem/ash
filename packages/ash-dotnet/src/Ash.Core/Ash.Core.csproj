@@ -14,7 +14,7 @@
     <Company>3maem Co.</Company>
     <Description>ASH Protocol Core - Authenticity and Stateless Hardening for .NET. Deterministic integrity verification for web requests.</Description>
     <PackageTags>ash;security;integrity;cryptography;api;authentication</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>Proprietary</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/3maem/ash</RepositoryUrl>
 
     <!-- Enable documentation generation -->

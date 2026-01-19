@@ -8,7 +8,7 @@ members = [
 [workspace.package]
 version = "1.0.0"
 edition = "2021"
-license = "MIT"
+license = "Proprietary"
 repository = "https://github.com/3maem/ash"
 authors = ["3maem Co. <dev@3maem.com>"]
 keywords = ["security", "integrity", "anti-tamper", "replay-protection", "wasm"]

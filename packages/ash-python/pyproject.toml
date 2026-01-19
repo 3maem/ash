@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ash-sdk"
-version = "1.0.1"
+version = "1.0.2"
 description = "ASH SDK for Python - Request integrity and anti-replay protection library"
 readme = "README.md"
 license = {text = "Proprietary"}
@@ -14,6 +14,7 @@ authors = [
 keywords = ["security", "integrity", "verification", "anti-replay", "flask"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
+    "License :: Other/Proprietary License",
     "Intended Audience :: Developers",
     "Framework :: Flask",
     "Programming Language :: Python :: 3",

@@ -547,7 +547,7 @@ app.listen(3000, () => {
 
 ## License
 
-MIT License
+Proprietary - All Rights Reserved
 
 ## Links
 

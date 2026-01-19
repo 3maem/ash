@@ -363,7 +363,7 @@ func main() {
 
 ## License
 
-MIT License
+Proprietary - All Rights Reserved
 
 ## Links
 

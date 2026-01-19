@@ -428,7 +428,7 @@ var response = await client.SendAsync(request);
 
 ## License
 
-MIT License
+Proprietary - All Rights Reserved
 
 ## Links
 
