@@ -4,6 +4,7 @@
  * Supports ASH v2.3 unified proof features:
  * - Context scoping (selective field protection)
  * - Request chaining (workflow integrity)
+ * - Server-side scope policies (ENH-003)
  */
 
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
@@ -18,6 +19,7 @@ import {
   ashVerifyProofUnified,
   ashExtractScopedFields,
 } from '../index';
+import { getScopePolicy, hasScopePolicy } from '../config/scopePolicies';
 
 /**
  * Express middleware configuration.
@@ -50,7 +52,9 @@ export type AshVerifyErrorCode =
   | 'PROOF_MISMATCH'
   | 'CANONICALIZATION_FAILED'
   | 'SCOPE_MISMATCH'
-  | 'CHAIN_BROKEN';
+  | 'CHAIN_BROKEN'
+  | 'SCOPE_POLICY_REQUIRED'
+  | 'SCOPE_POLICY_VIOLATION';
 
 /**
  * Verification error.
@@ -154,10 +158,44 @@ export function ashExpressMiddleware(options: AshExpressOptions): RequestHandler
       const scopeHash = req.get(HEADERS.SCOPE_HASH) ?? '';
       const chainHash = req.get(HEADERS.CHAIN_HASH) ?? '';
 
-      // Parse scope fields
-      const scope: string[] = scopeHeader
+      // Normalize binding from request (for policy lookup)
+      const queryString = req.query ? new URLSearchParams(req.query as Record<string, string>).toString() : '';
+      const binding = ashNormalizeBinding(req.method, req.path, queryString);
+
+      // Parse client scope fields
+      const clientScope: string[] = scopeHeader
         ? scopeHeader.split(',').map(s => s.trim()).filter(s => s !== '')
         : [];
+
+      // ENH-003: Check server-side scope policy
+      const policyScope = getScopePolicy(binding);
+      const hasPolicyScope = policyScope.length > 0;
+
+      // Determine effective scope
+      let scope = clientScope;
+
+      if (hasPolicyScope) {
+        // If server has a policy, client MUST use it
+        if (clientScope.length === 0) {
+          throw new AshVerifyError(
+            'SCOPE_POLICY_REQUIRED',
+            `This endpoint requires scope headers per server policy. Required scope: ${policyScope.join(', ')}`
+          );
+        }
+
+        // Verify client scope matches server policy
+        const sortedClientScope = [...clientScope].sort();
+        const sortedPolicyScope = [...policyScope].sort();
+
+        if (sortedClientScope.join(',') !== sortedPolicyScope.join(',')) {
+          throw new AshVerifyError(
+            'SCOPE_POLICY_VIOLATION',
+            `Request scope does not match server policy. Expected: ${policyScope.join(', ')}, Received: ${clientScope.join(', ')}`
+          );
+        }
+
+        scope = policyScope;
+      }
 
       if (!contextId) {
         throw new AshVerifyError('MISSING_CONTEXT_ID', 'Missing X-ASH-Context-ID header');
@@ -178,8 +216,8 @@ export function ashExpressMiddleware(options: AshExpressOptions): RequestHandler
         throw new AshVerifyError('CONTEXT_USED', 'Context already used (replay detected)');
       }
 
-      // Normalize binding from request
-      const actualBinding = ashNormalizeBinding(req.method, req.path);
+      // Use the binding we already calculated for policy lookup
+      const actualBinding = binding;
       const expectedBinding = options.expectedBinding ?? actualBinding;
 
       // Check binding match
@@ -270,8 +308,9 @@ export function ashExpressMiddleware(options: AshExpressOptions): RequestHandler
       }
 
       // Attach context metadata to request for downstream use
-      (req as unknown as { ashContext: typeof context; ashScope: string[]; ashChainHash: string }).ashContext = context;
+      (req as unknown as { ashContext: typeof context; ashScope: string[]; ashChainHash: string; ashScopePolicy: string[] }).ashContext = context;
       (req as unknown as { ashScope: string[] }).ashScope = scope;
+      (req as unknown as { ashScopePolicy: string[] }).ashScopePolicy = policyScope;
       (req as unknown as { ashChainHash: string }).ashChainHash = chainHash;
 
       next();

@@ -581,3 +581,18 @@ export const ash = {
   buildProofUnified: ashBuildProofUnified,
   verifyProofUnified: ashVerifyProofUnified,
 };
+
+// =========================================================================
+// ENH-003: Server-Side Scope Policies
+// =========================================================================
+
+export {
+  registerScopePolicy,
+  registerScopePolicies,
+  getScopePolicy,
+  hasScopePolicy,
+  getAllScopePolicies,
+  clearScopePolicies,
+} from './config/scopePolicies';
+
+export type { ScopePolicyConfig } from './config/scopePolicies';

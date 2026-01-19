@@ -6,6 +6,8 @@ namespace Ash\Middleware;
 
 use Ash\Ash;
 use Ash\AshErrorCode;
+use Ash\Config\ScopePolicies;
+use Ash\Core\Canonicalize;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -17,6 +19,7 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  * Supports ASH v2.3 unified proof features:
  * - Context scoping (selective field protection)
  * - Request chaining (workflow integrity)
+ * - Server-side scope policies (ENH-003)
  *
  * Usage:
  *
@@ -34,6 +37,12 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  *
  * 4. For chained verification, client sends:
  *    - X-ASH-Chain-Hash: SHA256 of previous proof
+ *
+ * 5. Server-side scope policies (ENH-003):
+ *    Register policies in your AppServiceProvider:
+ *    ScopePolicies::register('POST|/api/transfer|', ['amount', 'recipient']);
+ *
+ *    The server will enforce these policies automatically.
  */
 final class LaravelMiddleware
 {
@@ -88,18 +97,57 @@ final class LaravelMiddleware
         $scopeHash = $request->header(self::HEADERS['SCOPE_HASH'], '');
         $chainHash = $request->header(self::HEADERS['CHAIN_HASH'], '');
 
-        // Parse scope fields
-        $scope = [];
+        // Normalize binding with query string
+        $binding = Canonicalize::normalizeBinding(
+            $request->method(),
+            '/' . ltrim($request->path(), '/'),
+            $request->getQueryString() ?? ''
+        );
+
+        // ENH-003: Check server-side scope policy
+        $policyScope = ScopePolicies::get($binding);
+        $hasScopePolicy = !empty($policyScope);
+
+        // Parse client scope fields
+        $clientScope = [];
         if (!empty($scopeHeader)) {
-            $scope = array_map('trim', explode(',', $scopeHeader));
-            $scope = array_filter($scope, fn($s) => $s !== '');
+            $clientScope = array_map('trim', explode(',', $scopeHeader));
+            $clientScope = array_filter($clientScope, fn($s) => $s !== '');
+            $clientScope = array_values($clientScope); // Re-index
         }
 
-        // Normalize binding
-        $binding = $this->ash->ashNormalizeBinding(
-            $request->method(),
-            $request->path()
-        );
+        // Determine effective scope
+        $scope = $clientScope;
+
+        // ENH-003: Server-side scope policy enforcement
+        if ($hasScopePolicy) {
+            // If server has a policy, client MUST use it
+            if (empty($clientScope)) {
+                // Client didn't send scope but server requires it
+                return response()->json([
+                    'error' => 'SCOPE_POLICY_REQUIRED',
+                    'message' => 'This endpoint requires scope headers per server policy',
+                    'requiredScope' => $policyScope,
+                ], 403);
+            }
+
+            // Verify client scope matches server policy
+            $sortedClientScope = $clientScope;
+            $sortedPolicyScope = $policyScope;
+            sort($sortedClientScope);
+            sort($sortedPolicyScope);
+
+            if ($sortedClientScope !== $sortedPolicyScope) {
+                return response()->json([
+                    'error' => 'SCOPE_POLICY_VIOLATION',
+                    'message' => 'Request scope does not match server policy',
+                    'expected' => $policyScope,
+                    'received' => $clientScope,
+                ], 403);
+            }
+
+            $scope = $policyScope;
+        }
 
         // Get payload
         $payload = $request->getContent();
@@ -143,8 +191,22 @@ final class LaravelMiddleware
         // Store metadata in request for downstream use
         $request->attributes->set('ash_metadata', $result->metadata);
         $request->attributes->set('ash_scope', $scope);
+        $request->attributes->set('ash_scope_policy', $policyScope);
         $request->attributes->set('ash_chain_hash', $chainHash);
 
         return $next($request);
+    }
+
+    /**
+     * Get the scope policy for a binding.
+     *
+     * Convenience method for controllers to check the applied policy.
+     *
+     * @param string $binding The normalized binding
+     * @return string[] The scope policy fields
+     */
+    public static function getScopePolicy(string $binding): array
+    {
+        return ScopePolicies::get($binding);
     }
 }
