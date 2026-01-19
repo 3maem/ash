@@ -100,6 +100,7 @@ pub fn build_proof(
 /// Build proof from a structured input.
 ///
 /// Convenience wrapper around `build_proof` that accepts `BuildProofInput`.
+#[allow(dead_code)]
 pub fn ash_build_proof(input: &BuildProofInput) -> Result<String, AshError> {
     build_proof(
         input.mode,
@@ -143,6 +144,7 @@ pub fn verify_proof(input: &VerifyInput) -> bool {
 /// Verify that two proofs match.
 ///
 /// Convenience function for direct string comparison.
+#[allow(dead_code)]
 pub fn ash_verify_proof(expected: &str, actual: &str) -> bool {
     timing_safe_equal(expected.as_bytes(), actual.as_bytes())
 }

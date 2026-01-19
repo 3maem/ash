@@ -9,7 +9,7 @@ use crate::errors::{AshError, AshErrorCode};
 /// Security mode for ASH verification.
 ///
 /// Different modes provide different levels of security and overhead.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AshMode {
     /// Lightweight integrity check.
@@ -18,17 +18,12 @@ pub enum AshMode {
 
     /// Default recommended mode.
     /// Good balance between security and performance.
+    #[default]
     Balanced,
 
     /// Highest security level.
     /// Field-level integrity, strongest protection.
     Strict,
-}
-
-impl Default for AshMode {
-    fn default() -> Self {
-        AshMode::Balanced
-    }
 }
 
 impl fmt::Display for AshMode {
@@ -114,6 +109,7 @@ impl VerifyInput {
 }
 
 /// Context information returned to client.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContextPublicInfo {
@@ -129,6 +125,7 @@ pub struct ContextPublicInfo {
 }
 
 /// Stored context (server-side).
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoredContext {
@@ -150,6 +147,7 @@ pub struct StoredContext {
     pub consumed_at: Option<u64>,
 }
 
+#[allow(dead_code)]
 impl StoredContext {
     /// Check if context has been consumed.
     pub fn is_consumed(&self) -> bool {

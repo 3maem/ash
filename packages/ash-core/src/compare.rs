@@ -53,6 +53,7 @@ pub fn timing_safe_equal(a: &[u8], b: &[u8]) -> bool {
 ///
 /// assert!(timing_safe_equal(proof1.as_bytes(), proof2.as_bytes()));
 /// ```
+#[allow(dead_code)]
 pub fn ash_timing_safe_compare(a: &str, b: &str) -> bool {
     timing_safe_equal(a.as_bytes(), b.as_bytes())
 }
