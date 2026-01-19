@@ -6,7 +6,7 @@
  * Version: 1.0.0
  * Author: 3meam Co. | شركة عمائم
  * Author URI: https://3meam.com
- * License: MIT
+ * License: Proprietary
  * Text Domain: ash-security
  */
 
