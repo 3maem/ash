@@ -7,6 +7,8 @@ Same inputs MUST produce identical proof across all implementations.
 
 import base64
 import hashlib
+import hmac
+import secrets
 
 from ash.core.types import BuildProofInput
 
@@ -82,9 +84,6 @@ def base64url_decode(input_str: str) -> bytes:
 # =========================================================================
 # ASH v2.1 - Derived Client Secret & Cryptographic Proof
 # =========================================================================
-
-import hmac
-import secrets
 
 ASH_VERSION_PREFIX_V21 = "ASHv2.1"
 
