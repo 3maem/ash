@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import unicodedata
 from typing import Any
-from urllib.parse import parse_qsl, quote, urlencode
+from urllib.parse import parse_qsl, quote
 
 
 def ash_canonicalize_json(input_json: str) -> str:

@@ -4,7 +4,6 @@ Django middleware for ASH verification.
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
@@ -107,6 +106,6 @@ class AshDjangoMiddleware:
             )
 
         # Store metadata in request
-        request.ash_metadata = result.metadata  # type: ignore
+        request.ash_metadata = result.metadata
 
         return self.get_response(request)

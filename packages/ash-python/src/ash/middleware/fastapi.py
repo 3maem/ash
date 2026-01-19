@@ -4,13 +4,9 @@ FastAPI middleware for ASH verification.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
-    from fastapi import Request
-    from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.responses import Response
-
     from ..core import Ash
 
 
@@ -36,7 +32,7 @@ class AshFastAPIMiddleware:
 
     def __init__(
         self,
-        app: "Callable",
+        app: Callable[..., Any],
         ash: "Ash",
         protected_paths: list[str] | None = None,
     ) -> None:
@@ -44,7 +40,12 @@ class AshFastAPIMiddleware:
         self.ash = ash
         self.protected_paths = protected_paths or []
 
-    async def __call__(self, scope: dict, receive: "Callable", send: "Callable") -> None:
+    async def __call__(
+        self,
+        scope: dict[str, Any],
+        receive: Callable[..., Any],
+        send: Callable[..., Any],
+    ) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -114,7 +115,9 @@ class AshFastAPIMiddleware:
         await self.app(scope, receive, send)
 
 
-def ash_fastapi_depends(ash: "Ash", expected_binding: str | None = None):
+def ash_fastapi_depends(
+    ash: "Ash", expected_binding: str | None = None
+) -> Callable[..., Any]:
     """
     FastAPI dependency for ASH verification.
 
@@ -134,9 +137,9 @@ def ash_fastapi_depends(ash: "Ash", expected_binding: str | None = None):
         ... ):
         ...     return {"success": True}
     """
-    from fastapi import Depends, HTTPException, Request
+    from fastapi import HTTPException
 
-    async def verify(request: Request):
+    async def verify(request: Any) -> None:
         context_id = request.headers.get("x-ash-context-id")
         proof = request.headers.get("x-ash-proof")
 

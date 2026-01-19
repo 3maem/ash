@@ -1,17 +1,19 @@
 {
-    "name": "3meam/ash-php",
-    "description": "ASH (Anti-tamper Security Hash) PHP SDK - Request integrity protection",
+    "name": "3maem/ash-protocol",
+    "description": "ASH - Authenticity & Stateless Hardening Protocol for PHP",
     "type": "library",
-    "license": "MIT",
+    "license": "proprietary",
     "version": "1.0.0",
     "authors": [
         {
-            "name": "3meam Co. | شركة عمائم",
-            "email": "dev@3meam.com"
+            "name": "3maem"
         }
     ],
+    "keywords": ["security", "integrity", "verification", "anti-replay", "laravel", "symfony"],
     "require": {
         "php": ">=8.1",
+        "ext-hash": "*",
+        "ext-intl": "*",
         "ext-json": "*",
         "ext-mbstring": "*"
     },
@@ -31,24 +33,14 @@
         }
     },
     "scripts": {
-        "test": "phpunit",
-        "phpstan": "phpstan analyse src --level=8",
-        "cs": "phpcs src --standard=PSR12",
-        "cs-fix": "phpcbf src --standard=PSR12"
+        "test": "phpunit --colors=always",
+        "phpstan": "phpstan analyse src tests --level=8",
+        "cs": "phpcs --standard=PSR12 src tests",
+        "cs-fix": "phpcbf --standard=PSR12 src tests"
     },
-    "keywords": [
-        "ash",
-        "security",
-        "integrity",
-        "anti-tamper",
-        "replay-prevention",
-        "cryptography",
-        "middleware",
-        "laravel",
-        "codeigniter",
-        "wordpress",
-        "drupal"
-    ],
-    "minimum-stability": "stable",
-    "prefer-stable": true
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable"
 }

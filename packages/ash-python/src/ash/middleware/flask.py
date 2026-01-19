@@ -4,10 +4,10 @@ Flask middleware for ASH verification.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
-    from flask import Flask
+    from flask import Flask, Response
 
     from ..core import Ash
 
@@ -42,7 +42,7 @@ class AshFlaskExtension:
         self.protected_paths = protected_paths or []
         app.before_request(self._verify_request)
 
-    def _verify_request(self):
+    def _verify_request(self) -> "Response | tuple[Response, int] | None":
         """Verify request before handling."""
         from flask import g, jsonify, request
 
@@ -98,7 +98,7 @@ class AshFlaskExtension:
 def ash_flask_before_request(
     ash: "Ash",
     protected_paths: list[str],
-) -> Callable[[], None]:
+) -> Callable[[], Any]:
     """
     Create a Flask before_request handler for ASH verification.
 

@@ -1,66 +1,62 @@
 """
-ASH (Anti-tamper Security Hash) Python SDK
+ASH - Authenticity & Stateless Hardening Protocol
 
-Request integrity and anti-replay protection for Python applications.
+A cryptographic protocol for tamper-proof, replay-resistant API requests.
 
 Example:
-    >>> from ash import Ash, MemoryStore, AshMode
-    >>>
-    >>> store = MemoryStore()
-    >>> ash = Ash(store)
-    >>>
-    >>> # Issue a context
-    >>> ctx = ash.ash_issue_context("POST /api/update", ttl_ms=30000)
-    >>> print(ctx.id)
-    >>>
-    >>> # Build proof (client-side)
-    >>> proof = ash.ash_build_proof(
-    ...     AshMode.BALANCED,
-    ...     "POST /api/update",
-    ...     ctx.id,
-    ...     None,
-    ...     '{"name":"John"}'
-    ... )
+    from ash import context, stores, middleware
+
+    store = stores.Memory()
+
+    # Issue context
+    ctx = context.create(store, binding="POST /api/update", ttl_ms=30000)
+
+    # Flask middleware
+    @app.route("/api/update", methods=["POST"])
+    @middleware.flask(store, expected_binding="POST /api/update")
+    def update():
+        return {"status": "ok"}
 """
 
-from .core import (
-    Ash,
-    AshMode,
-    AshContext,
-    AshVerifyResult,
-    AshErrorCode,
+from ash.core import (
+    canonicalize_json,
+    canonicalize_url_encoded,
+    normalize_binding,
+    build_proof,
+    timing_safe_compare,
+    AshError,
+    InvalidContextError,
+    ContextExpiredError,
+    ReplayDetectedError,
+    IntegrityFailedError,
+    EndpointMismatchError,
+    CanonicalizationError,
+    UnsupportedContentTypeError,
 )
-from .canonicalize import (
-    ash_canonicalize_json,
-    ash_canonicalize_urlencoded,
-)
-from .proof import ash_build_proof, ash_verify_proof
-from .compare import ash_timing_safe_equal
-from .binding import ash_normalize_binding
-from .stores import ContextStore, MemoryStore, RedisStore
+from ash.server import context, stores, middleware, verify
 
 __version__ = "1.0.0"
-__ash_version__ = "ASHv1"
+__author__ = "3maem"
 
 __all__ = [
-    # Core
-    "Ash",
-    "AshMode",
-    "AshContext",
-    "AshVerifyResult",
-    "AshErrorCode",
-    # Functions
-    "ash_canonicalize_json",
-    "ash_canonicalize_urlencoded",
-    "ash_build_proof",
-    "ash_verify_proof",
-    "ash_timing_safe_equal",
-    "ash_normalize_binding",
-    # Stores
-    "ContextStore",
-    "MemoryStore",
-    "RedisStore",
-    # Version
-    "__version__",
-    "__ash_version__",
+    # Core functions
+    "canonicalize_json",
+    "canonicalize_url_encoded",
+    "normalize_binding",
+    "build_proof",
+    "timing_safe_compare",
+    # Errors
+    "AshError",
+    "InvalidContextError",
+    "ContextExpiredError",
+    "ReplayDetectedError",
+    "IntegrityFailedError",
+    "EndpointMismatchError",
+    "CanonicalizationError",
+    "UnsupportedContentTypeError",
+    # Server modules
+    "context",
+    "stores",
+    "middleware",
+    "verify",
 ]

@@ -1,24 +1,10 @@
-// Package ash provides request integrity and anti-replay protection.
+// Package ash provides the ASH Protocol SDK for Go.
 //
-// ASH (Anti-tamper Security Hash) protects HTTP requests from tampering
-// and replay attacks through cryptographic proofs and one-time contexts.
+// ASH (Authenticated Secure Hash) is a deterministic integrity verification
+// protocol for web requests. This package provides canonicalization, proof
+// generation, and secure comparison utilities.
 //
-// Example:
-//
-//	store := ash.NewMemoryStore()
-//	a := ash.New(store, ash.ModeBalanced)
-//
-//	// Issue a context
-//	ctx, err := a.AshIssueContext("POST /api/update", 30000, nil)
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//
-//	// Verify a request
-//	result := a.AshVerify(contextID, proof, "POST /api/update", payload, "application/json")
-//	if !result.Valid {
-//	    log.Printf("Verification failed: %s", result.ErrorMessage)
-//	}
+// Developed by 3maem Co. | شركة عمائم
 package ash
 
 import (
@@ -26,272 +12,543 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"sort"
+	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"golang.org/x/text/unicode/norm"
 )
 
-const (
-	// AshVersion is the protocol version.
-	AshVersion = "ASHv1"
+// Version is the ASH protocol version.
+const Version = "1.0.0"
 
-	// LibraryVersion is the library version.
-	LibraryVersion = "1.0.0"
-)
+// ASH protocol version prefix used in proof generation.
+const ashVersionPrefix = "ASHv1"
 
-// Mode represents ASH security modes.
-type Mode string
+// AshMode represents security modes for ASH protocol.
+type AshMode string
 
 const (
-	// ModeMinimal provides basic integrity protection.
-	ModeMinimal Mode = "minimal"
-
-	// ModeBalanced provides recommended protection for most operations.
-	ModeBalanced Mode = "balanced"
-
-	// ModeStrict provides maximum security with server nonce.
-	ModeStrict Mode = "strict"
+	// ModeMinimal is the minimal security mode.
+	ModeMinimal AshMode = "minimal"
+	// ModeBalanced is the balanced security mode.
+	ModeBalanced AshMode = "balanced"
+	// ModeStrict is the strict security mode.
+	ModeStrict AshMode = "strict"
 )
 
-// ErrorCode represents ASH error codes.
-type ErrorCode string
+// AshErrorCode represents error codes returned by ASH verification.
+type AshErrorCode string
 
 const (
-	ErrInvalidContext       ErrorCode = "INVALID_CONTEXT"
-	ErrContextExpired       ErrorCode = "CONTEXT_EXPIRED"
-	ErrReplayDetected       ErrorCode = "REPLAY_DETECTED"
-	ErrIntegrityFailed      ErrorCode = "INTEGRITY_FAILED"
-	ErrEndpointMismatch     ErrorCode = "ENDPOINT_MISMATCH"
-	ErrModeViolation        ErrorCode = "MODE_VIOLATION"
-	ErrUnsupportedContent   ErrorCode = "UNSUPPORTED_CONTENT_TYPE"
-	ErrMalformedRequest     ErrorCode = "MALFORMED_REQUEST"
-	ErrCanonicalizeFailed   ErrorCode = "CANONICALIZATION_FAILED"
+	// ErrInvalidContext indicates an invalid context.
+	ErrInvalidContext AshErrorCode = "ASH_INVALID_CONTEXT"
+	// ErrContextExpired indicates an expired context.
+	ErrContextExpired AshErrorCode = "ASH_CONTEXT_EXPIRED"
+	// ErrReplayDetected indicates a replay attack detected.
+	ErrReplayDetected AshErrorCode = "ASH_REPLAY_DETECTED"
+	// ErrIntegrityFailed indicates integrity verification failed.
+	ErrIntegrityFailed AshErrorCode = "ASH_INTEGRITY_FAILED"
+	// ErrEndpointMismatch indicates endpoint mismatch.
+	ErrEndpointMismatch AshErrorCode = "ASH_ENDPOINT_MISMATCH"
+	// ErrModeViolation indicates mode violation.
+	ErrModeViolation AshErrorCode = "ASH_MODE_VIOLATION"
+	// ErrUnsupportedContentType indicates unsupported content type.
+	ErrUnsupportedContentType AshErrorCode = "ASH_UNSUPPORTED_CONTENT_TYPE"
+	// ErrMalformedRequest indicates a malformed request.
+	ErrMalformedRequest AshErrorCode = "ASH_MALFORMED_REQUEST"
+	// ErrCanonicalizationFailed indicates canonicalization failed.
+	ErrCanonicalizationFailed AshErrorCode = "ASH_CANONICALIZATION_FAILED"
 )
 
-// Context represents an ASH context.
-type Context struct {
-	ID        string                 `json:"id"`
-	Binding   string                 `json:"binding"`
-	ExpiresAt int64                  `json:"expires_at"`
-	Mode      Mode                   `json:"mode"`
-	Used      bool                   `json:"used"`
-	Nonce     string                 `json:"nonce,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+// AshError represents an error in the ASH protocol.
+type AshError struct {
+	Code    AshErrorCode
+	Message string
 }
 
-// IsExpired checks if the context has expired.
-func (c *Context) IsExpired() bool {
-	return time.Now().UnixMilli() > c.ExpiresAt
+func (e *AshError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
 
-// VerifyResult represents the result of verification.
-type VerifyResult struct {
-	Valid        bool
-	ErrorCode    ErrorCode
-	ErrorMessage string
-	Metadata     map[string]interface{}
+// NewAshError creates a new AshError.
+func NewAshError(code AshErrorCode, message string) *AshError {
+	return &AshError{Code: code, Message: message}
 }
 
-// Success creates a successful result.
-func Success(metadata map[string]interface{}) VerifyResult {
-	return VerifyResult{Valid: true, Metadata: metadata}
+// BuildProofInput contains input for building a proof.
+type BuildProofInput struct {
+	// Mode is the ASH mode (currently only 'balanced' in v1).
+	Mode AshMode
+	// Binding is the canonical binding: "METHOD /path".
+	Binding string
+	// ContextID is the server-issued context ID.
+	ContextID string
+	// Nonce is the optional server-issued nonce.
+	Nonce string
+	// CanonicalPayload is the canonicalized payload string.
+	CanonicalPayload string
 }
 
-// Failure creates a failed result.
-func Failure(code ErrorCode, message string) VerifyResult {
-	return VerifyResult{
-		Valid:        false,
-		ErrorCode:    code,
-		ErrorMessage: message,
+// StoredContext represents context as stored on server.
+type StoredContext struct {
+	// ContextID is the unique context identifier (CSPRNG).
+	ContextID string
+	// Binding is the canonical binding: "METHOD /path".
+	Binding string
+	// Mode is the security mode.
+	Mode AshMode
+	// IssuedAt is the timestamp when context was issued (ms epoch).
+	IssuedAt int64
+	// ExpiresAt is the timestamp when context expires (ms epoch).
+	ExpiresAt int64
+	// Nonce is the optional nonce for server-assisted mode.
+	Nonce string
+	// ConsumedAt is the timestamp when context was consumed (0 if not consumed).
+	ConsumedAt int64
+}
+
+// ContextPublicInfo represents public context info returned to client.
+type ContextPublicInfo struct {
+	// ContextID is the opaque context ID.
+	ContextID string `json:"contextId"`
+	// ExpiresAt is the expiration timestamp (ms epoch).
+	ExpiresAt int64 `json:"expiresAt"`
+	// Mode is the security mode.
+	Mode AshMode `json:"mode"`
+	// Nonce is the optional nonce (if server-assisted mode).
+	Nonce string `json:"nonce,omitempty"`
+}
+
+// HttpMethod represents HTTP methods.
+type HttpMethod string
+
+const (
+	MethodGET    HttpMethod = "GET"
+	MethodPOST   HttpMethod = "POST"
+	MethodPUT    HttpMethod = "PUT"
+	MethodPATCH  HttpMethod = "PATCH"
+	MethodDELETE HttpMethod = "DELETE"
+)
+
+// SupportedContentType represents supported content types.
+type SupportedContentType string
+
+const (
+	ContentTypeJSON       SupportedContentType = "application/json"
+	ContentTypeURLEncoded SupportedContentType = "application/x-www-form-urlencoded"
+)
+
+// BuildProof builds a deterministic proof from the given inputs.
+//
+// Proof structure (from ASH-Spec-v1.0):
+//
+//	proof = SHA256(
+//	  "ASHv1" + "\n" +
+//	  mode + "\n" +
+//	  binding + "\n" +
+//	  contextId + "\n" +
+//	  (nonce? + "\n" : "") +
+//	  canonicalPayload
+//	)
+//
+// Output: Base64URL encoded (no padding)
+func BuildProof(input BuildProofInput) string {
+	// Build the proof input string
+	var sb strings.Builder
+	sb.WriteString(ashVersionPrefix)
+	sb.WriteByte('\n')
+	sb.WriteString(string(input.Mode))
+	sb.WriteByte('\n')
+	sb.WriteString(input.Binding)
+	sb.WriteByte('\n')
+	sb.WriteString(input.ContextID)
+	sb.WriteByte('\n')
+
+	// Add nonce if present (server-assisted mode)
+	if input.Nonce != "" {
+		sb.WriteString(input.Nonce)
+		sb.WriteByte('\n')
 	}
+
+	// Add canonical payload
+	sb.WriteString(input.CanonicalPayload)
+
+	// Compute SHA-256 hash
+	hash := sha256.Sum256([]byte(sb.String()))
+
+	// Encode as Base64URL (no padding)
+	return Base64URLEncode(hash[:])
 }
 
-// Ash is the main ASH instance.
-type Ash struct {
-	store       ContextStore
-	defaultMode Mode
+// Base64URLEncode encodes data as Base64URL (no padding).
+// RFC 4648 Section 5: Base 64 Encoding with URL and Filename Safe Alphabet
+func Base64URLEncode(data []byte) string {
+	return base64.RawURLEncoding.EncodeToString(data)
 }
 
-// New creates a new ASH instance.
-func New(store ContextStore, defaultMode Mode) *Ash {
-	return &Ash{
-		store:       store,
-		defaultMode: defaultMode,
-	}
+// Base64URLDecode decodes a Base64URL string to bytes.
+// Handles both padded and unpadded input.
+func Base64URLDecode(input string) ([]byte, error) {
+	// Remove any padding characters
+	input = strings.TrimRight(input, "=")
+	return base64.RawURLEncoding.DecodeString(input)
 }
 
-// AshIssueContext issues a new context for a request.
-func (a *Ash) AshIssueContext(binding string, ttlMs int64, metadata map[string]interface{}) (*Context, error) {
-	return a.AshIssueContextWithMode(binding, ttlMs, a.defaultMode, metadata)
-}
-
-// AshIssueContextWithMode issues a new context with a specific mode.
-func (a *Ash) AshIssueContextWithMode(binding string, ttlMs int64, mode Mode, metadata map[string]interface{}) (*Context, error) {
-	return a.store.Create(binding, ttlMs, mode, metadata)
-}
-
-// AshVerify verifies a request against its context and proof.
-func (a *Ash) AshVerify(contextID, proof, binding, payload, contentType string) VerifyResult {
-	// Get context
-	ctx, err := a.store.Get(contextID)
-	if err != nil || ctx == nil {
-		return Failure(ErrInvalidContext, "Invalid or expired context")
-	}
-
-	// Check if already used
-	if ctx.Used {
-		return Failure(ErrReplayDetected, "Context already used (replay detected)")
-	}
-
-	// Check binding
-	if ctx.Binding != binding {
-		return Failure(ErrEndpointMismatch,
-			fmt.Sprintf("Binding mismatch: expected %s, got %s", ctx.Binding, binding))
-	}
-
-	// Canonicalize payload
-	canonicalPayload, err := a.AshCanonicalize(payload, contentType)
+// CanonicalizeJSON canonicalizes a JSON value to a deterministic string.
+//
+// Rules (from ASH-Spec-v1.0):
+//   - JSON minified (no whitespace)
+//   - Object keys sorted lexicographically (ascending)
+//   - Arrays preserve order
+//   - Unicode normalization: NFC
+//   - Numbers: no scientific notation, remove trailing zeros, -0 becomes 0
+//   - Unsupported values REJECT: NaN, Infinity
+func CanonicalizeJSON(value interface{}) (string, error) {
+	canonicalized, err := canonicalizeValue(value)
 	if err != nil {
-		return Failure(ErrCanonicalizeFailed, "Failed to canonicalize payload: "+err.Error())
+		return "", err
+	}
+	return buildCanonicalJSON(canonicalized)
+}
+
+// canonicalizeValue recursively canonicalizes a value.
+func canonicalizeValue(value interface{}) (interface{}, error) {
+	if value == nil {
+		return nil, nil
 	}
 
-	// Build expected proof
-	expectedProof := AshBuildProof(ctx.Mode, ctx.Binding, contextID, ctx.Nonce, canonicalPayload)
+	switch v := value.(type) {
+	case string:
+		// Apply NFC normalization to strings
+		return norm.NFC.String(v), nil
 
-	// Verify proof
-	if !AshVerifyProof(expectedProof, proof) {
-		return Failure(ErrIntegrityFailed, "Proof verification failed")
+	case bool:
+		return v, nil
+
+	case float64:
+		return canonicalizeNumber(v)
+
+	case float32:
+		return canonicalizeNumber(float64(v))
+
+	case int:
+		return float64(v), nil
+
+	case int8:
+		return float64(v), nil
+
+	case int16:
+		return float64(v), nil
+
+	case int32:
+		return float64(v), nil
+
+	case int64:
+		return float64(v), nil
+
+	case uint:
+		return float64(v), nil
+
+	case uint8:
+		return float64(v), nil
+
+	case uint16:
+		return float64(v), nil
+
+	case uint32:
+		return float64(v), nil
+
+	case uint64:
+		return float64(v), nil
+
+	case json.Number:
+		f, err := v.Float64()
+		if err != nil {
+			return nil, NewAshError(ErrCanonicalizationFailed, "invalid json.Number")
+		}
+		return canonicalizeNumber(f)
+
+	case []interface{}:
+		result := make([]interface{}, len(v))
+		for i, item := range v {
+			canonicalized, err := canonicalizeValue(item)
+			if err != nil {
+				return nil, err
+			}
+			result[i] = canonicalized
+		}
+		return result, nil
+
+	case map[string]interface{}:
+		result := make(map[string]interface{})
+		for key, val := range v {
+			// Normalize key using NFC
+			normalizedKey := norm.NFC.String(key)
+			canonicalized, err := canonicalizeValue(val)
+			if err != nil {
+				return nil, err
+			}
+			result[normalizedKey] = canonicalized
+		}
+		return result, nil
+
+	default:
+		return nil, NewAshError(ErrCanonicalizationFailed, fmt.Sprintf("unsupported type: %T", value))
+	}
+}
+
+// canonicalizeNumber canonicalizes a number according to ASH spec.
+func canonicalizeNumber(num float64) (float64, error) {
+	// Check for NaN
+	if num != num { // NaN is the only value that's not equal to itself
+		return 0, NewAshError(ErrCanonicalizationFailed, "NaN values are not allowed")
 	}
 
-	// Consume context
-	if err := a.store.Consume(contextID); err != nil {
-		return Failure(ErrReplayDetected, "Context already used (replay detected)")
+	// Check for Infinity
+	if num > 1e308 || num < -1e308 {
+		return 0, NewAshError(ErrCanonicalizationFailed, "Infinity values are not allowed")
 	}
 
-	return Success(ctx.Metadata)
-}
-
-// AshCanonicalize canonicalizes a payload based on content type.
-func (a *Ash) AshCanonicalize(payload, contentType string) (string, error) {
-	if strings.Contains(contentType, "application/json") {
-		return AshCanonicalizeJSON(payload)
+	// Convert -0 to 0
+	if num == 0 {
+		return 0, nil
 	}
-	if strings.Contains(contentType, "application/x-www-form-urlencoded") {
-		return AshCanonicalizeURLEncoded(payload)
+
+	return num, nil
+}
+
+// buildCanonicalJSON builds canonical JSON string with sorted keys.
+func buildCanonicalJSON(value interface{}) (string, error) {
+	if value == nil {
+		return "null", nil
 	}
-	return payload, nil
+
+	switch v := value.(type) {
+	case string:
+		bytes, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+		return string(bytes), nil
+
+	case bool:
+		if v {
+			return "true", nil
+		}
+		return "false", nil
+
+	case float64:
+		return formatNumber(v), nil
+
+	case []interface{}:
+		var sb strings.Builder
+		sb.WriteByte('[')
+		for i, item := range v {
+			if i > 0 {
+				sb.WriteByte(',')
+			}
+			itemStr, err := buildCanonicalJSON(item)
+			if err != nil {
+				return "", err
+			}
+			sb.WriteString(itemStr)
+		}
+		sb.WriteByte(']')
+		return sb.String(), nil
+
+	case map[string]interface{}:
+		// Get keys and sort them
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+
+		var sb strings.Builder
+		sb.WriteByte('{')
+		for i, key := range keys {
+			if i > 0 {
+				sb.WriteByte(',')
+			}
+			keyBytes, err := json.Marshal(key)
+			if err != nil {
+				return "", err
+			}
+			sb.Write(keyBytes)
+			sb.WriteByte(':')
+
+			valStr, err := buildCanonicalJSON(v[key])
+			if err != nil {
+				return "", err
+			}
+			sb.WriteString(valStr)
+		}
+		sb.WriteByte('}')
+		return sb.String(), nil
+
+	default:
+		return "", NewAshError(ErrCanonicalizationFailed, fmt.Sprintf("cannot serialize type: %T", value))
+	}
 }
 
-// AshNormalizeBinding normalizes a binding string.
-func (a *Ash) AshNormalizeBinding(method, path string) string {
-	return AshNormalizeBinding(method, path)
+// formatNumber formats a number without scientific notation.
+func formatNumber(num float64) string {
+	// Handle special case of 0
+	if num == 0 {
+		return "0"
+	}
+
+	// Check if it's an integer
+	if num == float64(int64(num)) {
+		return strconv.FormatInt(int64(num), 10)
+	}
+
+	// Format with enough precision, then clean up
+	str := strconv.FormatFloat(num, 'f', -1, 64)
+	return str
 }
 
-// AshVersion returns the protocol version.
-func (a *Ash) AshVersion() string {
-	return AshVersion
-}
-
-// AshLibraryVersion returns the library version.
-func (a *Ash) AshLibraryVersion() string {
-	return LibraryVersion
-}
-
-// Store returns the context store.
-func (a *Ash) Store() ContextStore {
-	return a.store
-}
-
-// AshCanonicalizeJSON canonicalizes JSON to deterministic form.
-func AshCanonicalizeJSON(input string) (string, error) {
-	var data interface{}
-	if err := json.Unmarshal([]byte(input), &data); err != nil {
+// CanonicalizeURLEncoded canonicalizes URL-encoded form data.
+//
+// Rules (from ASH-Spec-v1.0):
+//   - Parse into key-value pairs
+//   - Percent-decode consistently
+//   - Sort keys lexicographically
+//   - For duplicate keys: preserve value order per key
+//   - Output format: k1=v1&k1=v2&k2=v3
+//   - Unicode NFC applies after decoding
+func CanonicalizeURLEncoded(input string) (string, error) {
+	pairs, err := parseURLEncoded(input)
+	if err != nil {
 		return "", err
 	}
 
-	normalized := normalizeValue(data)
-	result, err := json.Marshal(normalized)
-	if err != nil {
-		return "", err
+	// Normalize all keys and values with NFC
+	for i := range pairs {
+		pairs[i].Key = norm.NFC.String(pairs[i].Key)
+		pairs[i].Value = norm.NFC.String(pairs[i].Value)
 	}
 
-	return string(result), nil
+	// Sort by key (stable sort preserves value order for same keys)
+	sort.SliceStable(pairs, func(i, j int) bool {
+		return pairs[i].Key < pairs[j].Key
+	})
+
+	// Encode and join
+	var parts []string
+	for _, pair := range pairs {
+		parts = append(parts, url.QueryEscape(pair.Key)+"="+url.QueryEscape(pair.Value))
+	}
+
+	return strings.Join(parts, "&"), nil
 }
 
-// AshCanonicalizeURLEncoded canonicalizes URL-encoded data.
-func AshCanonicalizeURLEncoded(input string) (string, error) {
+// keyValuePair represents a key-value pair for URL encoding.
+type keyValuePair struct {
+	Key   string
+	Value string
+}
+
+// parseURLEncoded parses URL-encoded string into key-value pairs.
+func parseURLEncoded(input string) ([]keyValuePair, error) {
 	if input == "" {
-		return "", nil
+		return nil, nil
 	}
 
-	values, err := url.ParseQuery(input)
-	if err != nil {
-		return "", err
-	}
+	var pairs []keyValuePair
 
-	// Get sorted keys
-	keys := make([]string, 0, len(values))
-	for k := range values {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+	for _, part := range strings.Split(input, "&") {
+		// Skip empty parts
+		if part == "" {
+			continue
+		}
 
-	// Build result
-	var pairs []string
-	for _, k := range keys {
-		for _, v := range values[k] {
-			// NFC normalize
-			k = norm.NFC.String(k)
-			v = norm.NFC.String(v)
-			pairs = append(pairs, url.QueryEscape(k)+"="+url.QueryEscape(v))
+		// Replace + with space before decoding
+		part = strings.ReplaceAll(part, "+", " ")
+
+		eqIndex := strings.Index(part, "=")
+		if eqIndex == -1 {
+			// Key with no value
+			key, err := url.QueryUnescape(part)
+			if err != nil {
+				return nil, NewAshError(ErrCanonicalizationFailed, "invalid URL encoding")
+			}
+			if key != "" {
+				pairs = append(pairs, keyValuePair{Key: key, Value: ""})
+			}
+		} else {
+			key, err := url.QueryUnescape(part[:eqIndex])
+			if err != nil {
+				return nil, NewAshError(ErrCanonicalizationFailed, "invalid URL encoding")
+			}
+			value, err := url.QueryUnescape(part[eqIndex+1:])
+			if err != nil {
+				return nil, NewAshError(ErrCanonicalizationFailed, "invalid URL encoding")
+			}
+			if key != "" {
+				pairs = append(pairs, keyValuePair{Key: key, Value: value})
+			}
 		}
 	}
 
-	return strings.Join(pairs, "&"), nil
+	return pairs, nil
 }
 
-// AshBuildProof builds a cryptographic proof.
-func AshBuildProof(mode Mode, binding, contextID, nonce, canonicalPayload string) string {
-	var input string
-	if nonce != "" {
-		input = fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s",
-			AshVersion, mode, binding, contextID, nonce, canonicalPayload)
-	} else {
-		input = fmt.Sprintf("%s\n%s\n%s\n%s\n%s",
-			AshVersion, mode, binding, contextID, canonicalPayload)
+// CanonicalizeURLEncodedFromMap canonicalizes URL-encoded data from a map.
+func CanonicalizeURLEncodedFromMap(data map[string][]string) string {
+	var pairs []keyValuePair
+
+	for key, values := range data {
+		for _, value := range values {
+			pairs = append(pairs, keyValuePair{Key: key, Value: value})
+		}
 	}
 
-	hash := sha256.Sum256([]byte(input))
-	return base64.RawURLEncoding.EncodeToString(hash[:])
-}
-
-// AshVerifyProof verifies two proofs using constant-time comparison.
-func AshVerifyProof(expected, actual string) bool {
-	return AshTimingSafeEqual(expected, actual)
-}
-
-// AshTimingSafeEqual performs constant-time string comparison.
-func AshTimingSafeEqual(a, b string) bool {
-	if len(a) != len(b) {
-		return false
+	// Normalize all keys and values with NFC
+	for i := range pairs {
+		pairs[i].Key = norm.NFC.String(pairs[i].Key)
+		pairs[i].Value = norm.NFC.String(pairs[i].Value)
 	}
-	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+
+	// Sort by key (stable sort preserves value order for same keys)
+	sort.SliceStable(pairs, func(i, j int) bool {
+		return pairs[i].Key < pairs[j].Key
+	})
+
+	// Encode and join
+	var parts []string
+	for _, pair := range pairs {
+		parts = append(parts, url.QueryEscape(pair.Key)+"="+url.QueryEscape(pair.Value))
+	}
+
+	return strings.Join(parts, "&")
 }
 
-// AshNormalizeBinding normalizes a binding string.
-func AshNormalizeBinding(method, path string) string {
+// NormalizeBinding normalizes a binding string.
+//
+// Rules (from ASH-Spec-v1.0):
+//   - Format: "METHOD /path"
+//   - Method uppercased
+//   - Path must start with /
+//   - Path excludes query string
+//   - Collapse duplicate slashes
+func NormalizeBinding(method, path string) string {
 	// Uppercase method
-	method = strings.ToUpper(method)
+	normalizedMethod := strings.ToUpper(method)
+
+	// Remove fragment (#...) first
+	if fragIndex := strings.Index(path, "#"); fragIndex != -1 {
+		path = path[:fragIndex]
+	}
 
 	// Remove query string
-	if idx := strings.Index(path, "?"); idx != -1 {
-		path = path[:idx]
+	if queryIndex := strings.Index(path, "?"); queryIndex != -1 {
+		path = path[:queryIndex]
 	}
 
 	// Ensure path starts with /
@@ -300,50 +557,119 @@ func AshNormalizeBinding(method, path string) string {
 	}
 
 	// Collapse duplicate slashes
-	re := regexp.MustCompile(`/+`)
-	path = re.ReplaceAllString(path, "/")
+	var sb strings.Builder
+	prevSlash := false
+	for _, r := range path {
+		if r == '/' {
+			if !prevSlash {
+				sb.WriteRune(r)
+			}
+			prevSlash = true
+		} else {
+			sb.WriteRune(r)
+			prevSlash = false
+		}
+	}
+	path = sb.String()
 
 	// Remove trailing slash (except for root)
-	if path != "/" {
-		path = strings.TrimSuffix(path, "/")
+	if len(path) > 1 && strings.HasSuffix(path, "/") {
+		path = path[:len(path)-1]
 	}
 
-	return method + " " + path
+	return normalizedMethod + " " + path
 }
 
-// normalizeValue recursively normalizes a JSON value.
-func normalizeValue(v interface{}) interface{} {
-	switch val := v.(type) {
-	case map[string]interface{}:
-		return normalizeObject(val)
-	case []interface{}:
-		result := make([]interface{}, len(val))
-		for i, item := range val {
-			result[i] = normalizeValue(item)
-		}
-		return result
-	case string:
-		return norm.NFC.String(val)
+// TimingSafeCompare compares two strings in constant time.
+//
+// This prevents timing attacks where an attacker could determine
+// partial matches based on comparison duration.
+func TimingSafeCompare(a, b string) bool {
+	aBytes := []byte(a)
+	bBytes := []byte(b)
+
+	// If lengths differ, we still need constant-time behavior
+	if len(aBytes) != len(bBytes) {
+		// Compare aBytes with itself to maintain constant time
+		subtle.ConstantTimeCompare(aBytes, aBytes)
+		return false
+	}
+
+	return subtle.ConstantTimeCompare(aBytes, bBytes) == 1
+}
+
+// TimingSafeCompareBytes compares two byte slices in constant time.
+func TimingSafeCompareBytes(a, b []byte) bool {
+	if len(a) != len(b) {
+		// Compare a with itself to maintain constant time
+		subtle.ConstantTimeCompare(a, a)
+		return false
+	}
+
+	return subtle.ConstantTimeCompare(a, b) == 1
+}
+
+// IsValidMode checks if a mode is valid.
+func IsValidMode(mode AshMode) bool {
+	switch mode {
+	case ModeMinimal, ModeBalanced, ModeStrict:
+		return true
 	default:
-		return val
+		return false
 	}
 }
 
-// normalizeObject normalizes an object with sorted keys.
-func normalizeObject(obj map[string]interface{}) map[string]interface{} {
-	// Get sorted keys
-	keys := make([]string, 0, len(obj))
-	for k := range obj {
-		keys = append(keys, k)
+// IsValidHTTPMethod checks if an HTTP method is valid.
+func IsValidHTTPMethod(method HttpMethod) bool {
+	switch method {
+	case MethodGET, MethodPOST, MethodPUT, MethodPATCH, MethodDELETE:
+		return true
+	default:
+		return false
 	}
-	sort.Strings(keys)
+}
 
-	// Build ordered map (Go maps maintain insertion order in JSON encoding)
-	result := make(map[string]interface{})
-	for _, k := range keys {
-		normalizedKey := norm.NFC.String(k)
-		result[normalizedKey] = normalizeValue(obj[k])
+// ParseJSON parses a JSON string and canonicalizes it.
+func ParseJSON(jsonStr string) (string, error) {
+	var data interface{}
+	decoder := json.NewDecoder(strings.NewReader(jsonStr))
+	decoder.UseNumber()
+	if err := decoder.Decode(&data); err != nil {
+		return "", NewAshError(ErrCanonicalizationFailed, "invalid JSON: "+err.Error())
 	}
+	return CanonicalizeJSON(data)
+}
 
-	return result
+// Common errors
+var (
+	// ErrNilInput is returned when nil input is provided.
+	ErrNilInput = errors.New("nil input")
+	// ErrEmptyContextID is returned when context ID is empty.
+	ErrEmptyContextID = errors.New("empty context ID")
+	// ErrEmptyBinding is returned when binding is empty.
+	ErrEmptyBinding = errors.New("empty binding")
+)
+
+// ValidateProofInput validates the proof input.
+func ValidateProofInput(input BuildProofInput) error {
+	if !IsValidMode(input.Mode) {
+		return NewAshError(ErrModeViolation, "invalid mode")
+	}
+	if input.ContextID == "" {
+		return ErrEmptyContextID
+	}
+	if input.Binding == "" {
+		return ErrEmptyBinding
+	}
+	return nil
+}
+
+// IsASCII checks if a string contains only ASCII characters.
+func IsASCII(s string) bool {
+	for _, r := range s {
+		if r > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }

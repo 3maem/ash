@@ -4,277 +4,116 @@ declare(strict_types=1);
 
 namespace Ash;
 
-use Ash\Canonicalize\JsonCanonicalizer;
-use Ash\Canonicalize\UrlencodedCanonicalizer;
-use Ash\Proof\ProofBuilder;
-use Ash\Store\ContextStoreInterface;
+use Ash\Core\AshMode;
+use Ash\Core\BuildProofInput;
+use Ash\Core\Canonicalize;
+use Ash\Core\Compare;
+use Ash\Core\Proof;
 
 /**
- * ASH PHP SDK
+ * ASH - Authenticity & Stateless Hardening Protocol.
  *
- * Request integrity and anti-replay protection for PHP applications.
+ * A cryptographic protocol for tamper-proof, replay-resistant API requests.
  *
- * @package Ash
+ * Example:
+ *     use Ash\Ash;
+ *     use Ash\Core\AshMode;
+ *     use Ash\Core\BuildProofInput;
+ *
+ *     // Canonicalize JSON payload
+ *     $canonical = Ash::canonicalizeJson(['key' => 'value']);
+ *
+ *     // Build proof
+ *     $input = new BuildProofInput(
+ *         mode: AshMode::Balanced,
+ *         binding: 'POST /api/update',
+ *         contextId: 'ctx_abc123',
+ *         canonicalPayload: $canonical
+ *     );
+ *     $proof = Ash::buildProof($input);
  */
 final class Ash
 {
-    private const VERSION = 'ASHv1';
-    private const LIBRARY_VERSION = '1.0.0';
-
-    private ContextStoreInterface $store;
-    private AshMode $defaultMode;
+    public const VERSION = '1.0.0';
 
     /**
-     * Create a new ASH instance.
+     * Canonicalize a JSON value to a deterministic string.
      *
-     * @param ContextStoreInterface $store Context store implementation
-     * @param AshMode $defaultMode Default security mode
-     */
-    public function __construct(
-        ContextStoreInterface $store,
-        AshMode $defaultMode = AshMode::Balanced
-    ) {
-        $this->store = $store;
-        $this->defaultMode = $defaultMode;
-    }
-
-    /**
-     * Issue a new context for a request.
-     *
-     * @param string $binding Endpoint binding (e.g., "POST /api/update")
-     * @param int $ttlMs Time-to-live in milliseconds
-     * @param AshMode|null $mode Security mode (uses default if null)
-     * @param array<string, mixed> $metadata Optional metadata
-     * @return AshContext The created context
-     */
-    public function ashIssueContext(
-        string $binding,
-        int $ttlMs,
-        ?AshMode $mode = null,
-        array $metadata = []
-    ): AshContext {
-        return $this->store->create(
-            $binding,
-            $ttlMs,
-            $mode ?? $this->defaultMode,
-            $metadata
-        );
-    }
-
-    /**
-     * Verify a request against its context and proof.
-     *
-     * @param string $contextId Context ID from request header
-     * @param string $proof Proof from request header
-     * @param string $binding Actual request binding
-     * @param string $payload Request payload (raw body)
-     * @param string $contentType Content-Type header
-     * @return AshVerifyResult Verification result
-     */
-    public function ashVerify(
-        string $contextId,
-        string $proof,
-        string $binding,
-        string $payload,
-        string $contentType
-    ): AshVerifyResult {
-        // Get context
-        $context = $this->store->get($contextId);
-
-        if ($context === null) {
-            return AshVerifyResult::failure(
-                AshErrorCode::InvalidContext,
-                'Invalid or expired context'
-            );
-        }
-
-        // Check if already used
-        if ($context->used) {
-            return AshVerifyResult::failure(
-                AshErrorCode::ReplayDetected,
-                'Context already used (replay detected)'
-            );
-        }
-
-        // Check binding
-        if ($context->binding !== $binding) {
-            return AshVerifyResult::failure(
-                AshErrorCode::EndpointMismatch,
-                "Binding mismatch: expected {$context->binding}, got {$binding}"
-            );
-        }
-
-        // Canonicalize payload
-        try {
-            $canonicalPayload = $this->ashCanonicalize($payload, $contentType);
-        } catch (\Exception $e) {
-            return AshVerifyResult::failure(
-                AshErrorCode::CanonicalizationFailed,
-                'Failed to canonicalize payload: ' . $e->getMessage()
-            );
-        }
-
-        // Build expected proof
-        $expectedProof = $this->ashBuildProof(
-            $context->mode,
-            $context->binding,
-            $contextId,
-            $context->nonce,
-            $canonicalPayload
-        );
-
-        // Constant-time comparison
-        if (!$this->ashTimingSafeEqual($expectedProof, $proof)) {
-            return AshVerifyResult::failure(
-                AshErrorCode::IntegrityFailed,
-                'Proof verification failed'
-            );
-        }
-
-        // Consume context
-        if (!$this->store->consume($contextId)) {
-            return AshVerifyResult::failure(
-                AshErrorCode::ReplayDetected,
-                'Context already used (replay detected)'
-            );
-        }
-
-        return AshVerifyResult::success($context->metadata);
-    }
-
-    /**
-     * Canonicalize a payload based on content type.
-     *
-     * @param string $payload Raw payload
-     * @param string $contentType Content-Type header
-     * @return string Canonical payload
-     */
-    public function ashCanonicalize(string $payload, string $contentType): string
-    {
-        if (str_contains($contentType, 'application/json')) {
-            return $this->ashCanonicalizeJson($payload);
-        }
-
-        if (str_contains($contentType, 'application/x-www-form-urlencoded')) {
-            return $this->ashCanonicalizeUrlencoded($payload);
-        }
-
-        // For other content types, return as-is
-        return $payload;
-    }
-
-    /**
-     * Canonicalize JSON to deterministic form.
-     *
-     * @param string $json JSON string
+     * @param mixed $value The value to canonicalize
      * @return string Canonical JSON string
+     * @throws Core\Exceptions\CanonicalizationException If value contains unsupported types
      */
-    public function ashCanonicalizeJson(string $json): string
+    public static function canonicalizeJson(mixed $value): string
     {
-        return JsonCanonicalizer::canonicalize($json);
+        return Canonicalize::json($value);
     }
 
     /**
-     * Canonicalize URL-encoded data to deterministic form.
+     * Canonicalize URL-encoded form data.
      *
-     * @param string $urlencoded URL-encoded string
+     * @param string|array<string, string|array<string>> $inputData URL-encoded string or dict
      * @return string Canonical URL-encoded string
+     * @throws Core\Exceptions\CanonicalizationException If input cannot be parsed
      */
-    public function ashCanonicalizeUrlencoded(string $urlencoded): string
+    public static function canonicalizeUrlEncoded(string|array $inputData): string
     {
-        return UrlencodedCanonicalizer::canonicalize($urlencoded);
-    }
-
-    /**
-     * Build a cryptographic proof.
-     *
-     * @param AshMode $mode Security mode
-     * @param string $binding Endpoint binding
-     * @param string $contextId Context ID
-     * @param string|null $nonce Optional nonce
-     * @param string $canonicalPayload Canonicalized payload
-     * @return string Base64URL-encoded proof
-     */
-    public function ashBuildProof(
-        AshMode $mode,
-        string $binding,
-        string $contextId,
-        ?string $nonce,
-        string $canonicalPayload
-    ): string {
-        return ProofBuilder::build($mode, $binding, $contextId, $nonce, $canonicalPayload);
+        return Canonicalize::urlEncoded($inputData);
     }
 
     /**
      * Normalize a binding string.
      *
      * @param string $method HTTP method
-     * @param string $path URL path
-     * @return string Canonical binding
+     * @param string $path Request path
+     * @return string Normalized binding string
      */
-    public function ashNormalizeBinding(string $method, string $path): string
+    public static function normalizeBinding(string $method, string $path): string
     {
-        // Uppercase method
-        $method = strtoupper($method);
-
-        // Remove query string
-        $path = strtok($path, '?') ?: $path;
-
-        // Ensure path starts with /
-        if (!str_starts_with($path, '/')) {
-            $path = '/' . $path;
-        }
-
-        // Collapse duplicate slashes
-        $path = preg_replace('#/+#', '/', $path) ?? $path;
-
-        // Remove trailing slash (except for root)
-        if ($path !== '/') {
-            $path = rtrim($path, '/');
-        }
-
-        return "{$method} {$path}";
+        return Canonicalize::normalizeBinding($method, $path);
     }
 
     /**
-     * Constant-time string comparison.
+     * Build a deterministic proof from the given inputs.
      *
-     * @param string $expected Expected value
-     * @param string $actual Actual value
-     * @return bool True if equal
+     * @param BuildProofInput $input Proof input parameters
+     * @return string Base64URL encoded proof string
      */
-    public function ashTimingSafeEqual(string $expected, string $actual): bool
+    public static function buildProof(BuildProofInput $input): string
     {
-        return hash_equals($expected, $actual);
+        return Proof::build($input);
     }
 
     /**
-     * Get the ASH protocol version.
+     * Perform a timing-safe string comparison.
      *
-     * @return string Version string
+     * @param string $known The known string
+     * @param string $userInput The user-provided string to compare
+     * @return bool True if strings are equal, false otherwise
      */
-    public function ashVersion(): string
+    public static function timingSafeCompare(string $known, string $userInput): bool
     {
-        return self::VERSION;
+        return Compare::timingSafe($known, $userInput);
     }
 
     /**
-     * Get the library version.
+     * Encode bytes as Base64URL (no padding).
      *
-     * @return string Semantic version
+     * @param string $data The data to encode
+     * @return string Base64URL encoded string
      */
-    public function ashLibraryVersion(): string
+    public static function base64UrlEncode(string $data): string
     {
-        return self::LIBRARY_VERSION;
+        return Proof::base64UrlEncode($data);
     }
 
     /**
-     * Get the context store.
+     * Decode a Base64URL string to bytes.
      *
-     * @return ContextStoreInterface
+     * @param string $input The Base64URL string to decode
+     * @return string Decoded bytes
      */
-    public function getStore(): ContextStoreInterface
+    public static function base64UrlDecode(string $input): string
     {
-        return $this->store;
+        return Proof::base64UrlDecode($input);
     }
 }

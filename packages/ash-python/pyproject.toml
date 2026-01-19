@@ -1,61 +1,63 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
-name = "ash-security"
+name = "ash-protocol"
 version = "1.0.0"
-description = "ASH (Anti-tamper Security Hash) Python SDK - Request integrity protection"
+description = "ASH - Authenticity & Stateless Hardening Protocol for Python"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "Proprietary"}
 authors = [
-    {name = "3meam Co. | شركة عمائم", email = "dev@3meam.com"}
+    { name = "3maem" }
 ]
-requires-python = ">=3.10"
+keywords = ["security", "integrity", "verification", "anti-replay", "flask"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "Framework :: Flask",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Security",
-    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
-    "Framework :: FastAPI",
-    "Framework :: Flask",
-    "Framework :: Django",
+    "Typing :: Typed",
 ]
-keywords = ["ash", "security", "integrity", "anti-tamper", "replay-prevention", "cryptography"]
+requires-python = ">=3.10"
 dependencies = []
 
 [project.optional-dependencies]
-redis = ["redis>=4.0.0"]
-fastapi = ["fastapi>=0.100.0", "starlette>=0.27.0"]
 flask = ["flask>=2.0.0"]
-django = ["django>=4.0.0"]
+redis = ["redis>=4.0.0"]
+all = ["flask>=2.0.0", "redis>=4.0.0"]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "flask>=2.0.0",
+    "redis>=4.0.0",
     "mypy>=1.0.0",
     "ruff>=0.1.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/3meam/ash"
-Documentation = "https://github.com/3meam/ash#readme"
-Repository = "https://github.com/3meam/ash.git"
+Homepage = "https://github.com/3maem/ash"
+Repository = "https://github.com/3maem/ash"
+Documentation = "https://github.com/3maem/ash#readme"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.mypy]
-python_version = "3.10"
-strict = true
+[tool.hatch.build.targets.wheel]
+packages = ["src/ash"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]

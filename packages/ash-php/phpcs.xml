@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<ruleset name="ASH PHP SDK">
+    <description>PSR-12 Coding Standard for ASH PHP SDK</description>
+
+    <file>src</file>
+    <file>tests</file>
+
+    <arg name="colors"/>
+    <arg name="parallel" value="4"/>
+    <arg value="sp"/>
+
+    <rule ref="PSR12"/>
+</ruleset>
