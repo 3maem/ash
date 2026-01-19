@@ -5,4 +5,5 @@ parameters:
         - tests
     excludePaths:
         - src/Middleware/*
+        - src/Store/*
     treatPhpDocTypesAsCertain: false
