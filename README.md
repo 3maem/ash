@@ -434,6 +434,8 @@ this scope is incidental and must not be relied upon.
 
 ## License
 
-**Proprietary - All Rights Reserved**
+**ASH Source-Available License (ASAL-1.0)**
+
+See [LICENSE](LICENSE) for full terms.
 
 © 3maem Co. | شركة عمائم
