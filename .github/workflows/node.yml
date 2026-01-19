@@ -1,11 +1,13 @@
 name: Node.js CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, develop]
     paths:
       - 'packages/ash-node/**'
       - 'packages/ash-wasm/**'
+      - 'examples/**'
       - 'package.json'
       - '.github/workflows/node.yml'
   pull_request:
