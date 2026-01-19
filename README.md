@@ -86,6 +86,93 @@ This mechanism allows the server to determine whether a request:
 
 ---
 
+## Terminology
+
+This section defines key terms used throughout ASH documentation.
+All terms are used consistently across SDKs.
+
+### Context
+
+A short-lived, server-issued identifier (`contextId`) that defines
+the valid scope and lifetime of a protected request.
+
+A context is:
+- Issued by the server
+- Bound to a specific HTTP method and endpoint
+- Limited by a strict TTL
+- Consumable once
+
+### Context Store
+
+A server-side storage mechanism responsible for:
+- Issuing contexts
+- Tracking context state
+- Enforcing expiration and single-use constraints
+
+The store may be in-memory or persistent, depending on deployment.
+
+### Proof
+
+A deterministic value derived from:
+- HTTP method
+- Endpoint binding
+- contextId
+- Canonicalized request payload
+- Mode-specific rules
+
+A proof:
+- Is generated per request
+- Is valid for a single use
+- Cannot be reversed or reused
+- Does not contain claims or identity information
+
+### Binding
+
+The explicit association between a context/proof and a specific
+HTTP method and endpoint.
+
+Bindings prevent cross-endpoint or cross-method reuse of requests.
+
+### Canonicalization
+
+A deterministic process that converts request payloads into a
+byte-stable representation before proof generation.
+
+Canonicalization ensures that logically identical payloads
+produce identical proofs across SDKs and platforms.
+
+### Mode
+
+A predefined configuration that controls how proofs are derived
+(e.g., performance vs. strictness trade-offs).
+
+Modes are agreed upon by client and server during context issuance.
+
+### TTL (Time-To-Live)
+
+A strict time window during which a context and its associated
+proofs are considered valid.
+
+Once expired, a context and all proofs derived from it are invalid.
+
+### Single-Use Enforcement
+
+A rule that ensures a proof or context cannot be successfully
+verified more than once.
+
+This mechanism provides request-level anti-replay protection.
+
+### Verification
+
+The server-side process of validating:
+- Proof correctness
+- Context validity
+- Binding consistency
+- TTL compliance
+- Single-use constraints
+
+---
+
 ## API Naming Convention
 
 All public APIs use the `ash` prefix for consistency and to avoid naming conflicts.
@@ -244,6 +331,85 @@ await fetch('/api/transfer', {
   body: JSON.stringify(payload)
 });
 ```
+
+---
+
+## Error Reference
+
+This section defines common error conditions returned by ASH
+during request verification. Error codes are prefixed with `ASH_`
+for consistent handling across SDKs.
+
+### ASH_CTX_NOT_FOUND
+
+The provided `contextId` does not exist or is unknown to the server.
+
+**Possible causes:**
+- Invalid or malformed contextId
+- Context already consumed
+- Context store reset
+
+### ASH_CTX_EXPIRED
+
+The context exists but has exceeded its TTL.
+
+**Possible causes:**
+- Request sent after expiration
+- Client/server clock drift beyond tolerance
+
+### ASH_CTX_ALREADY_USED
+
+The context or proof has already been successfully consumed.
+
+**Possible causes:**
+- Replay attempt
+- Duplicate request submission
+- Network retry without new context
+
+### ASH_BINDING_MISMATCH
+
+The request does not match the binding associated with the context.
+
+**Possible causes:**
+- Different endpoint
+- Different HTTP method
+- Context reused for another operation
+
+### ASH_PROOF_MISSING
+
+The request did not include a required proof value.
+
+**Possible causes:**
+- Client integration error
+- Missing headers
+
+### ASH_PROOF_INVALID
+
+The provided proof does not match the expected value.
+
+**Possible causes:**
+- Payload modification
+- Canonicalization mismatch
+- Incorrect mode or binding
+- Implementation mismatch across SDKs
+
+### ASH_CANONICALIZATION_ERROR
+
+The payload could not be canonicalized deterministically.
+
+**Possible causes:**
+- Unsupported payload structure
+- Invalid JSON
+- Non-deterministic serialization
+
+### ASH_VERIFICATION_FAILED
+
+A generic verification failure when a more specific error
+cannot be safely disclosed.
+
+**Recommended usage:**
+- Return a generic client-facing error
+- Log detailed diagnostics server-side only
 
 ---
 
