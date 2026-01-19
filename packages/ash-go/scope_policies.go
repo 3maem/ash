@@ -187,7 +187,8 @@ func matchesBindingPattern(binding, pattern string) bool {
 	regexStr = strings.ReplaceAll(regexStr, `\*`, "[^|/]*")
 
 	// Replace <param> (Flask-style route params)
-	flaskRe := regexp.MustCompile(`\\<[a-zA-Z_][a-zA-Z0-9_]*\\>`)
+	// Note: QuoteMeta does NOT escape < and >, so we match them directly
+	flaskRe := regexp.MustCompile(`<[a-zA-Z_][a-zA-Z0-9_]*>`)
 	regexStr = flaskRe.ReplaceAllString(regexStr, "[^|/]+")
 
 	// Replace :param (Express-style route params) - need to match unescaped colon
