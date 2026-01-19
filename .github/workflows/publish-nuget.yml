@@ -1,0 +1,57 @@
+name: Publish to NuGet
+
+on:
+  release:
+    types: [published]
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (updates .csproj)'
+        required: false
+        type: string
+
+jobs:
+  publish:
+    name: Publish Ash.Security
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ash-dotnet
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      - name: Update version (if specified)
+        if: ${{ inputs.version != '' }}
+        run: |
+          sed -i 's/<Version>[^<]*<\/Version>/<Version>${{ inputs.version }}<\/Version>/' Ash.csproj
+
+      - name: Pack NuGet package
+        run: dotnet pack --configuration Release --no-build --output ./nupkg
+
+      - name: Publish to NuGet
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Create publish summary
+        run: |
+          VERSION=$(grep -oP '<Version>\K[^<]+' Ash.csproj)
+          echo "## Published to NuGet" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Package: Ash.Security" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- Registry: https://www.nuget.org/packages/Ash.Security" >> $GITHUB_STEP_SUMMARY

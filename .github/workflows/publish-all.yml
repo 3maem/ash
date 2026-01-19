@@ -1,0 +1,83 @@
+name: Publish All Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      npm:
+        description: 'Publish to npm (@3meam/ash-node)'
+        required: false
+        type: boolean
+        default: true
+      pypi:
+        description: 'Publish to PyPI (ash-protocol)'
+        required: false
+        type: boolean
+        default: true
+      crates:
+        description: 'Publish to crates.io (ash-core, ash-wasm)'
+        required: false
+        type: boolean
+        default: true
+      nuget:
+        description: 'Publish to NuGet (Ash.Security)'
+        required: false
+        type: boolean
+        default: true
+      packagist:
+        description: 'Notify Packagist (3maem/ash-protocol)'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  publish-npm:
+    name: npm
+    if: ${{ inputs.npm }}
+    uses: ./.github/workflows/publish-npm.yml
+    secrets: inherit
+
+  publish-pypi:
+    name: PyPI
+    if: ${{ inputs.pypi }}
+    uses: ./.github/workflows/publish-pypi.yml
+    secrets: inherit
+
+  publish-crates:
+    name: crates.io
+    if: ${{ inputs.crates }}
+    uses: ./.github/workflows/publish-crates.yml
+    with:
+      package: all
+      dry_run: false
+    secrets: inherit
+
+  publish-nuget:
+    name: NuGet
+    if: ${{ inputs.nuget }}
+    uses: ./.github/workflows/publish-nuget.yml
+    secrets: inherit
+
+  publish-packagist:
+    name: Packagist
+    if: ${{ inputs.packagist }}
+    uses: ./.github/workflows/publish-packagist.yml
+    secrets: inherit
+
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [publish-npm, publish-pypi, publish-crates, publish-nuget, publish-packagist]
+    if: always()
+
+    steps:
+      - name: Create summary
+        run: |
+          echo "# Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Registry | Package | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| npm | @3meam/ash-node | ${{ needs.publish-npm.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PyPI | ash-protocol | ${{ needs.publish-pypi.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| crates.io | ash-core, ash-wasm | ${{ needs.publish-crates.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| NuGet | Ash.Security | ${{ needs.publish-nuget.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Packagist | 3maem/ash-protocol | ${{ needs.publish-packagist.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
