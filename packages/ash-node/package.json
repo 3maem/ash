@@ -1,6 +1,6 @@
 {
   "name": "@3maem/ash-node",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "ASH SDK for Node.js - Request integrity and anti-replay protection library",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

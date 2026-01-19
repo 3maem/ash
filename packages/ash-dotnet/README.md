@@ -433,5 +433,4 @@ Proprietary - All Rights Reserved
 ## Links
 
 - [Main Repository](https://github.com/3maem/ash)
-- [ASH Protocol Specification](https://github.com/3maem/ash/blob/main/SPEC.md)
 - [NuGet Package](https://www.nuget.org/packages/Ash.Security)
