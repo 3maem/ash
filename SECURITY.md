@@ -18,10 +18,19 @@ ASH assumes:
 
 ASH does not attempt to secure environments that are already compromised.
 
-## Security Scope
+## Security Boundaries
 
-For detailed information about ASH's security scope, boundaries, and limitations,
-see the [README](README.md#security-scope-and-explicit-boundaries).
+ASH provides request-level integrity validation and single-use
+enforcement only.
+
+ASH validates whether request inputs have been altered or replayed,
+not whether a request is safe, authorized, or appropriate to execute.
+
+While these properties may reduce the feasibility or impact of certain
+attack scenarios, ASH is not designed, represented, or intended to
+function as an attack prevention, detection, or threat mitigation system.
+
+ASH must not be treated as a standalone security control.
 
 ---
 
