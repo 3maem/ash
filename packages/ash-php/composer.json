@@ -1,6 +1,5 @@
 {
     "name": "3maem/ash-sdk-php",
-    "version": "2.3.1",
     "description": "ASH SDK for PHP - Request integrity and anti-replay protection library",
     "type": "library",
     "license": "proprietary",
