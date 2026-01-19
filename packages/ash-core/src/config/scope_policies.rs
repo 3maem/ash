@@ -198,7 +198,8 @@ fn matches_pattern(binding: &str, pattern: &str) -> bool {
     regex_str = regex_str.replace(r"\*", "[^|/]*");
 
     // Replace <param> (Flask-style route params)
-    let flask_re = Regex::new(r"\\<[a-zA-Z_][a-zA-Z0-9_]*\\>").unwrap();
+    // Note: regex::escape does NOT escape < and >, so we match them directly
+    let flask_re = Regex::new(r"<[a-zA-Z_][a-zA-Z0-9_]*>").unwrap();
     regex_str = flask_re.replace_all(&regex_str, "[^|/]+").to_string();
 
     // Replace :param (Express-style route params)
