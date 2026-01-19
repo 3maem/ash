@@ -415,7 +415,7 @@ cannot be safely disclosed.
 | **Node.js** | `@3maem/ash-node` | `npm install @3maem/ash-node` |
 | **Python** | `ash-sdk` | `pip install ash-sdk` |
 | **Go** | `github.com/3maem/ash-go` | `go get github.com/3maem/ash-go` |
-| **PHP** | `3maem/ash-sdk` | `composer require 3maem/ash-sdk` |
+| **PHP** | `3maem/ash-sdk-php` | `composer require 3maem/ash-sdk-php` |
 | **.NET** | `Ash.Security` | `dotnet add package Ash.Security` |
 | **Rust** | `ash-core` | `cargo add ash-core` |
 

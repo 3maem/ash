@@ -7,7 +7,7 @@ ASH SDK provides request integrity and anti-replay protection for web applicatio
 ## Installation
 
 ```bash
-composer require 3maem/ash-sdk
+composer require 3maem/ash-sdk-php
 ```
 
 **Requirements:**
@@ -503,4 +503,4 @@ See the [LICENSE](https://github.com/3maem/ash/blob/main/LICENSE) for full terms
 ## Links
 
 - [Main Repository](https://github.com/3maem/ash)
-- [Packagist](https://packagist.org/packages/3maem/ash-sdk)
+- [Packagist](https://packagist.org/packages/3maem/ash-sdk-php)
