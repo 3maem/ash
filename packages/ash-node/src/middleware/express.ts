@@ -15,11 +15,9 @@ import {
   ashCanonicalizeUrlencoded,
   ashNormalizeBinding,
   ashVerifyProof,
-  ashHashBody,
   ashVerifyProofUnified,
-  ashExtractScopedFields,
 } from '../index';
-import { getScopePolicy, hasScopePolicy } from '../config/scopePolicies';
+import { getScopePolicy } from '../config/scopePolicies';
 
 /**
  * Express middleware configuration.
