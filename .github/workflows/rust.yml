@@ -66,10 +66,10 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Build WASM (web)
-        run: wasm-pack build packages/ash-wasm --target web --release
+        run: wasm-pack build packages/ash-wasm --target web --release --no-opt
 
       - name: Build WASM (nodejs)
-        run: wasm-pack build packages/ash-wasm --target nodejs --release
+        run: wasm-pack build packages/ash-wasm --target nodejs --release --no-opt
 
       - name: Check WASM size
         run: |

@@ -217,23 +217,11 @@ mod tests {
 
     #[test]
     fn test_build_and_verify_proof() {
-        let proof1 = ash_build_proof(
-            "balanced",
-            "POST /api/test",
-            "ctx123",
-            None,
-            r#"{"a":1}"#,
-        )
-        .unwrap();
+        let proof1 =
+            ash_build_proof("balanced", "POST /api/test", "ctx123", None, r#"{"a":1}"#).unwrap();
 
-        let proof2 = ash_build_proof(
-            "balanced",
-            "POST /api/test",
-            "ctx123",
-            None,
-            r#"{"a":1}"#,
-        )
-        .unwrap();
+        let proof2 =
+            ash_build_proof("balanced", "POST /api/test", "ctx123", None, r#"{"a":1}"#).unwrap();
 
         assert!(ash_verify_proof(&proof1, &proof2));
     }

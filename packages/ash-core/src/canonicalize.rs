@@ -201,13 +201,7 @@ pub fn canonicalize_urlencoded(input: &str) -> Result<String, AshError> {
     // Re-encode and join
     let encoded: Vec<String> = pairs
         .into_iter()
-        .map(|(k, v)| {
-            format!(
-                "{}={}",
-                percent_encode(&k),
-                percent_encode(&v)
-            )
-        })
+        .map(|(k, v)| format!("{}={}", percent_encode(&k), percent_encode(&v)))
         .collect();
 
     Ok(encoded.join("&"))

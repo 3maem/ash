@@ -51,7 +51,10 @@ impl FromStr for AshMode {
             "strict" => Ok(AshMode::Strict),
             _ => Err(AshError::new(
                 AshErrorCode::ModeViolation,
-                format!("Invalid mode: {}. Expected: minimal, balanced, or strict", s),
+                format!(
+                    "Invalid mode: {}. Expected: minimal, balanced, or strict",
+                    s
+                ),
             )),
         }
     }

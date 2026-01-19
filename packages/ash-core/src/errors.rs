@@ -136,7 +136,10 @@ impl AshError {
 
     /// Endpoint mismatch.
     pub fn endpoint_mismatch() -> Self {
-        Self::new(AshErrorCode::EndpointMismatch, "Binding does not match endpoint")
+        Self::new(
+            AshErrorCode::EndpointMismatch,
+            "Binding does not match endpoint",
+        )
     }
 
     /// Canonicalization failed.
@@ -173,8 +176,17 @@ mod tests {
 
     #[test]
     fn test_error_convenience_functions() {
-        assert_eq!(AshError::invalid_context().code(), AshErrorCode::InvalidContext);
-        assert_eq!(AshError::context_expired().code(), AshErrorCode::ContextExpired);
-        assert_eq!(AshError::replay_detected().code(), AshErrorCode::ReplayDetected);
+        assert_eq!(
+            AshError::invalid_context().code(),
+            AshErrorCode::InvalidContext
+        );
+        assert_eq!(
+            AshError::context_expired().code(),
+            AshErrorCode::ContextExpired
+        );
+        assert_eq!(
+            AshError::replay_detected().code(),
+            AshErrorCode::ReplayDetected
+        );
     }
 }
