@@ -41,6 +41,7 @@
 
 mod canonicalize;
 mod compare;
+pub mod config;
 mod errors;
 mod proof;
 mod types;
