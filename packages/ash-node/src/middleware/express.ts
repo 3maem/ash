@@ -86,7 +86,7 @@ function defaultErrorHandler(
  * @example
  * ```typescript
  * import express from 'express';
- * import { AshMemoryStore, ashExpressMiddleware } from '@3meam/ash-node';
+ * import { AshMemoryStore, ashExpressMiddleware } from '@3maem/ash-node';
  *
  * const app = express();
  * const store = new AshMemoryStore();

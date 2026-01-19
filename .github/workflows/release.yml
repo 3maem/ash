@@ -32,7 +32,7 @@ jobs:
             | Package | Registry |
             |---------|----------|
             | `ash-core` | crates.io |
-            | `@3meam/ash-node` | npm |
+            | `@3maem/ash-node` | npm |
             | `ash-security` | PyPI |
             | `3meam/ash-php` | Packagist |
             | `github.com/3meam/ash-go` | Go Modules |
@@ -42,7 +42,7 @@ jobs:
 
             **Node.js:**
             ```bash
-            npm install @3meam/ash-node
+            npm install @3maem/ash-node
             ```
 
             **Python:**

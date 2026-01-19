@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       npm:
-        description: 'Publish to npm (@3meam/ash-node)'
+        description: 'Publish to npm (@3maem/ash-node)'
         required: false
         type: boolean
         default: true
@@ -76,7 +76,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Registry | Package | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| npm | @3meam/ash-node | ${{ needs.publish-npm.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| npm | @3maem/ash-node | ${{ needs.publish-npm.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| PyPI | ash-protocol | ${{ needs.publish-pypi.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| crates.io | ash-core, ash-wasm | ${{ needs.publish-crates.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| NuGet | Ash.Security | ${{ needs.publish-nuget.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY

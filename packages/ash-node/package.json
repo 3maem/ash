@@ -1,5 +1,5 @@
 {
-  "name": "@3meam/ash-node",
+  "name": "@3maem/ash-node",
   "version": "1.0.0",
   "description": "ASH SDK for Node.js - Request integrity and anti-replay protection library",
   "main": "dist/index.js",
@@ -44,7 +44,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@3meam/ash-wasm": "file:../ash-wasm/pkg"
+    "@3maem/ash-wasm": "file:../ash-wasm/pkg"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

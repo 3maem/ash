@@ -7,7 +7,7 @@ ASH SDK provides request integrity and anti-replay protection for web applicatio
 ## Installation
 
 ```bash
-npm install @3meam/ash-node
+npm install @3maem/ash-node
 ```
 
 **Requirements:** Node.js 18.0.0 or later
@@ -17,7 +17,7 @@ npm install @3meam/ash-node
 ### Initialize the Library
 
 ```typescript
-import { ashInit } from '@3meam/ash-node';
+import { ashInit } from '@3maem/ash-node';
 
 // Call once before using other functions
 ashInit();
@@ -26,7 +26,7 @@ ashInit();
 ### Canonicalize JSON
 
 ```typescript
-import { ashCanonicalizeJson, ashInit } from '@3meam/ash-node';
+import { ashCanonicalizeJson, ashInit } from '@3maem/ash-node';
 
 ashInit();
 
@@ -38,7 +38,7 @@ console.log(canonical); // {"a":2,"z":1}
 ### Build a Proof
 
 ```typescript
-import { ashInit, ashCanonicalizeJson, ashBuildProof } from '@3meam/ash-node';
+import { ashInit, ashCanonicalizeJson, ashBuildProof } from '@3maem/ash-node';
 
 ashInit();
 
@@ -61,7 +61,7 @@ console.log(`Proof: ${proof}`);
 ### Verify a Proof
 
 ```typescript
-import { ashInit, ashVerifyProof } from '@3meam/ash-node';
+import { ashInit, ashVerifyProof } from '@3maem/ash-node';
 
 ashInit();
 
@@ -84,7 +84,7 @@ import {
   ashInit,
   ashExpressMiddleware,
   AshMemoryStore,
-} from '@3meam/ash-node';
+} from '@3maem/ash-node';
 
 ashInit();
 
@@ -134,7 +134,7 @@ import {
   ashInit,
   ashFastifyPlugin,
   AshMemoryStore,
-} from '@3meam/ash-node';
+} from '@3maem/ash-node';
 
 ashInit();
 
@@ -180,7 +180,7 @@ fastify.listen({ port: 3000 });
 Initialize the ASH library. Call once before using other functions.
 
 ```typescript
-import { ashInit } from '@3meam/ash-node';
+import { ashInit } from '@3maem/ash-node';
 
 ashInit();
 ```
@@ -329,7 +329,7 @@ interface AshContextStore {
 In-memory store for development and testing.
 
 ```typescript
-import { AshMemoryStore } from '@3meam/ash-node';
+import { AshMemoryStore } from '@3maem/ash-node';
 
 const store = new AshMemoryStore();
 ```
@@ -339,7 +339,7 @@ const store = new AshMemoryStore();
 Production-ready store with atomic operations.
 
 ```typescript
-import { AshRedisStore } from '@3meam/ash-node';
+import { AshRedisStore } from '@3maem/ash-node';
 import Redis from 'ioredis';
 
 const redis = new Redis('redis://localhost:6379');
@@ -351,7 +351,7 @@ const store = new AshRedisStore(redis);
 SQL-based store for relational databases.
 
 ```typescript
-import { AshSqlStore } from '@3meam/ash-node';
+import { AshSqlStore } from '@3maem/ash-node';
 
 const store = new AshSqlStore(databaseConnection);
 ```
@@ -376,7 +376,7 @@ interface AshExpressOptions {
 
 ```typescript
 import express from 'express';
-import { ashExpressMiddleware, AshMemoryStore } from '@3meam/ash-node';
+import { ashExpressMiddleware, AshMemoryStore } from '@3maem/ash-node';
 
 const app = express();
 const store = new AshMemoryStore();
@@ -420,7 +420,7 @@ app.post(
 For Node.js clients making requests to ASH-protected endpoints:
 
 ```typescript
-import { ashInit, ashCanonicalizeJson, ashBuildProof } from '@3meam/ash-node';
+import { ashInit, ashCanonicalizeJson, ashBuildProof } from '@3maem/ash-node';
 import axios from 'axios';
 
 ashInit();
@@ -468,7 +468,7 @@ import {
   ashExpressMiddleware,
   ashNormalizeBinding,
   AshMemoryStore,
-} from '@3meam/ash-node';
+} from '@3maem/ash-node';
 
 ashInit();
 
@@ -553,4 +553,4 @@ MIT License
 
 - [Main Repository](https://github.com/3maem/ash)
 - [ASH Protocol Specification](https://github.com/3maem/ash/blob/main/SPEC.md)
-- [npm Package](https://www.npmjs.com/package/@3meam/ash-node)
+- [npm Package](https://www.npmjs.com/package/@3maem/ash-node)

@@ -41,7 +41,7 @@ const HEADERS = {
  * @example
  * ```typescript
  * import Fastify from 'fastify';
- * import { AshMemoryStore, ashFastifyPlugin } from '@3meam/ash-node';
+ * import { AshMemoryStore, ashFastifyPlugin } from '@3maem/ash-node';
  *
  * const fastify = Fastify();
  * const store = new AshMemoryStore();

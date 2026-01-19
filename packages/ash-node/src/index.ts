@@ -4,10 +4,10 @@
  * Request integrity and anti-replay protection for Node.js applications.
  *
  * @packageDocumentation
- * @module @3meam/ash-node
+ * @module @3maem/ash-node
  */
 
-import * as wasm from '@3meam/ash-wasm';
+import * as wasm from '@3maem/ash-wasm';
 
 // Re-export WASM functions with TypeScript types
 export { wasm };
