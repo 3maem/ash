@@ -5,14 +5,15 @@ regarding ASH (Application Security Hash).
 
 ---
 
-## Is ASH an attack prevention or detection system?
+## Is ASH an attack prevention or threat mitigation system?
 
 No.
 
-ASH does not provide attack prevention, attack detection, or threat
-mitigation capabilities.
+ASH validates request integrity and enforces single-use constraints.
 
-ASH is a request integrity validation mechanism only.
+While these properties may reduce the feasibility or impact of certain
+attack scenarios, ASH is not designed, represented, or intended to
+function as an attack prevention, detection, or threat mitigation system.
 
 ---
 
