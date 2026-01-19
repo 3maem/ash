@@ -1,0 +1,554 @@
+{
+  "version": "1.0.0",
+  "description": "ASH Protocol Cross-SDK Conformance Test Vectors",
+  "test_suites": {
+    "canonicalize_json": [
+      {
+        "id": "json_001",
+        "description": "Empty object",
+        "input": "{}",
+        "expected": "{}"
+      },
+      {
+        "id": "json_002",
+        "description": "Empty array",
+        "input": "[]",
+        "expected": "[]"
+      },
+      {
+        "id": "json_003",
+        "description": "Simple object with unsorted keys",
+        "input": "{\"z\":1,\"a\":2,\"m\":3}",
+        "expected": "{\"a\":2,\"m\":3,\"z\":1}"
+      },
+      {
+        "id": "json_004",
+        "description": "Nested objects with unsorted keys",
+        "input": "{\"b\":{\"d\":4,\"c\":3},\"a\":{\"f\":6,\"e\":5}}",
+        "expected": "{\"a\":{\"e\":5,\"f\":6},\"b\":{\"c\":3,\"d\":4}}"
+      },
+      {
+        "id": "json_005",
+        "description": "Object with whitespace (must be minified)",
+        "input": "{ \"z\" : 1 , \"a\" : 2 }",
+        "expected": "{\"a\":2,\"z\":1}"
+      },
+      {
+        "id": "json_006",
+        "description": "Array order preserved",
+        "input": "{\"arr\":[3,1,2]}",
+        "expected": "{\"arr\":[3,1,2]}"
+      },
+      {
+        "id": "json_007",
+        "description": "Null value",
+        "input": "{\"a\":null}",
+        "expected": "{\"a\":null}"
+      },
+      {
+        "id": "json_008",
+        "description": "Boolean values with key sorting",
+        "input": "{\"b\":true,\"a\":false}",
+        "expected": "{\"a\":false,\"b\":true}"
+      },
+      {
+        "id": "json_009",
+        "description": "Unicode string - simple",
+        "input": "{\"name\":\"cafe\\u0301\"}",
+        "expected": "{\"name\":\"caf\u00e9\"}",
+        "notes": "e + combining acute (U+0301) normalizes to e-acute (U+00E9) via NFC"
+      },
+      {
+        "id": "json_010",
+        "description": "Unicode string - already NFC normalized",
+        "input": "{\"name\":\"caf\u00e9\"}",
+        "expected": "{\"name\":\"caf\u00e9\"}"
+      },
+      {
+        "id": "json_011",
+        "description": "Unicode string - emoji",
+        "input": "{\"emoji\":\"\ud83d\ude00\"}",
+        "expected": "{\"emoji\":\"\ud83d\ude00\"}"
+      },
+      {
+        "id": "json_012",
+        "description": "Unicode string - CJK characters",
+        "input": "{\"text\":\"\u4e2d\u6587\"}",
+        "expected": "{\"text\":\"\u4e2d\u6587\"}"
+      },
+      {
+        "id": "json_013",
+        "description": "Unicode string - Hangul precomposed",
+        "input": "{\"text\":\"\ud55c\uae00\"}",
+        "expected": "{\"text\":\"\ud55c\uae00\"}"
+      },
+      {
+        "id": "json_014",
+        "description": "Unicode NFC normalization - Hangul decomposed to composed",
+        "input": "{\"text\":\"\u1112\u1161\u11ab\"}",
+        "expected": "{\"text\":\"\ud55c\"}",
+        "notes": "Hangul Jamo sequence normalizes to precomposed Hangul syllable via NFC"
+      },
+      {
+        "id": "json_015",
+        "description": "Integer number",
+        "input": "{\"num\":42}",
+        "expected": "{\"num\":42}"
+      },
+      {
+        "id": "json_016",
+        "description": "Negative integer",
+        "input": "{\"num\":-123}",
+        "expected": "{\"num\":-123}"
+      },
+      {
+        "id": "json_017",
+        "description": "Float number",
+        "input": "{\"num\":3.14}",
+        "expected": "{\"num\":3.14}"
+      },
+      {
+        "id": "json_018",
+        "description": "Scientific notation (normalized to decimal)",
+        "input": "{\"num\":1.5e2}",
+        "expected": "{\"num\":150.0}",
+        "notes": "Scientific notation is expanded; trailing .0 depends on implementation"
+      },
+      {
+        "id": "json_019",
+        "description": "Zero",
+        "input": "{\"num\":0}",
+        "expected": "{\"num\":0}"
+      },
+      {
+        "id": "json_020",
+        "description": "Negative zero becomes positive zero",
+        "input": "{\"num\":-0}",
+        "expected": "{\"num\":0}",
+        "notes": "-0 normalizes to 0"
+      },
+      {
+        "id": "json_021",
+        "description": "Special characters requiring JSON escaping",
+        "input": "{\"text\":\"line1\\nline2\\ttab\"}",
+        "expected": "{\"text\":\"line1\\nline2\\ttab\"}"
+      },
+      {
+        "id": "json_022",
+        "description": "Backslash and quote escaping",
+        "input": "{\"text\":\"a\\\\b\\\"c\"}",
+        "expected": "{\"text\":\"a\\\\b\\\"c\"}"
+      },
+      {
+        "id": "json_023",
+        "description": "Control characters",
+        "input": "{\"text\":\"\\u0000\\u001f\"}",
+        "expected": "{\"text\":\"\\u0000\\u001f\"}",
+        "notes": "Control characters must remain escaped in JSON output"
+      },
+      {
+        "id": "json_024",
+        "description": "Deeply nested object",
+        "input": "{\"a\":{\"b\":{\"c\":{\"d\":1}}}}",
+        "expected": "{\"a\":{\"b\":{\"c\":{\"d\":1}}}}"
+      },
+      {
+        "id": "json_025",
+        "description": "Mixed array with various types",
+        "input": "{\"arr\":[1,\"two\",true,null,{\"z\":1,\"a\":2}]}",
+        "expected": "{\"arr\":[1,\"two\",true,null,{\"a\":2,\"z\":1}]}"
+      },
+      {
+        "id": "json_026",
+        "description": "Large integer",
+        "input": "{\"num\":9007199254740991}",
+        "expected": "{\"num\":9007199254740991}",
+        "notes": "MAX_SAFE_INTEGER in JavaScript"
+      },
+      {
+        "id": "json_027",
+        "description": "Empty string",
+        "input": "{\"text\":\"\"}",
+        "expected": "{\"text\":\"\"}"
+      },
+      {
+        "id": "json_028",
+        "description": "Complex nested structure with key sorting at all levels",
+        "input": "{\"z\":{\"b\":2,\"a\":1},\"a\":{\"d\":4,\"c\":3},\"m\":[{\"f\":6,\"e\":5}]}",
+        "expected": "{\"a\":{\"c\":3,\"d\":4},\"m\":[{\"e\":5,\"f\":6}],\"z\":{\"a\":1,\"b\":2}}"
+      }
+    ],
+    "canonicalize_url_encoded": [
+      {
+        "id": "url_001",
+        "description": "Empty input",
+        "input": "",
+        "expected": ""
+      },
+      {
+        "id": "url_002",
+        "description": "Simple key=value pair",
+        "input": "name=value",
+        "expected": "name=value"
+      },
+      {
+        "id": "url_003",
+        "description": "Multiple pairs - already sorted",
+        "input": "a=1&b=2&c=3",
+        "expected": "a=1&b=2&c=3"
+      },
+      {
+        "id": "url_004",
+        "description": "Multiple pairs - unsorted keys",
+        "input": "z=3&a=1&m=2",
+        "expected": "a=1&m=2&z=3"
+      },
+      {
+        "id": "url_005",
+        "description": "Duplicate keys - preserve value order after sorting",
+        "input": "a=2&a=1&b=3",
+        "expected": "a=2&a=1&b=3"
+      },
+      {
+        "id": "url_006",
+        "description": "Duplicate keys from different positions",
+        "input": "b=x&a=1&b=y&a=2",
+        "expected": "a=1&a=2&b=x&b=y"
+      },
+      {
+        "id": "url_007",
+        "description": "Space encoded as %20",
+        "input": "a=hello%20world",
+        "expected": "a=hello%20world"
+      },
+      {
+        "id": "url_008",
+        "description": "Plus sign treated as space, output as %20",
+        "input": "a=hello+world",
+        "expected": "a=hello%20world"
+      },
+      {
+        "id": "url_009",
+        "description": "Special characters - ampersand in value",
+        "input": "a=one%26two",
+        "expected": "a=one%26two"
+      },
+      {
+        "id": "url_010",
+        "description": "Special characters - equals in value",
+        "input": "a=x%3Dy",
+        "expected": "a=x%3Dy"
+      },
+      {
+        "id": "url_011",
+        "description": "Unicode value - simple",
+        "input": "name=caf%C3%A9",
+        "expected": "name=caf%C3%A9"
+      },
+      {
+        "id": "url_012",
+        "description": "Unicode value - CJK",
+        "input": "text=%E4%B8%AD%E6%96%87",
+        "expected": "text=%E4%B8%AD%E6%96%87"
+      },
+      {
+        "id": "url_013",
+        "description": "Unicode NFC normalization in URL encoding",
+        "input": "name=cafe%CC%81",
+        "expected": "name=caf%C3%A9",
+        "notes": "e + combining acute (%CC%81) normalizes to e-acute (%C3%A9)"
+      },
+      {
+        "id": "url_014",
+        "description": "Key without value",
+        "input": "a&b=2",
+        "expected": "a=&b=2"
+      },
+      {
+        "id": "url_015",
+        "description": "Empty value",
+        "input": "a=&b=2",
+        "expected": "a=&b=2"
+      },
+      {
+        "id": "url_016",
+        "description": "Unreserved characters not encoded",
+        "input": "a=test-value_123.456~end",
+        "expected": "a=test-value_123.456~end"
+      },
+      {
+        "id": "url_017",
+        "description": "Mixed case percent encoding normalized to uppercase",
+        "input": "a=hello%2bworld",
+        "expected": "a=hello%2Bworld",
+        "notes": "Lowercase hex digits normalized to uppercase"
+      },
+      {
+        "id": "url_018",
+        "description": "Complex sorting with special characters",
+        "input": "z=last&a=first%20value&m=middle",
+        "expected": "a=first%20value&m=middle&z=last"
+      }
+    ],
+    "build_proof": [
+      {
+        "id": "proof_001",
+        "description": "Minimal mode proof",
+        "input": {
+          "mode": "minimal",
+          "binding": "POST /api/test",
+          "context_id": "ctx_abc123",
+          "nonce": null,
+          "canonical_payload": "{\"a\":1}"
+        },
+        "preimage": "ASHv1\nminimal\nPOST /api/test\nctx_abc123\n{\"a\":1}",
+        "expected": "PFe8K_HZ5TZO_7-H_FEqAW4gHIXqbJAXDkFhE5j2G5E",
+        "notes": "SHA256 of preimage, Base64URL encoded without padding"
+      },
+      {
+        "id": "proof_002",
+        "description": "Balanced mode proof",
+        "input": {
+          "mode": "balanced",
+          "binding": "POST /api/test",
+          "context_id": "ctx_abc123",
+          "nonce": null,
+          "canonical_payload": "{\"a\":1}"
+        },
+        "preimage": "ASHv1\nbalanced\nPOST /api/test\nctx_abc123\n{\"a\":1}",
+        "expected": "ItjGmT_FAdaYTu0BYLxqORzwRyaGIvxVQMR8NYkYKaQ",
+        "notes": "SHA256 of preimage, Base64URL encoded without padding"
+      },
+      {
+        "id": "proof_003",
+        "description": "Strict mode proof with nonce",
+        "input": {
+          "mode": "strict",
+          "binding": "POST /api/test",
+          "context_id": "ctx_abc123",
+          "nonce": "nonce_xyz789",
+          "canonical_payload": "{\"a\":1}"
+        },
+        "preimage": "ASHv1\nstrict\nPOST /api/test\nctx_abc123\nnonce_xyz789\n{\"a\":1}",
+        "expected": "aLv8AYU4TjvFpgjKjKJt2Y4w3kwpL6j1bLqDXChzaFg",
+        "notes": "Nonce is included before payload when present"
+      },
+      {
+        "id": "proof_004",
+        "description": "Strict mode proof without nonce",
+        "input": {
+          "mode": "strict",
+          "binding": "PUT /api/update",
+          "context_id": "ctx_def456",
+          "nonce": null,
+          "canonical_payload": "{\"name\":\"John\",\"age\":30}"
+        },
+        "preimage": "ASHv1\nstrict\nPUT /api/update\nctx_def456\n{\"name\":\"John\",\"age\":30}",
+        "expected": "qCjUKq-eNJ2XOOWOcOgjLG25bHXJPZ3mFFJgA_9bqKE",
+        "notes": "Complex payload with multiple fields"
+      },
+      {
+        "id": "proof_005",
+        "description": "Empty payload",
+        "input": {
+          "mode": "balanced",
+          "binding": "DELETE /api/resource/123",
+          "context_id": "ctx_empty",
+          "nonce": null,
+          "canonical_payload": ""
+        },
+        "preimage": "ASHv1\nbalanced\nDELETE /api/resource/123\nctx_empty\n",
+        "expected": "WaBKIVNlQiCf37zJCZt3YWe4D2lJlXEAL1ofhKCmjT8",
+        "notes": "Empty payload is valid"
+      },
+      {
+        "id": "proof_006",
+        "description": "Unicode in payload",
+        "input": {
+          "mode": "balanced",
+          "binding": "POST /api/profile",
+          "context_id": "ctx_unicode",
+          "nonce": null,
+          "canonical_payload": "{\"name\":\"caf\u00e9\"}"
+        },
+        "preimage": "ASHv1\nbalanced\nPOST /api/profile\nctx_unicode\n{\"name\":\"caf\u00e9\"}",
+        "expected": "5CqEbfwpCLGYPOx_OZbVaYCM1HKZzD-TIbDXu99pXTo",
+        "notes": "Unicode characters in payload"
+      },
+      {
+        "id": "proof_007",
+        "description": "Long context ID",
+        "input": {
+          "mode": "minimal",
+          "binding": "GET /api/data",
+          "context_id": "ctx_very_long_context_id_with_many_characters_1234567890",
+          "nonce": null,
+          "canonical_payload": "{}"
+        },
+        "preimage": "ASHv1\nminimal\nGET /api/data\nctx_very_long_context_id_with_many_characters_1234567890\n{}",
+        "expected": "x-1lZ3wOBXXb-rPj1XUKhEfWhnWbQE-Kc7F6XaS_G6c",
+        "notes": "Long context ID is supported"
+      },
+      {
+        "id": "proof_008",
+        "description": "Proof changes with different binding",
+        "input": {
+          "mode": "balanced",
+          "binding": "PATCH /api/test",
+          "context_id": "ctx_abc123",
+          "nonce": null,
+          "canonical_payload": "{\"a\":1}"
+        },
+        "preimage": "ASHv1\nbalanced\nPATCH /api/test\nctx_abc123\n{\"a\":1}",
+        "expected": "B6qWoTNE2YQHV3B67fpB5L-_B8HHD6nC8QP4E5e1KQ8",
+        "notes": "Different binding produces different proof"
+      }
+    ],
+    "normalize_binding": [
+      {
+        "id": "binding_001",
+        "description": "Method uppercasing - lowercase to uppercase",
+        "input": {
+          "method": "post",
+          "path": "/api/test"
+        },
+        "expected": "POST /api/test"
+      },
+      {
+        "id": "binding_002",
+        "description": "Method uppercasing - mixed case",
+        "input": {
+          "method": "Post",
+          "path": "/api/test"
+        },
+        "expected": "POST /api/test"
+      },
+      {
+        "id": "binding_003",
+        "description": "Method already uppercase",
+        "input": {
+          "method": "GET",
+          "path": "/api/resource"
+        },
+        "expected": "GET /api/resource"
+      },
+      {
+        "id": "binding_004",
+        "description": "Path normalization - remove query string",
+        "input": {
+          "method": "GET",
+          "path": "/api/test?foo=bar&baz=qux"
+        },
+        "expected": "GET /api/test"
+      },
+      {
+        "id": "binding_005",
+        "description": "Path normalization - remove fragment",
+        "input": {
+          "method": "GET",
+          "path": "/api/test#section"
+        },
+        "expected": "GET /api/test"
+      },
+      {
+        "id": "binding_006",
+        "description": "Path normalization - remove both query and fragment",
+        "input": {
+          "method": "POST",
+          "path": "/api/submit?token=abc#confirm"
+        },
+        "expected": "POST /api/submit"
+      },
+      {
+        "id": "binding_007",
+        "description": "Path with trailing slash preserved",
+        "input": {
+          "method": "GET",
+          "path": "/api/list/"
+        },
+        "expected": "GET /api/list/"
+      },
+      {
+        "id": "binding_008",
+        "description": "Root path",
+        "input": {
+          "method": "GET",
+          "path": "/"
+        },
+        "expected": "GET /"
+      },
+      {
+        "id": "binding_009",
+        "description": "Path with URL-encoded characters",
+        "input": {
+          "method": "GET",
+          "path": "/api/users/john%20doe"
+        },
+        "expected": "GET /api/users/john%20doe",
+        "notes": "URL-encoded characters in path are preserved"
+      },
+      {
+        "id": "binding_010",
+        "description": "PUT method",
+        "input": {
+          "method": "put",
+          "path": "/api/resource/123"
+        },
+        "expected": "PUT /api/resource/123"
+      },
+      {
+        "id": "binding_011",
+        "description": "DELETE method",
+        "input": {
+          "method": "delete",
+          "path": "/api/resource/456"
+        },
+        "expected": "DELETE /api/resource/456"
+      },
+      {
+        "id": "binding_012",
+        "description": "PATCH method",
+        "input": {
+          "method": "patch",
+          "path": "/api/resource/789"
+        },
+        "expected": "PATCH /api/resource/789"
+      },
+      {
+        "id": "binding_013",
+        "description": "Path with multiple segments",
+        "input": {
+          "method": "GET",
+          "path": "/api/v2/users/123/posts/456/comments"
+        },
+        "expected": "GET /api/v2/users/123/posts/456/comments"
+      },
+      {
+        "id": "binding_014",
+        "description": "Empty query string removed",
+        "input": {
+          "method": "GET",
+          "path": "/api/test?"
+        },
+        "expected": "GET /api/test"
+      },
+      {
+        "id": "binding_015",
+        "description": "Path normalization - double slashes preserved",
+        "input": {
+          "method": "GET",
+          "path": "/api//test"
+        },
+        "expected": "GET /api//test",
+        "notes": "Double slashes are intentionally preserved to maintain exact path matching"
+      }
+    ]
+  },
+  "metadata": {
+    "hash_algorithm": "SHA-256",
+    "encoding": "Base64URL without padding",
+    "unicode_normalization": "NFC",
+    "created_at": "2025-01-01",
+    "protocol_version": "ASHv1"
+  }
+}
