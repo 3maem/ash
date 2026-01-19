@@ -189,10 +189,11 @@ export class AshSqlStore implements AshContextStore {
       WHERE expires_at < $1
     `;
 
-    const result = await this.query.execute<{ rowCount?: number }>(sql, [Date.now()]);
+    await this.query.execute(sql, [Date.now()]);
 
-    // Return count of deleted rows if available
-    return result.rowCount ?? 0;
+    // Note: Row count is driver-specific; return 0 as default
+    // Override this method if you need accurate counts
+    return 0;
   }
 
   private rowToContext(row: ContextRow): AshContext {
