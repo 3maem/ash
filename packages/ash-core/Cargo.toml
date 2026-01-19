@@ -23,8 +23,9 @@ subtle.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
-criterion.workspace = true
+# criterion = { version = "0.5", optional = true }
 
-[[bench]]
-name = "canonicalize"
-harness = false
+# Benchmarks disabled until bench files are created
+# [[bench]]
+# name = "canonicalize"
+# harness = false
