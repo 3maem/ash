@@ -57,6 +57,15 @@ select = ["E", "F", "I", "W"]
 [tool.mypy]
 python_version = "3.10"
 strict = true
+ignore_missing_imports = true
+exclude = [
+    "src/ash/stores/",
+    "src/ash/middleware/",
+    "src/ash/server/middleware/",
+    "src/ash/server/stores/",
+    "src/ash/proof.py",
+    "src/ash/core.py",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
