@@ -342,20 +342,59 @@ public static partial class Canonicalize
     }
 
     /// <summary>
-    /// Normalize a binding string.
+    /// Canonicalize a URL query string according to ASH specification.
     /// </summary>
     /// <remarks>
-    /// Rules (from ASH-Spec-v1.0):
-    /// - Format: "METHOD /path"
+    /// 9 MUST Rules:
+    /// 1. MUST parse query string after ? (or use full string if no ?)
+    /// 2. MUST split on &amp; to get key=value pairs
+    /// 3. MUST handle keys without values (treat as empty string)
+    /// 4. MUST percent-decode all keys and values
+    /// 5. MUST apply Unicode NFC normalization
+    /// 6. MUST sort pairs by key lexicographically (byte order)
+    /// 7. MUST preserve order of duplicate keys
+    /// 8. MUST re-encode with uppercase hex (%XX)
+    /// 9. MUST join with &amp; separator
+    /// </remarks>
+    /// <param name="query">Query string (with or without leading ?).</param>
+    /// <returns>Canonical query string.</returns>
+    public static string Query(string query)
+    {
+        // Rule 1: Remove leading ? if present
+        if (query.StartsWith('?'))
+        {
+            query = query[1..];
+        }
+
+        if (string.IsNullOrEmpty(query))
+            return "";
+
+        // Rule 2 & 3: Parse pairs
+        var pairs = ParseUrlEncoded(query);
+
+        // Rule 4-9: Normalize, sort, and re-encode
+        return BuildCanonicalUrlEncoded(pairs);
+    }
+
+    /// <summary>
+    /// Normalize a binding string to canonical form (v2.3.2+ format).
+    /// </summary>
+    /// <remarks>
+    /// Format: METHOD|PATH|CANONICAL_QUERY
+    ///
+    /// Rules:
     /// - Method uppercased
     /// - Path must start with /
-    /// - Path excludes query string
-    /// - Collapse duplicate slashes
+    /// - Duplicate slashes collapsed
+    /// - Trailing slash removed (except for root)
+    /// - Query string canonicalized
+    /// - Parts joined with | (pipe)
     /// </remarks>
     /// <param name="method">HTTP method.</param>
     /// <param name="path">Request path.</param>
-    /// <returns>Normalized binding string.</returns>
-    public static string Binding(string method, string path)
+    /// <param name="query">Query string (empty string if none).</param>
+    /// <returns>Canonical binding string (METHOD|PATH|QUERY).</returns>
+    public static string Binding(string method, string path, string query = "")
     {
         var normalizedMethod = method.ToUpperInvariant();
 
@@ -363,7 +402,7 @@ public static partial class Canonicalize
         var fragmentIndex = path.IndexOf('#');
         var normalizedPath = fragmentIndex != -1 ? path[..fragmentIndex] : path;
 
-        // Remove query string
+        // Extract path without query string (in case path contains ?)
         var queryIndex = normalizedPath.IndexOf('?');
         normalizedPath = queryIndex != -1 ? normalizedPath[..queryIndex] : normalizedPath;
 
@@ -382,7 +421,36 @@ public static partial class Canonicalize
             normalizedPath = normalizedPath[..^1];
         }
 
-        return $"{normalizedMethod} {normalizedPath}";
+        // Canonicalize query string
+        var canonicalQuery = !string.IsNullOrEmpty(query) ? Query(query) : "";
+
+        // v2.3.2 format: METHOD|PATH|CANONICAL_QUERY
+        return $"{normalizedMethod}|{normalizedPath}|{canonicalQuery}";
+    }
+
+    /// <summary>
+    /// Normalize a binding from a full URL path (including query string).
+    /// </summary>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="fullPath">Full URL path including query string (e.g., "/api/users?page=1").</param>
+    /// <returns>Canonical binding string (METHOD|PATH|QUERY).</returns>
+    public static string BindingFromUrl(string method, string fullPath)
+    {
+        var queryIndex = fullPath.IndexOf('?');
+        string path, query;
+
+        if (queryIndex != -1)
+        {
+            path = fullPath[..queryIndex];
+            query = fullPath[(queryIndex + 1)..];
+        }
+        else
+        {
+            path = fullPath;
+            query = "";
+        }
+
+        return Binding(method, path, query);
     }
 
     [GeneratedRegex(@"/+")]

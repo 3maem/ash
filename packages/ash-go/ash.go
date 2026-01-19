@@ -533,15 +533,79 @@ func CanonicalizeURLEncodedFromMap(data map[string][]string) string {
 	return strings.Join(parts, "&")
 }
 
-// NormalizeBinding normalizes a binding string.
+// CanonicalizeQuery canonicalizes a URL query string according to ASH specification.
 //
-// Rules (from ASH-Spec-v1.0):
-//   - Format: "METHOD /path"
+// 9 MUST Rules:
+//  1. MUST parse query string after ? (or use full string if no ?)
+//  2. MUST split on & to get key=value pairs
+//  3. MUST handle keys without values (treat as empty string)
+//  4. MUST percent-decode all keys and values
+//  5. MUST apply Unicode NFC normalization
+//  6. MUST sort pairs by key lexicographically (byte order)
+//  7. MUST preserve order of duplicate keys
+//  8. MUST re-encode with uppercase hex (%XX)
+//  9. MUST join with & separator
+func CanonicalizeQuery(query string) (string, error) {
+	// Rule 1: Remove leading ? if present
+	query = strings.TrimPrefix(query, "?")
+
+	if query == "" {
+		return "", nil
+	}
+
+	// Rule 2 & 3: Parse pairs
+	values, err := url.ParseQuery(query)
+	if err != nil {
+		return "", NewAshError(ErrCanonicalizationFailed, "invalid query string: "+err.Error())
+	}
+
+	// Collect all pairs
+	type kvPair struct {
+		key   string
+		value string
+	}
+	var pairs []kvPair
+
+	for key, vals := range values {
+		// Rule 4 & 5: NFC normalize (already decoded by ParseQuery)
+		normalizedKey := norm.NFC.String(key)
+		for _, val := range vals {
+			normalizedVal := norm.NFC.String(val)
+			pairs = append(pairs, kvPair{key: normalizedKey, value: normalizedVal})
+		}
+	}
+
+	// Rule 6 & 7: Sort by key (stable sort preserves duplicate key order)
+	sort.SliceStable(pairs, func(i, j int) bool {
+		return pairs[i].key < pairs[j].key
+	})
+
+	// Rule 8 & 9: Re-encode and join
+	var parts []string
+	for _, p := range pairs {
+		encodedKey := url.QueryEscape(p.key)
+		encodedValue := url.QueryEscape(p.value)
+		// QueryEscape uses + for space, replace with %20
+		encodedKey = strings.ReplaceAll(encodedKey, "+", "%20")
+		encodedValue = strings.ReplaceAll(encodedValue, "+", "%20")
+		parts = append(parts, encodedKey+"="+encodedValue)
+	}
+
+	return strings.Join(parts, "&"), nil
+}
+
+// NormalizeBinding normalizes a binding string to canonical form (v2.3.2+ format).
+//
+// Format: METHOD|PATH|CANONICAL_QUERY
+//
+// Rules:
 //   - Method uppercased
 //   - Path must start with /
-//   - Path excludes query string
-//   - Collapse duplicate slashes
-func NormalizeBinding(method, path string) string {
+//   - Duplicate slashes collapsed
+//   - Trailing slash removed (except for root)
+//   - Query string canonicalized
+//   - Parts joined with | (pipe)
+func NormalizeBinding(method, path, query string) string {
 	// Uppercase method
 	normalizedMethod := strings.ToUpper(method)
 
@@ -550,7 +614,7 @@ func NormalizeBinding(method, path string) string {
 		path = path[:fragIndex]
 	}
 
-	// Remove query string
+	// Extract path without query string (in case path contains ?)
 	if queryIndex := strings.Index(path, "?"); queryIndex != -1 {
 		path = path[:queryIndex]
 	}
@@ -581,7 +645,29 @@ func NormalizeBinding(method, path string) string {
 		path = path[:len(path)-1]
 	}
 
-	return normalizedMethod + " " + path
+	// Canonicalize query string
+	canonicalQuery := ""
+	if query != "" {
+		canonicalQuery, _ = CanonicalizeQuery(query)
+	}
+
+	// v2.3.2 format: METHOD|PATH|CANONICAL_QUERY
+	return normalizedMethod + "|" + path + "|" + canonicalQuery
+}
+
+// NormalizeBindingFromURL normalizes a binding from a full URL path (including query string).
+//
+// This is a convenience function that extracts the query from the path.
+func NormalizeBindingFromURL(method, fullPath string) string {
+	path := fullPath
+	query := ""
+
+	if queryIndex := strings.Index(fullPath, "?"); queryIndex != -1 {
+		path = fullPath[:queryIndex]
+		query = fullPath[queryIndex+1:]
+	}
+
+	return NormalizeBinding(method, path, query)
 }
 
 // TimingSafeCompare compares two strings in constant time.

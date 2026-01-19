@@ -83,20 +83,78 @@ final class Canonicalize
     }
 
     /**
-     * Normalize a binding string.
+     * Canonicalize a URL query string according to ASH specification.
      *
-     * Rules (from ASH-Spec-v1.0):
-     * - Format: "METHOD /path"
+     * 9 MUST Rules:
+     * 1. MUST parse query string after ? (or use full string if no ?)
+     * 2. MUST split on & to get key=value pairs
+     * 3. MUST handle keys without values (treat as empty string)
+     * 4. MUST percent-decode all keys and values
+     * 5. MUST apply Unicode NFC normalization
+     * 6. MUST sort pairs by key lexicographically (byte order)
+     * 7. MUST preserve order of duplicate keys
+     * 8. MUST re-encode with uppercase hex (%XX)
+     * 9. MUST join with & separator
+     *
+     * @param string $query Query string (with or without leading ?)
+     * @return string Canonical query string
+     */
+    public static function canonicalizeQuery(string $query): string
+    {
+        // Rule 1: Remove leading ? if present
+        if (str_starts_with($query, '?')) {
+            $query = substr($query, 1);
+        }
+
+        if ($query === '') {
+            return '';
+        }
+
+        // Rule 2 & 3: Parse pairs
+        $pairs = self::parseUrlEncoded($query);
+
+        // Rule 4 & 5: Normalize with NFC (already done in parseUrlEncoded via urldecode)
+        $normalizedPairs = [];
+        foreach ($pairs as [$key, $value]) {
+            $normalizedKey = Normalizer::normalize($key, Normalizer::FORM_C);
+            $normalizedValue = Normalizer::normalize($value, Normalizer::FORM_C);
+            if ($normalizedKey === false || $normalizedValue === false) {
+                throw new CanonicalizationException('Failed to normalize Unicode');
+            }
+            $normalizedPairs[] = [$normalizedKey, $normalizedValue];
+        }
+
+        // Rule 6 & 7: Sort by key (stable sort preserves value order for same keys)
+        usort($normalizedPairs, fn($a, $b) => strcmp($a[0], $b[0]));
+
+        // Rule 8 & 9: Re-encode and join
+        $parts = [];
+        foreach ($normalizedPairs as [$key, $value]) {
+            $parts[] = rawurlencode($key) . '=' . rawurlencode($value);
+        }
+
+        return implode('&', $parts);
+    }
+
+    /**
+     * Normalize a binding string to canonical form (v2.3.2+ format).
+     *
+     * Format: METHOD|PATH|CANONICAL_QUERY
+     *
+     * Rules:
      * - Method uppercased
      * - Path must start with /
-     * - Path excludes query string
-     * - Collapse duplicate slashes
+     * - Duplicate slashes collapsed
+     * - Trailing slash removed (except for root)
+     * - Query string canonicalized
+     * - Parts joined with | (pipe)
      *
      * @param string $method HTTP method
      * @param string $path Request path
-     * @return string Normalized binding string
+     * @param string $query Query string (empty string if none)
+     * @return string Canonical binding string (METHOD|PATH|QUERY)
      */
-    public static function normalizeBinding(string $method, string $path): string
+    public static function normalizeBinding(string $method, string $path, string $query = ''): string
     {
         $normalizedMethod = strtoupper($method);
 
@@ -104,7 +162,7 @@ final class Canonicalize
         $fragmentIndex = strpos($path, '#');
         $normalizedPath = $fragmentIndex !== false ? substr($path, 0, $fragmentIndex) : $path;
 
-        // Remove query string
+        // Extract path without query string (in case path contains ?)
         $queryIndex = strpos($normalizedPath, '?');
         $normalizedPath = $queryIndex !== false ? substr($normalizedPath, 0, $queryIndex) : $normalizedPath;
 
@@ -121,7 +179,32 @@ final class Canonicalize
             $normalizedPath = substr($normalizedPath, 0, -1);
         }
 
-        return "{$normalizedMethod} {$normalizedPath}";
+        // Canonicalize query string
+        $canonicalQuery = $query !== '' ? self::canonicalizeQuery($query) : '';
+
+        // v2.3.2 format: METHOD|PATH|CANONICAL_QUERY
+        return "{$normalizedMethod}|{$normalizedPath}|{$canonicalQuery}";
+    }
+
+    /**
+     * Normalize a binding from a full URL path (including query string).
+     *
+     * @param string $method HTTP method
+     * @param string $fullPath Full URL path including query string (e.g., "/api/users?page=1")
+     * @return string Canonical binding string (METHOD|PATH|QUERY)
+     */
+    public static function normalizeBindingFromUrl(string $method, string $fullPath): string
+    {
+        $queryIndex = strpos($fullPath, '?');
+        if ($queryIndex !== false) {
+            $path = substr($fullPath, 0, $queryIndex);
+            $query = substr($fullPath, $queryIndex + 1);
+        } else {
+            $path = $fullPath;
+            $query = '';
+        }
+
+        return self::normalizeBinding($method, $path, $query);
     }
 
     /**

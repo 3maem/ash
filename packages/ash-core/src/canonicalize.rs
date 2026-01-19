@@ -240,6 +240,102 @@ fn percent_decode(input: &str) -> Result<String, AshError> {
     Ok(result)
 }
 
+/// Canonicalize a URL query string according to ASH specification.
+///
+/// # Canonicalization Rules (9 MUST rules)
+///
+/// 1. MUST parse query string after `?` (or use full string if no `?`)
+/// 2. MUST split on `&` to get key=value pairs
+/// 3. MUST handle keys without values (treat as empty string)
+/// 4. MUST percent-decode all keys and values
+/// 5. MUST apply Unicode NFC normalization
+/// 6. MUST sort pairs by key lexicographically (byte order)
+/// 7. MUST preserve order of duplicate keys
+/// 8. MUST re-encode with uppercase hex (%XX)
+/// 9. MUST join with `&` separator
+///
+/// # Example
+///
+/// ```rust
+/// use ash_core::canonicalize_query;
+///
+/// let input = "z=3&a=1&b=hello%20world";
+/// let output = canonicalize_query(input).unwrap();
+/// assert_eq!(output, "a=1&b=hello%20world&z=3");
+///
+/// // With leading ?
+/// let input2 = "?z=3&a=1";
+/// let output2 = canonicalize_query(input2).unwrap();
+/// assert_eq!(output2, "a=1&z=3");
+/// ```
+pub fn canonicalize_query(input: &str) -> Result<String, AshError> {
+    // Rule 1: Remove leading ? if present
+    let query = input.strip_prefix('?').unwrap_or(input);
+
+    if query.is_empty() {
+        return Ok(String::new());
+    }
+
+    // Rule 2 & 3: Parse pairs
+    let mut pairs: Vec<(String, String)> = Vec::new();
+
+    for part in query.split('&') {
+        if part.is_empty() {
+            continue;
+        }
+
+        let (key, value) = match part.find('=') {
+            Some(pos) => (&part[..pos], &part[pos + 1..]),
+            None => (part, ""), // Rule 3: keys without values
+        };
+
+        // Rule 4: Percent-decode
+        let decoded_key = percent_decode(key)?;
+        let decoded_value = percent_decode(value)?;
+
+        // Rule 5: NFC normalize
+        let normalized_key: String = decoded_key.nfc().collect();
+        let normalized_value: String = decoded_value.nfc().collect();
+
+        pairs.push((normalized_key, normalized_value));
+    }
+
+    // Rule 6 & 7: Sort by key (stable sort preserves order of duplicate keys)
+    pairs.sort_by(|a, b| a.0.cmp(&b.0));
+
+    // Rule 8 & 9: Re-encode with uppercase hex and join
+    let encoded: Vec<String> = pairs
+        .into_iter()
+        .map(|(k, v)| format!("{}={}", percent_encode_uppercase(&k), percent_encode_uppercase(&v)))
+        .collect();
+
+    Ok(encoded.join("&"))
+}
+
+/// Percent-encode a string with uppercase hex digits.
+fn percent_encode_uppercase(input: &str) -> String {
+    let mut result = String::with_capacity(input.len() * 3);
+
+    for ch in input.chars() {
+        match ch {
+            'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => {
+                result.push(ch);
+            }
+            ' ' => {
+                result.push_str("%20");
+            }
+            _ => {
+                for byte in ch.to_string().as_bytes() {
+                    result.push('%');
+                    result.push_str(&format!("{:02X}", byte)); // Uppercase hex
+                }
+            }
+        }
+    }
+
+    result
+}
+
 /// Percent-encode a string for URL form data.
 fn percent_encode(input: &str) -> String {
     let mut result = String::with_capacity(input.len() * 3);

@@ -240,23 +240,75 @@ def _object_to_pairs(obj: dict[str, Union[str, list[str]]]) -> list[tuple[str, s
     return pairs
 
 
-def normalize_binding(method: str, path: str) -> str:
+def canonicalize_query(query: str) -> str:
     """
-    Normalize a binding string.
+    Canonicalize a URL query string according to ASH specification.
 
-    Rules (from ASH-Spec-v1.0):
-    - Format: "METHOD /path"
+    9 MUST Rules:
+    1. MUST parse query string after ? (or use full string if no ?)
+    2. MUST split on & to get key=value pairs
+    3. MUST handle keys without values (treat as empty string)
+    4. MUST percent-decode all keys and values
+    5. MUST apply Unicode NFC normalization
+    6. MUST sort pairs by key lexicographically (byte order)
+    7. MUST preserve order of duplicate keys
+    8. MUST re-encode with uppercase hex (%XX)
+    9. MUST join with & separator
+
+    Args:
+        query: Query string (with or without leading ?)
+
+    Returns:
+        Canonical query string
+    """
+    # Rule 1: Remove leading ? if present
+    if query.startswith("?"):
+        query = query[1:]
+
+    if not query:
+        return ""
+
+    # Rule 2 & 3: Parse pairs
+    pairs = _parse_url_encoded(query)
+
+    # Rule 4 & 5: NFC normalize
+    normalized_pairs = [
+        (unicodedata.normalize("NFC", key), unicodedata.normalize("NFC", value))
+        for key, value in pairs
+    ]
+
+    # Rule 6 & 7: Sort by key (stable sort preserves duplicate key order)
+    normalized_pairs.sort(key=lambda x: x[0])
+
+    # Rule 8 & 9: Re-encode and join
+    return "&".join(
+        f"{quote(key, safe='')}"
+        f"={quote(value, safe='')}"
+        for key, value in normalized_pairs
+    )
+
+
+def normalize_binding(method: str, path: str, query: str = "") -> str:
+    """
+    Normalize a binding string to canonical form (v2.3.1+ format).
+
+    Format: METHOD|PATH|CANONICAL_QUERY
+
+    Rules:
     - Method uppercased
     - Path must start with /
-    - Path excludes query string
-    - Collapse duplicate slashes
+    - Duplicate slashes collapsed
+    - Trailing slash removed (except for root)
+    - Query string canonicalized
+    - Parts joined with | (pipe)
 
     Args:
         method: HTTP method
         path: Request path
+        query: Query string (empty string if none)
 
     Returns:
-        Normalized binding string
+        Canonical binding string (METHOD|PATH|QUERY)
     """
     normalized_method = method.upper()
 
@@ -264,7 +316,7 @@ def normalize_binding(method: str, path: str) -> str:
     fragment_index = path.find("#")
     normalized_path = path[:fragment_index] if fragment_index != -1 else path
 
-    # Remove query string
+    # Extract path without query string (in case path contains ?)
     query_index = normalized_path.find("?")
     normalized_path = (
         normalized_path[:query_index] if query_index != -1 else normalized_path
@@ -281,4 +333,27 @@ def normalize_binding(method: str, path: str) -> str:
     if len(normalized_path) > 1 and normalized_path.endswith("/"):
         normalized_path = normalized_path[:-1]
 
-    return f"{normalized_method} {normalized_path}"
+    # Canonicalize query string
+    canonical_query = canonicalize_query(query) if query else ""
+
+    # v2.3.1 format: METHOD|PATH|CANONICAL_QUERY
+    return f"{normalized_method}|{normalized_path}|{canonical_query}"
+
+
+def normalize_binding_from_url(method: str, full_path: str) -> str:
+    """
+    Normalize a binding from a full URL path (including query string).
+
+    Args:
+        method: HTTP method
+        full_path: Full URL path including query string (e.g., "/api/users?page=1")
+
+    Returns:
+        Canonical binding string (METHOD|PATH|QUERY)
+    """
+    if "?" in full_path:
+        path, query = full_path.split("?", 1)
+    else:
+        path, query = full_path, ""
+
+    return normalize_binding(method, path, query)

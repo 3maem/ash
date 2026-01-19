@@ -70,19 +70,24 @@ describe('ASH Node.js SDK', () => {
   });
 
   describe('ashNormalizeBinding', () => {
-    it('uppercases method', () => {
+    it('uppercases method and uses pipe format', () => {
       const result = ashNormalizeBinding('post', '/api/test');
-      expect(result).toBe('POST /api/test');
+      expect(result).toBe('POST|/api/test|');
     });
 
     it('removes trailing slashes', () => {
       const result = ashNormalizeBinding('GET', '/api/test/');
-      expect(result).toBe('GET /api/test');
+      expect(result).toBe('GET|/api/test|');
     });
 
     it('removes duplicate slashes', () => {
       const result = ashNormalizeBinding('GET', '/api//test');
-      expect(result).toBe('GET /api/test');
+      expect(result).toBe('GET|/api/test|');
+    });
+
+    it('includes canonicalized query string', () => {
+      const result = ashNormalizeBinding('GET', '/api/test', 'z=1&a=2');
+      expect(result).toBe('GET|/api/test|a=2&z=1');
     });
   });
 

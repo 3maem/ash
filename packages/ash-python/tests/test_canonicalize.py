@@ -116,44 +116,49 @@ class TestCanonicalizeUrlEncoded:
 
 
 class TestNormalizeBinding:
-    """Tests for binding normalization."""
+    """Tests for binding normalization (v2.3.1+ format: METHOD|PATH|QUERY)."""
 
     def test_simple_binding(self):
         """Should normalize simple binding."""
         result = normalize_binding("post", "/api/update")
-        assert result == "POST /api/update"
+        assert result == "POST|/api/update|"
 
     def test_uppercase_method(self):
         """Should uppercase method."""
         result = normalize_binding("get", "/path")
-        assert result == "GET /path"
+        assert result == "GET|/path|"
 
-    def test_remove_query_string(self):
-        """Should remove query string."""
-        result = normalize_binding("GET", "/path?foo=bar")
-        assert result == "GET /path"
+    def test_with_query_string(self):
+        """Should include canonicalized query string."""
+        result = normalize_binding("GET", "/path", "foo=bar")
+        assert result == "GET|/path|foo=bar"
+
+    def test_query_sorted(self):
+        """Should sort query parameters."""
+        result = normalize_binding("GET", "/path", "z=3&a=1")
+        assert result == "GET|/path|a=1&z=3"
 
     def test_remove_fragment(self):
-        """Should remove fragment."""
+        """Should remove fragment from path."""
         result = normalize_binding("GET", "/path#section")
-        assert result == "GET /path"
+        assert result == "GET|/path|"
 
     def test_add_leading_slash(self):
         """Should add leading slash."""
         result = normalize_binding("GET", "path")
-        assert result == "GET /path"
+        assert result == "GET|/path|"
 
     def test_collapse_slashes(self):
         """Should collapse duplicate slashes."""
         result = normalize_binding("GET", "//path///to////resource")
-        assert result == "GET /path/to/resource"
+        assert result == "GET|/path/to/resource|"
 
     def test_remove_trailing_slash(self):
         """Should remove trailing slash."""
         result = normalize_binding("GET", "/path/")
-        assert result == "GET /path"
+        assert result == "GET|/path|"
 
     def test_preserve_root(self):
         """Should preserve root path."""
         result = normalize_binding("GET", "/")
-        assert result == "GET /"
+        assert result == "GET|/|"

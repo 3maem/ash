@@ -106,8 +106,39 @@ export function ashVerifyProof(expected: string, actual: string): boolean {
   return wasm.ashVerifyProof(expected, actual);
 }
 
-export function ashNormalizeBinding(method: string, path: string): string {
-  return wasm.ashNormalizeBinding(method, path);
+/**
+ * Canonicalize a URL query string according to ASH specification.
+ * Follows the 9 MUST rules for query canonicalization.
+ *
+ * @param query Query string to canonicalize (with or without leading ?)
+ * @returns Canonical query string
+ */
+export function ashCanonicalizeQuery(query: string): string {
+  return wasm.ashCanonicalizeQuery(query);
+}
+
+/**
+ * Normalize a binding string to canonical form (v2.3.2+ format).
+ * Bindings are in the format: "METHOD|PATH|CANONICAL_QUERY"
+ *
+ * @param method HTTP method (GET, POST, etc.)
+ * @param path URL path
+ * @param query Query string (empty string if none)
+ * @returns Canonical binding string (METHOD|PATH|QUERY)
+ */
+export function ashNormalizeBinding(method: string, path: string, query: string = ''): string {
+  return wasm.ashNormalizeBinding(method, path, query);
+}
+
+/**
+ * Normalize a binding from a full URL path (including query string).
+ *
+ * @param method HTTP method (GET, POST, etc.)
+ * @param fullPath Full URL path including query string (e.g., "/api/users?page=1")
+ * @returns Canonical binding string (METHOD|PATH|QUERY)
+ */
+export function ashNormalizeBindingFromUrl(method: string, fullPath: string): string {
+  return wasm.ashNormalizeBindingFromUrl(method, fullPath);
 }
 
 export function ashTimingSafeEqual(a: string, b: string): boolean {
@@ -179,7 +210,7 @@ export function ashHashBody(canonicalBody: string): string {
 }
 
 export function ashContextToClient(context: AshContext): AshClientContext {
-  if (\!context.clientSecret) {
+  if (!context.clientSecret) {
     throw new Error('Context must have clientSecret for v2.1');
   }
   return {
@@ -498,3 +529,55 @@ export function ashVerifyProofUnified(
     return false;
   }
 }
+
+// =========================================================================
+// ASH Namespace Object (v2.3.2+)
+// Provides proper namespace consistency: ash.functionName()
+// =========================================================================
+
+/**
+ * ASH namespace object for proper namespace consistency.
+ * Usage: ash.canonicalizeJson(), ash.normalizeBinding(), etc.
+ */
+export const ash = {
+  // Core functions
+  init: ashInit,
+  version: ashVersion,
+  libraryVersion: ashLibraryVersion,
+
+  // Canonicalization
+  canonicalizeJson: ashCanonicalizeJson,
+  canonicalizeUrlencoded: ashCanonicalizeUrlencoded,
+  canonicalizeQuery: ashCanonicalizeQuery,
+
+  // Binding
+  normalizeBinding: ashNormalizeBinding,
+  normalizeBindingFromUrl: ashNormalizeBindingFromUrl,
+
+  // Proof (legacy)
+  buildProof: ashBuildProof,
+  verifyProof: ashVerifyProof,
+
+  // Comparison
+  timingSafeEqual: ashTimingSafeEqual,
+
+  // v2.1 functions
+  generateNonce: ashGenerateNonce,
+  generateContextId: ashGenerateContextId,
+  deriveClientSecret: ashDeriveClientSecret,
+  buildProofV21: ashBuildProofV21,
+  verifyProofV21: ashVerifyProofV21,
+  hashBody: ashHashBody,
+  contextToClient: ashContextToClient,
+
+  // v2.2 scoping functions
+  extractScopedFields: ashExtractScopedFields,
+  buildProofV21Scoped: ashBuildProofV21Scoped,
+  verifyProofV21Scoped: ashVerifyProofV21Scoped,
+  hashScopedBody: ashHashScopedBody,
+
+  // v2.3 unified functions
+  hashProof: ashHashProof,
+  buildProofUnified: ashBuildProofUnified,
+  verifyProofUnified: ashVerifyProofUnified,
+};

@@ -117,24 +117,55 @@ pub fn ash_verify_proof(expected: &str, actual: &str) -> bool {
     ash_core::timing_safe_equal(expected.as_bytes(), actual.as_bytes())
 }
 
-/// Normalize a binding string to canonical form.
+/// Canonicalize a URL query string according to ASH specification.
 ///
-/// Bindings are in the format: "METHOD /path"
+/// # Canonicalization Rules (9 MUST rules)
+/// - Sort by key lexicographically
+/// - Preserve order of duplicate keys
+/// - Percent-decode and re-encode consistently
+/// - Unicode NFC normalized
+///
+/// @param query - Query string to canonicalize (with or without leading ?)
+/// @returns Canonical query string
+/// @throws Error if query cannot be canonicalized
+#[wasm_bindgen(js_name = "ashCanonicalizeQuery")]
+pub fn ash_canonicalize_query(query: &str) -> Result<String, JsValue> {
+    ash_core::canonicalize_query(query).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// Normalize a binding string to canonical form (v2.3.2+ format).
+///
+/// Bindings are in the format: "METHOD|PATH|CANONICAL_QUERY"
 ///
 /// # Normalization Rules
 /// - Method uppercased
 /// - Path starts with /
-/// - Query string excluded
 /// - Duplicate slashes collapsed
 /// - Trailing slash removed
+/// - Query string canonicalized
+/// - Parts joined with | (pipe)
 ///
 /// @param method - HTTP method (GET, POST, etc.)
 /// @param path - URL path
-/// @returns Canonical binding string
+/// @param query - Query string (empty string if none)
+/// @returns Canonical binding string (METHOD|PATH|QUERY)
 /// @throws Error if method is empty or path doesn't start with /
 #[wasm_bindgen(js_name = "ashNormalizeBinding")]
-pub fn ash_normalize_binding(method: &str, path: &str) -> Result<String, JsValue> {
-    ash_core::normalize_binding(method, path).map_err(|e| JsValue::from_str(&e.to_string()))
+pub fn ash_normalize_binding(method: &str, path: &str, query: &str) -> Result<String, JsValue> {
+    ash_core::normalize_binding(method, path, query).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// Normalize a binding from a full URL path (including query string).
+///
+/// This is a convenience function that extracts the query from the path.
+///
+/// @param method - HTTP method (GET, POST, etc.)
+/// @param fullPath - Full URL path including query string (e.g., "/api/users?page=1")
+/// @returns Canonical binding string (METHOD|PATH|QUERY)
+/// @throws Error if method is empty or path doesn't start with /
+#[wasm_bindgen(js_name = "ashNormalizeBindingFromUrl")]
+pub fn ash_normalize_binding_from_url(method: &str, full_path: &str) -> Result<String, JsValue> {
+    ash_core::normalize_binding_from_url(method, full_path).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Constant-time comparison of two strings.
@@ -195,8 +226,18 @@ pub fn verify_proof(expected: &str, actual: &str) -> bool {
 }
 
 #[wasm_bindgen(js_name = "normalizeBinding")]
-pub fn normalize_binding(method: &str, path: &str) -> Result<String, JsValue> {
-    ash_normalize_binding(method, path)
+pub fn normalize_binding(method: &str, path: &str, query: &str) -> Result<String, JsValue> {
+    ash_normalize_binding(method, path, query)
+}
+
+#[wasm_bindgen(js_name = "canonicalizeQuery")]
+pub fn canonicalize_query(query: &str) -> Result<String, JsValue> {
+    ash_canonicalize_query(query)
+}
+
+#[wasm_bindgen(js_name = "normalizeBindingFromUrl")]
+pub fn normalize_binding_from_url(method: &str, full_path: &str) -> Result<String, JsValue> {
+    ash_normalize_binding_from_url(method, full_path)
 }
 
 #[cfg(test)]
@@ -228,8 +269,26 @@ mod tests {
 
     #[test]
     fn test_normalize_binding() {
-        let result = ash_normalize_binding("post", "/api//test/").unwrap();
-        assert_eq!(result, "POST /api/test");
+        let result = ash_normalize_binding("post", "/api//test/", "").unwrap();
+        assert_eq!(result, "POST|/api/test|");
+    }
+
+    #[test]
+    fn test_normalize_binding_with_query() {
+        let result = ash_normalize_binding("GET", "/api/users", "page=1&sort=name").unwrap();
+        assert_eq!(result, "GET|/api/users|page=1&sort=name");
+    }
+
+    #[test]
+    fn test_normalize_binding_from_url() {
+        let result = ash_normalize_binding_from_url("GET", "/api/search?z=3&a=1").unwrap();
+        assert_eq!(result, "GET|/api/search|a=1&z=3");
+    }
+
+    #[test]
+    fn test_canonicalize_query() {
+        let result = ash_canonicalize_query("z=3&a=1&b=2").unwrap();
+        assert_eq!(result, "a=1&b=2&z=3");
     }
 
     #[test]

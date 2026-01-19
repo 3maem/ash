@@ -45,7 +45,7 @@ mod errors;
 mod proof;
 mod types;
 
-pub use canonicalize::{canonicalize_json, canonicalize_urlencoded};
+pub use canonicalize::{canonicalize_json, canonicalize_urlencoded, canonicalize_query};
 pub use compare::timing_safe_equal;
 pub use errors::{AshError, AshErrorCode};
 pub use proof::{
@@ -63,26 +63,30 @@ pub use proof::{
 };
 pub use types::{AshMode, BuildProofInput, VerifyInput};
 
-/// Normalize a binding string to canonical form.
+/// Normalize a binding string to canonical form (v2.3.2+ format).
 ///
-/// Bindings are in the format: `METHOD /path`
+/// Bindings are in the format: `METHOD|PATH|CANONICAL_QUERY`
 ///
 /// # Normalization Rules
 /// - Method is uppercased
 /// - Path must start with `/`
-/// - Query string is excluded
-/// - Duplicate slashes are collapsed
+/// - Path has duplicate slashes collapsed
 /// - Trailing slash is removed (except for root `/`)
+/// - Query string is canonicalized (sorted, normalized)
+/// - Parts are joined with `|` (pipe) separator
 ///
 /// # Example
 ///
 /// ```rust
 /// use ash_core::normalize_binding;
 ///
-/// let binding = normalize_binding("post", "/api//users/").unwrap();
-/// assert_eq!(binding, "POST /api/users");
+/// let binding = normalize_binding("post", "/api//users/", "").unwrap();
+/// assert_eq!(binding, "POST|/api/users|");
+///
+/// let binding_with_query = normalize_binding("GET", "/api/users", "page=1&sort=name").unwrap();
+/// assert_eq!(binding_with_query, "GET|/api/users|page=1&sort=name");
 /// ```
-pub fn normalize_binding(method: &str, path: &str) -> Result<String, AshError> {
+pub fn normalize_binding(method: &str, path: &str, query: &str) -> Result<String, AshError> {
     // Validate method
     let method = method.trim().to_uppercase();
     if method.is_empty() {
@@ -101,89 +105,151 @@ pub fn normalize_binding(method: &str, path: &str) -> Result<String, AshError> {
         ));
     }
 
-    // Remove query string
-    let path = path.split('?').next().unwrap_or(path);
+    // Extract path without query string (in case path contains ?)
+    let path_only = path.split('?').next().unwrap_or(path);
 
     // Collapse duplicate slashes and normalize
-    let mut normalized = String::with_capacity(path.len());
+    let mut normalized_path = String::with_capacity(path_only.len());
     let mut prev_slash = false;
 
-    for ch in path.chars() {
+    for ch in path_only.chars() {
         if ch == '/' {
             if !prev_slash {
-                normalized.push(ch);
+                normalized_path.push(ch);
             }
             prev_slash = true;
         } else {
-            normalized.push(ch);
+            normalized_path.push(ch);
             prev_slash = false;
         }
     }
 
     // Remove trailing slash (except for root)
-    if normalized.len() > 1 && normalized.ends_with('/') {
-        normalized.pop();
+    if normalized_path.len() > 1 && normalized_path.ends_with('/') {
+        normalized_path.pop();
     }
 
-    Ok(format!("{} {}", method, normalized))
+    // Canonicalize query string
+    let canonical_query = if query.is_empty() {
+        String::new()
+    } else {
+        canonicalize::canonicalize_query(query)?
+    };
+
+    // v2.3.2 format: METHOD|PATH|CANONICAL_QUERY
+    Ok(format!("{}|{}|{}", method, normalized_path, canonical_query))
+}
+
+/// Normalize a binding from a full URL path (including query string).
+///
+/// This is a convenience function that extracts the query string from the path.
+///
+/// # Example
+///
+/// ```rust
+/// use ash_core::normalize_binding_from_url;
+///
+/// let binding = normalize_binding_from_url("GET", "/api/users?page=1&sort=name").unwrap();
+/// assert_eq!(binding, "GET|/api/users|page=1&sort=name");
+/// ```
+pub fn normalize_binding_from_url(method: &str, full_path: &str) -> Result<String, AshError> {
+    let (path, query) = match full_path.find('?') {
+        Some(pos) => (&full_path[..pos], &full_path[pos + 1..]),
+        None => (full_path, ""),
+    };
+    normalize_binding(method, path, query)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    // v2.3.2 Binding Format Tests (METHOD|PATH|CANONICAL_QUERY)
+
     #[test]
     fn test_normalize_binding_basic() {
         assert_eq!(
-            normalize_binding("POST", "/api/users").unwrap(),
-            "POST /api/users"
+            normalize_binding("POST", "/api/users", "").unwrap(),
+            "POST|/api/users|"
         );
     }
 
     #[test]
     fn test_normalize_binding_lowercase_method() {
         assert_eq!(
-            normalize_binding("post", "/api/users").unwrap(),
-            "POST /api/users"
+            normalize_binding("post", "/api/users", "").unwrap(),
+            "POST|/api/users|"
         );
     }
 
     #[test]
     fn test_normalize_binding_duplicate_slashes() {
         assert_eq!(
-            normalize_binding("GET", "/api//users///profile").unwrap(),
-            "GET /api/users/profile"
+            normalize_binding("GET", "/api//users///profile", "").unwrap(),
+            "GET|/api/users/profile|"
         );
     }
 
     #[test]
     fn test_normalize_binding_trailing_slash() {
         assert_eq!(
-            normalize_binding("PUT", "/api/users/").unwrap(),
-            "PUT /api/users"
+            normalize_binding("PUT", "/api/users/", "").unwrap(),
+            "PUT|/api/users|"
         );
     }
 
     #[test]
     fn test_normalize_binding_root() {
-        assert_eq!(normalize_binding("GET", "/").unwrap(), "GET /");
+        assert_eq!(normalize_binding("GET", "/", "").unwrap(), "GET|/|");
     }
 
     #[test]
-    fn test_normalize_binding_query_string() {
+    fn test_normalize_binding_with_query() {
         assert_eq!(
-            normalize_binding("GET", "/api/users?page=1").unwrap(),
-            "GET /api/users"
+            normalize_binding("GET", "/api/users", "page=1&sort=name").unwrap(),
+            "GET|/api/users|page=1&sort=name"
+        );
+    }
+
+    #[test]
+    fn test_normalize_binding_query_sorted() {
+        assert_eq!(
+            normalize_binding("GET", "/api/users", "z=3&a=1&b=2").unwrap(),
+            "GET|/api/users|a=1&b=2&z=3"
+        );
+    }
+
+    #[test]
+    fn test_normalize_binding_from_url_basic() {
+        assert_eq!(
+            normalize_binding_from_url("GET", "/api/users?page=1&sort=name").unwrap(),
+            "GET|/api/users|page=1&sort=name"
+        );
+    }
+
+    #[test]
+    fn test_normalize_binding_from_url_no_query() {
+        assert_eq!(
+            normalize_binding_from_url("POST", "/api/users").unwrap(),
+            "POST|/api/users|"
+        );
+    }
+
+    #[test]
+    fn test_normalize_binding_from_url_query_sorted() {
+        assert_eq!(
+            normalize_binding_from_url("GET", "/api/search?z=last&a=first").unwrap(),
+            "GET|/api/search|a=first&z=last"
         );
     }
 
     #[test]
     fn test_normalize_binding_empty_method() {
-        assert!(normalize_binding("", "/api").is_err());
+        assert!(normalize_binding("", "/api", "").is_err());
     }
 
     #[test]
     fn test_normalize_binding_no_leading_slash() {
-        assert!(normalize_binding("GET", "api/users").is_err());
+        assert!(normalize_binding("GET", "api/users", "").is_err());
     }
 }

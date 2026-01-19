@@ -156,61 +156,82 @@ final class CanonicalizeTest extends TestCase
         $this->assertSame('a=hello%20world', $result);
     }
 
-    // Binding Normalization Tests
+    // Binding Normalization Tests (v2.3.1+ format: METHOD|PATH|QUERY)
 
     #[Test]
     public function normalizeBindingSimple(): void
     {
         $result = Canonicalize::normalizeBinding('post', '/api/update');
-        $this->assertSame('POST /api/update', $result);
+        $this->assertSame('POST|/api/update|', $result);
     }
 
     #[Test]
     public function normalizeBindingUppercasesMethod(): void
     {
         $result = Canonicalize::normalizeBinding('get', '/path');
-        $this->assertSame('GET /path', $result);
+        $this->assertSame('GET|/path|', $result);
     }
 
     #[Test]
-    public function normalizeBindingRemovesQueryString(): void
+    public function normalizeBindingWithQueryString(): void
     {
-        $result = Canonicalize::normalizeBinding('GET', '/path?foo=bar');
-        $this->assertSame('GET /path', $result);
+        $result = Canonicalize::normalizeBinding('GET', '/path', 'foo=bar');
+        $this->assertSame('GET|/path|foo=bar', $result);
+    }
+
+    #[Test]
+    public function normalizeBindingQuerySorted(): void
+    {
+        $result = Canonicalize::normalizeBinding('GET', '/path', 'z=3&a=1');
+        $this->assertSame('GET|/path|a=1&z=3', $result);
     }
 
     #[Test]
     public function normalizeBindingRemovesFragment(): void
     {
         $result = Canonicalize::normalizeBinding('GET', '/path#section');
-        $this->assertSame('GET /path', $result);
+        $this->assertSame('GET|/path|', $result);
     }
 
     #[Test]
     public function normalizeBindingAddsLeadingSlash(): void
     {
         $result = Canonicalize::normalizeBinding('GET', 'path');
-        $this->assertSame('GET /path', $result);
+        $this->assertSame('GET|/path|', $result);
     }
 
     #[Test]
     public function normalizeBindingCollapsesSlashes(): void
     {
         $result = Canonicalize::normalizeBinding('GET', '//path///to////resource');
-        $this->assertSame('GET /path/to/resource', $result);
+        $this->assertSame('GET|/path/to/resource|', $result);
     }
 
     #[Test]
     public function normalizeBindingRemovesTrailingSlash(): void
     {
         $result = Canonicalize::normalizeBinding('GET', '/path/');
-        $this->assertSame('GET /path', $result);
+        $this->assertSame('GET|/path|', $result);
     }
 
     #[Test]
     public function normalizeBindingPreservesRoot(): void
     {
         $result = Canonicalize::normalizeBinding('GET', '/');
-        $this->assertSame('GET /', $result);
+        $this->assertSame('GET|/|', $result);
+    }
+
+    #[Test]
+    public function normalizeBindingFromUrlWithQuery(): void
+    {
+        $result = Canonicalize::normalizeBindingFromUrl('GET', '/api/users?page=1&sort=name');
+        $this->assertSame('GET|/api/users|page=1&sort=name', $result);
+    }
+
+    #[Test]
+    public function normalizeBindingFromUrlWithoutQuery(): void
+    {
+        $result = Canonicalize::normalizeBindingFromUrl('POST', '/api/users');
+        $this->assertSame('POST|/api/users|', $result);
     }
 }

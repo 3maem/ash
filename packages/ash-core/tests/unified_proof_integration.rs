@@ -11,7 +11,7 @@ use ash_core::{
 fn test_unified_basic() {
     let nonce = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     let context_id = "ash_test_context_001";
-    let binding = "POST /api/transfer";
+    let binding = "POST|/api/transfer|";
     let timestamp = "1704067200000";
     let payload = r#"{"amount":100,"note":"test","recipient":"user123"}"#;
 
@@ -54,7 +54,7 @@ fn test_unified_basic() {
 fn test_unified_scoped_single() {
     let nonce = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     let context_id = "ash_test_context_002";
-    let binding = "POST /api/transfer";
+    let binding = "POST|/api/transfer|";
     let timestamp = "1704067200000";
     let payload = r#"{"amount":100,"note":"test","recipient":"user123"}"#;
 
@@ -97,7 +97,7 @@ fn test_unified_scoped_single() {
 fn test_unified_scoped_multiple() {
     let nonce = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     let context_id = "ash_test_context_003";
-    let binding = "POST /api/transfer";
+    let binding = "POST|/api/transfer|";
     let timestamp = "1704067200000";
     let payload = r#"{"amount":100,"note":"test","recipient":"user123"}"#;
 
@@ -138,7 +138,7 @@ fn test_unified_scoped_multiple() {
 fn test_unified_chained() {
     let nonce = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     let context_id = "ash_test_context_004";
-    let binding = "POST /api/confirm";
+    let binding = "POST|/api/confirm|";
     let timestamp = "1704067260000";
     let payload = r#"{"confirmed":true}"#;
     let previous_proof = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
@@ -184,7 +184,7 @@ fn test_unified_chained() {
 fn test_unified_full() {
     let nonce = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     let context_id = "ash_test_context_005";
-    let binding = "POST /api/finalize";
+    let binding = "POST|/api/finalize|";
     let timestamp = "1704067320000";
     let payload = r#"{"amount":500,"approved":true,"recipient":"user456"}"#;
     let previous_proof = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
@@ -227,7 +227,7 @@ fn test_unified_full() {
 fn test_unified_wrong_scope_hash_fails() {
     let nonce = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     let context_id = "ash_test_context_010";
-    let binding = "POST /api/test";
+    let binding = "POST|/api/test|";
     let timestamp = "1704067200000";
     let payload = r#"{"amount":100}"#;
     let scope = ["amount"];
@@ -267,7 +267,7 @@ fn test_unified_wrong_scope_hash_fails() {
 fn test_unified_wrong_chain_hash_fails() {
     let nonce = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     let context_id = "ash_test_context_011";
-    let binding = "POST /api/test";
+    let binding = "POST|/api/test|";
     let timestamp = "1704067200000";
     let payload = r#"{"confirmed":true}"#;
     let previous_proof = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";

@@ -72,3 +72,40 @@ verifyProofV21Chained(
 - E-commerce: Cart → Checkout → Payment
 - Auth: Login → 2FA → Dashboard
 - Workflows: Submit → Review → Approve
+
+---
+
+## Update (2026-01-18): Tutorial 15 Compliance
+
+### Binding Format
+
+Per tutorial_15, binding now uses pipe-separated format with canonical query:
+
+**New Format:** `METHOD|PATH|CANONICAL_QUERY`
+
+**Updated Formula:**
+```
+prevProofHash = SHA256(previousProof)
+proof = HMAC-SHA256(clientSecret, timestamp|METHOD|PATH|QUERY|bodyHash|prevProofHash)
+```
+
+### Verification Order
+
+Chain verification should follow the DoS-resistant order:
+```
+1. Required headers present (including X-ASH-Chain-Hash)
+2. Verify seal signature
+3. Check expiration
+4. ATOMIC CONSUME EARLY (before chain verification)
+5. Verify previous chain hash
+6. Verify binding with canonical query
+7. Recompute bodyHash using JCS (constant-time compare)
+```
+
+### JCS Canonicalization
+
+Body hash MUST use RFC 8785 JCS canonicalization:
+```javascript
+const canonical = ash.canon.jcs(body);  // NOT JSON.stringify
+const bodyHash = ash.canon.sha256Hex(canonical);
+```

@@ -25,3 +25,22 @@ proof = HMAC-SHA256(clientSecret, timestamp|binding|bodyHash|scopeHash)
 ## Use Cases
 - Payment: Protect `amount`, ignore `notes`
 - Forms: Protect critical fields, ignore analytics
+
+---
+
+## Update (2026-01-18): Binding Format
+
+Per tutorial_15, binding now uses pipe-separated format with canonical query:
+
+**Old:** `METHOD /path`
+**New:** `METHOD|PATH|CANONICAL_QUERY`
+
+**Example:**
+```
+POST|/api/transfer|amount=100&recipient=user123
+```
+
+**Scoped Proof with New Binding:**
+```
+proof = HMAC-SHA256(clientSecret, timestamp|METHOD|PATH|QUERY|bodyHash|scopeHash)
+```

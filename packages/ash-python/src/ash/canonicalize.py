@@ -38,6 +38,62 @@ def ash_canonicalize_json(input_json: str) -> str:
     return json.dumps(normalized, separators=(",", ":"), ensure_ascii=False, sort_keys=False)
 
 
+def ash_canonicalize_query(query: str) -> str:
+    """
+    Canonicalize a URL query string according to ASH specification.
+
+    9 MUST Rules:
+    1. MUST parse query string after ? (or use full string if no ?)
+    2. MUST split on & to get key=value pairs
+    3. MUST handle keys without values (treat as empty string)
+    4. MUST percent-decode all keys and values
+    5. MUST apply Unicode NFC normalization
+    6. MUST sort pairs by key lexicographically (byte order)
+    7. MUST preserve order of duplicate keys
+    8. MUST re-encode with uppercase hex (%XX)
+    9. MUST join with & separator
+
+    Args:
+        query: Query string to canonicalize (with or without leading ?)
+
+    Returns:
+        Canonical query string
+
+    Example:
+        >>> ash_canonicalize_query('z=3&a=1&b=hello%20world')
+        'a=1&b=hello%20world&z=3'
+    """
+    # Rule 1: Remove leading ? if present
+    if query.startswith("?"):
+        query = query[1:]
+
+    if not query:
+        return ""
+
+    # Rule 2 & 3: Parse pairs
+    pairs = parse_qsl(query, keep_blank_values=True)
+
+    # Rule 4 & 5: Percent-decode and NFC normalize
+    normalized_pairs = []
+    for key, value in pairs:
+        key = unicodedata.normalize("NFC", key)
+        value = unicodedata.normalize("NFC", value)
+        normalized_pairs.append((key, value))
+
+    # Rule 6 & 7: Sort by key (stable sort preserves duplicate key order)
+    normalized_pairs.sort(key=lambda x: x[0])
+
+    # Rule 8 & 9: Re-encode with uppercase hex and join
+    encoded_pairs = []
+    for key, value in normalized_pairs:
+        # quote() uses uppercase hex by default
+        encoded_key = quote(key, safe="")
+        encoded_value = quote(value, safe="")
+        encoded_pairs.append(f"{encoded_key}={encoded_value}")
+
+    return "&".join(encoded_pairs)
+
+
 def ash_canonicalize_urlencoded(input_data: str) -> str:
     """
     Canonicalize URL-encoded data to deterministic form.

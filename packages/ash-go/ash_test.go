@@ -407,73 +407,90 @@ func TestCanonicalizeURLEncoded(t *testing.T) {
 	}
 }
 
-// TestNormalizeBinding tests binding normalization.
+// TestNormalizeBinding tests binding normalization (v2.3.1+ format: METHOD|PATH|QUERY).
 func TestNormalizeBinding(t *testing.T) {
 	tests := []struct {
 		name     string
 		method   string
 		path     string
+		query    string
 		expected string
 	}{
 		{
 			name:     "simple",
 			method:   "POST",
 			path:     "/api/login",
-			expected: "POST /api/login",
+			query:    "",
+			expected: "POST|/api/login|",
 		},
 		{
 			name:     "lowercase method",
 			method:   "post",
 			path:     "/api/login",
-			expected: "POST /api/login",
+			query:    "",
+			expected: "POST|/api/login|",
 		},
 		{
 			name:     "mixed case method",
 			method:   "PoSt",
 			path:     "/api/login",
-			expected: "POST /api/login",
+			query:    "",
+			expected: "POST|/api/login|",
 		},
 		{
 			name:     "path without leading slash",
 			method:   "GET",
 			path:     "api/data",
-			expected: "GET /api/data",
+			query:    "",
+			expected: "GET|/api/data|",
 		},
 		{
-			name:     "path with query string",
+			name:     "with query string",
 			method:   "GET",
-			path:     "/api/data?foo=bar",
-			expected: "GET /api/data",
+			path:     "/api/data",
+			query:    "foo=bar",
+			expected: "GET|/api/data|foo=bar",
+		},
+		{
+			name:     "query sorted",
+			method:   "GET",
+			path:     "/api/data",
+			query:    "z=1&a=2",
+			expected: "GET|/api/data|a=2&z=1",
 		},
 		{
 			name:     "path with fragment",
 			method:   "GET",
 			path:     "/api/data#section",
-			expected: "GET /api/data",
+			query:    "",
+			expected: "GET|/api/data|",
 		},
 		{
 			name:     "duplicate slashes",
 			method:   "GET",
 			path:     "/api//data///test",
-			expected: "GET /api/data/test",
+			query:    "",
+			expected: "GET|/api/data/test|",
 		},
 		{
 			name:     "trailing slash removed",
 			method:   "GET",
 			path:     "/api/data/",
-			expected: "GET /api/data",
+			query:    "",
+			expected: "GET|/api/data|",
 		},
 		{
 			name:     "root path preserved",
 			method:   "GET",
 			path:     "/",
-			expected: "GET /",
+			query:    "",
+			expected: "GET|/|",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NormalizeBinding(tt.method, tt.path)
+			result := NormalizeBinding(tt.method, tt.path, tt.query)
 			if result != tt.expected {
 				t.Errorf("Expected %q, got %q", tt.expected, result)
 			}
