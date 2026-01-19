@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_version() {
-        assert_eq!(ash_version(), "ASHv1");
+        assert_eq!(ash_version(), "ASHv2.1");
     }
 }
 
