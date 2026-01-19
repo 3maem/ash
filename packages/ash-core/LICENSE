@@ -1,0 +1,86 @@
+ASH Source-Available License (ASAL-1.0)
+
+Copyright © 2026
+3maem Co. | شركة عمائم
+All Rights Reserved.
+
+--------------------------------------------------
+
+Grant of Use
+
+Permission is hereby granted to use this software, in source or binary
+form, for personal and commercial purposes, subject to the terms and
+restrictions of this license.
+
+This license grants the right to USE the software only.
+
+--------------------------------------------------
+Restrictions
+
+You may NOT, without explicit written permission from 3maem Co.:
+
+1. Modify, adapt, translate, or create derivative works based on the
+   software, in whole or in part.
+
+2. Redistribute, sublicense, publish, sell, repackage, or otherwise
+   make the software available to third parties, whether in source
+   or binary form.
+
+3. Fork the project or maintain a competing, parallel, or alternative
+   implementation derived from this software.
+
+4. Remove, alter, or obscure any copyright, trademark, attribution,
+   or proprietary notices contained in the software or documentation.
+
+5. Offer the software as a standalone product, service, or security
+   solution, whether free or commercial.
+
+--------------------------------------------------
+Ownership and Development
+
+All intellectual property rights in the software, including but not
+limited to copyrights, trademarks, design rights, and future
+enhancements, are and shall remain the exclusive property of
+3maem Co.
+
+All official development, maintenance, optimization, and enhancement
+of the software are performed solely by 3maem Co.
+
+--------------------------------------------------
+Security Scope Notice
+
+This software provides deterministic validation that request inputs
+have not been modified in transit and are used only once within their
+intended context.
+
+By enforcing strict request integrity and single-use constraints, the
+software may reduce the feasibility or impact of certain attack
+scenarios that rely on request tampering or replay.
+
+However, the software is not designed, represented, or intended to
+function as an attack prevention, attack detection, or threat
+mitigation system.
+
+The software must not be relied upon as a standalone security control
+for protecting applications against cybersecurity attacks.
+
+--------------------------------------------------
+No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+
+--------------------------------------------------
+Limitation of Liability
+
+IN NO EVENT SHALL 3MAEM CO. OR ITS CONTRIBUTORS BE LIABLE FOR ANY
+CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------
+Governing Law
+
+This license shall be governed by and construed in accordance with
+the laws applicable in the jurisdiction of 3maem Co.
