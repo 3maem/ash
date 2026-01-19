@@ -7,7 +7,7 @@ ASH SDK provides request integrity and anti-replay protection for web applicatio
 ## Installation
 
 ```bash
-dotnet add package Ash.Security
+dotnet add package Ash.Core
 ```
 
 **Requirements:** .NET 6.0, 7.0, or 8.0
@@ -435,4 +435,4 @@ See the [LICENSE](https://github.com/3maem/ash/blob/main/LICENSE) for full terms
 ## Links
 
 - [Main Repository](https://github.com/3maem/ash)
-- [NuGet Package](https://www.nuget.org/packages/Ash.Security)
+- [NuGet Package](https://www.nuget.org/packages/Ash.Core)
