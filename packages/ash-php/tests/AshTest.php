@@ -33,7 +33,7 @@ final class AshTest extends TestCase
     public function canNormalizeBindingThroughFacade(): void
     {
         $result = Ash::normalizeBinding('post', '/api/update');
-        $this->assertSame('POST /api/update', $result);
+        $this->assertSame('POST|/api/update|', $result);
     }
 
     #[Test]
@@ -71,6 +71,6 @@ final class AshTest extends TestCase
     #[Test]
     public function versionConstantExists(): void
     {
-        $this->assertSame('1.0.0', Ash::VERSION);
+        $this->assertSame('2.3.1', Ash::VERSION);
     }
 }
