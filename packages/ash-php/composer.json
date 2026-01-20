@@ -33,7 +33,7 @@
     },
     "scripts": {
         "test": "phpunit --colors=always",
-        "phpstan": "phpstan analyse src tests --level=8",
+        "phpstan": "phpstan analyse",
         "cs": "phpcs --standard=PSR12 src tests",
         "cs-fix": "phpcbf --standard=PSR12 src tests"
     },
