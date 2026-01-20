@@ -21,6 +21,12 @@ final class Proof
     private const VERSION_PREFIX = 'ASHv1';
 
     /**
+     * ASH v2.1 protocol version prefix.
+     * @phpstan-ignore-next-line Kept for API consistency across SDKs
+     */
+    public const VERSION_PREFIX_V21 = 'ASHv2.1';
+
+    /**
      * Build a deterministic proof from the given inputs (v1.x legacy).
      *
      * Proof structure (from ASH-Spec-v1.0):
