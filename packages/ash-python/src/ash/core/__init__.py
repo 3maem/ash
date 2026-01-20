@@ -17,6 +17,8 @@ from ash.core.errors import (
     UnsupportedContentTypeError,
 )
 from ash.core.proof import (
+    ASH_VERSION_PREFIX,
+    ASH_VERSION_PREFIX_V21,
     base64url_decode,
     base64url_encode,
     build_proof,
@@ -49,6 +51,8 @@ __all__ = [
     "canonicalize_url_encoded",
     "normalize_binding",
     # Proof
+    "ASH_VERSION_PREFIX",
+    "ASH_VERSION_PREFIX_V21",
     "base64url_decode",
     "base64url_encode",
     "build_proof",
