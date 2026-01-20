@@ -32,6 +32,10 @@ const Version = "2.1.0"
 // ASH protocol version prefix used in proof generation.
 const ashVersionPrefix = "ASHv1"
 
+// AshVersionPrefixV21 is the ASH v2.1 protocol version prefix.
+// Exported for API consistency across SDKs.
+const AshVersionPrefixV21 = "ASHv2.1"
+
 // AshMode represents security modes for ASH protocol.
 type AshMode string
 

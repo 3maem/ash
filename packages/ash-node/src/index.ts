@@ -20,6 +20,17 @@ import * as wasm from '@3maem/ash-wasm';
 export { wasm };
 
 /**
+ * ASH protocol version prefix (v1.x legacy).
+ */
+export const ASH_VERSION_PREFIX = 'ASHv1';
+
+/**
+ * ASH protocol version prefix (v2.1).
+ * Exported for API consistency across SDKs.
+ */
+export const ASH_VERSION_PREFIX_V21 = 'ASHv2.1';
+
+/**
  * ASH security modes.
  */
 export type AshMode = 'minimal' | 'balanced' | 'strict';
