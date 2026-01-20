@@ -22,7 +22,6 @@ final class Proof
 
     /**
      * ASH v2.1 protocol version prefix.
-     * @phpstan-ignore-next-line Kept for API consistency across SDKs
      */
     public const VERSION_PREFIX_V21 = 'ASHv2.1';
 
