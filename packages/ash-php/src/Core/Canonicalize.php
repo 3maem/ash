@@ -73,10 +73,10 @@ final class Canonicalize
         // Sort by key (stable sort preserves value order for same keys)
         usort($normalizedPairs, fn($a, $b) => strcmp($a[0], $b[0]));
 
-        // Encode and join
+        // Encode and join (with uppercase hex per ASH spec)
         $parts = [];
         foreach ($normalizedPairs as [$key, $value]) {
-            $parts[] = rawurlencode($key) . '=' . rawurlencode($value);
+            $parts[] = self::uppercasePercentEncode($key) . '=' . self::uppercasePercentEncode($value);
         }
 
         return implode('&', $parts);
@@ -127,10 +127,10 @@ final class Canonicalize
         // Rule 6 & 7: Sort by key (stable sort preserves value order for same keys)
         usort($normalizedPairs, fn($a, $b) => strcmp($a[0], $b[0]));
 
-        // Rule 8 & 9: Re-encode and join
+        // Rule 8 & 9: Re-encode with uppercase hex and join
         $parts = [];
         foreach ($normalizedPairs as [$key, $value]) {
-            $parts[] = rawurlencode($key) . '=' . rawurlencode($value);
+            $parts[] = self::uppercasePercentEncode($key) . '=' . self::uppercasePercentEncode($value);
         }
 
         return implode('&', $parts);
@@ -259,7 +259,12 @@ final class Canonicalize
     }
 
     /**
-     * Escape a string for JSON output.
+     * Escape a string for JSON output (RFC 8785 JCS compliant).
+     *
+     * Minimal escaping per RFC 8785:
+     * - 0x08 -> \b, 0x09 -> \t, 0x0A -> \n, 0x0C -> \f, 0x0D -> \r
+     * - 0x22 -> \", 0x5C -> \\
+     * - 0x00-0x1F (other control chars) -> \uXXXX (lowercase hex)
      */
     private static function jsonEscapeString(string $s): string
     {
@@ -274,18 +279,25 @@ final class Canonicalize
                 case '\\':
                     $result .= '\\\\';
                     break;
-                case "\n":
+                case "\x08": // backspace
+                    $result .= '\\b';
+                    break;
+                case "\t": // 0x09
+                    $result .= '\\t';
+                    break;
+                case "\n": // 0x0A
                     $result .= '\\n';
                     break;
-                case "\r":
-                    $result .= '\\r';
+                case "\x0C": // form feed
+                    $result .= '\\f';
                     break;
-                case "\t":
-                    $result .= '\\t';
+                case "\r": // 0x0D
+                    $result .= '\\r';
                     break;
                 default:
                     $ord = mb_ord($char, 'UTF-8');
                     if ($ord !== false && $ord < 0x20) {
+                        // Other control chars (0x00-0x1F except the ones above)
                         $result .= sprintf('\\u%04x', $ord);
                     } else {
                         $result .= $char;
@@ -456,5 +468,27 @@ final class Canonicalize
             return false;
         }
         return array_keys($arr) !== range(0, count($arr) - 1);
+    }
+
+    /**
+     * Percent-encode a string with uppercase hex digits (RFC 3986 + ASH spec).
+     *
+     * PHP's rawurlencode() uses lowercase hex (e.g., %2f), but ASH requires
+     * uppercase hex (e.g., %2F) for consistent canonicalization.
+     *
+     * @param string $value String to encode
+     * @return string Percent-encoded string with uppercase hex
+     */
+    private static function uppercasePercentEncode(string $value): string
+    {
+        $encoded = rawurlencode($value);
+
+        // Convert lowercase hex in percent-encoding to uppercase
+        // Matches %xx and replaces with %XX
+        return preg_replace_callback(
+            '/%[0-9a-f]{2}/i',
+            fn(array $matches): string => strtoupper($matches[0]),
+            $encoded
+        ) ?? $encoded;
     }
 }

@@ -16,9 +16,9 @@ namespace Ash\Core;
 final class Proof
 {
     /**
-     * ASH protocol version prefix.
+     * ASH protocol version prefix (legacy v1.x).
      */
-    private const VERSION_PREFIX = 'ASHv1';
+    public const VERSION_PREFIX = 'ASHv1';
 
     /**
      * ASH v2.1 protocol version prefix.

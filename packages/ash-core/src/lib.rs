@@ -69,6 +69,10 @@ pub use proof::{
     verify_proof_v21_unified,
     // v2.3 unified functions (scoping + chaining)
     UnifiedProofResult,
+    // Version constants (v2.3.1)
+    ASH_SDK_VERSION,
+    ASH_VERSION_PREFIX,
+    ASH_VERSION_PREFIX_V21,
 };
 pub use types::{AshMode, BuildProofInput, VerifyInput};
 
@@ -263,5 +267,36 @@ mod tests {
     #[test]
     fn test_normalize_binding_no_leading_slash() {
         assert!(normalize_binding("GET", "api/users", "").is_err());
+    }
+
+    // v2.3.1 Version Constants Tests
+
+    #[test]
+    fn test_version_constants() {
+        use crate::{ASH_SDK_VERSION, ASH_VERSION_PREFIX, ASH_VERSION_PREFIX_V21};
+
+        assert_eq!(ASH_SDK_VERSION, "2.3.1");
+        assert_eq!(ASH_VERSION_PREFIX, "ASHv1");
+        assert_eq!(ASH_VERSION_PREFIX_V21, "ASHv2.1");
+    }
+
+    // v2.3.1 Query Canonicalization in Binding Tests
+
+    #[test]
+    fn test_normalize_binding_strips_fragment() {
+        // Fragment should be stripped from query string
+        assert_eq!(
+            normalize_binding("GET", "/api/search", "q=test#section").unwrap(),
+            "GET|/api/search|q=test"
+        );
+    }
+
+    #[test]
+    fn test_normalize_binding_plus_literal() {
+        // + is literal plus in query strings, not space
+        assert_eq!(
+            normalize_binding("GET", "/api/search", "q=a+b").unwrap(),
+            "GET|/api/search|q=a%2Bb"
+        );
     }
 }

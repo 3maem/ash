@@ -67,21 +67,38 @@ def _build_canonical_json(value: Any) -> str:
 
 
 def _json_escape_string(s: str) -> str:
-    """Escape a string for JSON output."""
+    """
+    Escape a string for JSON output per RFC 8785 (JCS).
+
+    Minimal JSON escaping:
+    - 0x08 -> \\b (backspace)
+    - 0x09 -> \\t (tab)
+    - 0x0A -> \\n (newline)
+    - 0x0C -> \\f (form feed)
+    - 0x0D -> \\r (carriage return)
+    - 0x22 -> \\" (double quote)
+    - 0x5C -> \\\\ (backslash)
+    - 0x00-0x1F (other control chars) -> \\uXXXX (lowercase hex)
+    """
     result = ['"']
     for char in s:
-        if char == '"':
+        code = ord(char)
+        if char == '"':  # 0x22
             result.append('\\"')
-        elif char == "\\":
+        elif char == "\\":  # 0x5C
             result.append("\\\\")
-        elif char == "\n":
-            result.append("\\n")
-        elif char == "\r":
-            result.append("\\r")
-        elif char == "\t":
+        elif char == "\b":  # 0x08 backspace
+            result.append("\\b")
+        elif char == "\t":  # 0x09 tab
             result.append("\\t")
-        elif ord(char) < 0x20:
-            result.append(f"\\u{ord(char):04x}")
+        elif char == "\n":  # 0x0A newline
+            result.append("\\n")
+        elif char == "\f":  # 0x0C form feed
+            result.append("\\f")
+        elif char == "\r":  # 0x0D carriage return
+            result.append("\\r")
+        elif code < 0x20:  # Other control characters
+            result.append(f"\\u{code:04x}")
         else:
             result.append(char)
     result.append('"')
@@ -264,6 +281,11 @@ def canonicalize_query(query: str) -> str:
     # Rule 1: Remove leading ? if present
     if query.startswith("?"):
         query = query[1:]
+
+    # Strip fragment (#) if present
+    fragment_index = query.find("#")
+    if fragment_index != -1:
+        query = query[:fragment_index]
 
     if not query:
         return ""

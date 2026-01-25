@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"sort"
 	"strconv"
@@ -27,10 +28,10 @@ import (
 )
 
 // Version is the ASH protocol version.
-const Version = "2.1.0"
+const Version = "2.3.1"
 
-// ASH protocol version prefix used in proof generation.
-const ashVersionPrefix = "ASHv1"
+// AshVersionPrefix is the ASH v1 protocol version prefix used in proof generation.
+const AshVersionPrefix = "ASHv1"
 
 // AshVersionPrefixV21 is the ASH v2.1 protocol version prefix.
 // Exported for API consistency across SDKs.
@@ -167,7 +168,7 @@ const (
 func BuildProof(input BuildProofInput) string {
 	// Build the proof input string
 	var sb strings.Builder
-	sb.WriteString(ashVersionPrefix)
+	sb.WriteString(AshVersionPrefix)
 	sb.WriteByte('\n')
 	sb.WriteString(string(input.Mode))
 	sb.WriteByte('\n')
@@ -312,12 +313,12 @@ func canonicalizeValue(value interface{}) (interface{}, error) {
 // canonicalizeNumber canonicalizes a number according to ASH spec.
 func canonicalizeNumber(num float64) (float64, error) {
 	// Check for NaN
-	if num != num { // NaN is the only value that's not equal to itself
+	if math.IsNaN(num) {
 		return 0, NewAshError(ErrCanonicalizationFailed, "NaN values are not allowed")
 	}
 
-	// Check for Infinity
-	if num > 1e308 || num < -1e308 {
+	// Check for Infinity (both positive and negative)
+	if math.IsInf(num, 0) {
 		return 0, NewAshError(ErrCanonicalizationFailed, "Infinity values are not allowed")
 	}
 
@@ -337,11 +338,7 @@ func buildCanonicalJSON(value interface{}) (string, error) {
 
 	switch v := value.(type) {
 	case string:
-		bytes, err := json.Marshal(v)
-		if err != nil {
-			return "", err
-		}
-		return string(bytes), nil
+		return escapeJSONStringRFC8785(v), nil
 
 	case bool:
 		if v {
@@ -369,7 +366,7 @@ func buildCanonicalJSON(value interface{}) (string, error) {
 		return sb.String(), nil
 
 	case map[string]interface{}:
-		// Get keys and sort them
+		// Get keys and sort them lexicographically (byte-wise, NOT locale-dependent)
 		keys := make([]string, 0, len(v))
 		for key := range v {
 			keys = append(keys, key)
@@ -382,11 +379,7 @@ func buildCanonicalJSON(value interface{}) (string, error) {
 			if i > 0 {
 				sb.WriteByte(',')
 			}
-			keyBytes, err := json.Marshal(key)
-			if err != nil {
-				return "", err
-			}
-			sb.Write(keyBytes)
+			sb.WriteString(escapeJSONStringRFC8785(key))
 			sb.WriteByte(':')
 
 			valStr, err := buildCanonicalJSON(v[key])
@@ -401,6 +394,51 @@ func buildCanonicalJSON(value interface{}) (string, error) {
 	default:
 		return "", NewAshError(ErrCanonicalizationFailed, fmt.Sprintf("cannot serialize type: %T", value))
 	}
+}
+
+// escapeJSONStringRFC8785 escapes a string according to RFC 8785 (JCS).
+//
+// Minimal JSON escaping rules:
+//   - 0x08 -> \b (backspace)
+//   - 0x09 -> \t (tab)
+//   - 0x0A -> \n (newline)
+//   - 0x0C -> \f (form feed)
+//   - 0x0D -> \r (carriage return)
+//   - 0x22 -> \" (double quote)
+//   - 0x5C -> \\ (backslash)
+//   - 0x00-0x1F (other control chars) -> \uXXXX (lowercase hex)
+func escapeJSONStringRFC8785(s string) string {
+	var sb strings.Builder
+	sb.WriteByte('"')
+
+	for _, r := range s {
+		switch r {
+		case '\b': // 0x08
+			sb.WriteString(`\b`)
+		case '\t': // 0x09
+			sb.WriteString(`\t`)
+		case '\n': // 0x0A
+			sb.WriteString(`\n`)
+		case '\f': // 0x0C
+			sb.WriteString(`\f`)
+		case '\r': // 0x0D
+			sb.WriteString(`\r`)
+		case '"': // 0x22
+			sb.WriteString(`\"`)
+		case '\\': // 0x5C
+			sb.WriteString(`\\`)
+		default:
+			if r >= 0x00 && r <= 0x1F {
+				// Other control characters: use \uXXXX with lowercase hex
+				sb.WriteString(fmt.Sprintf(`\u%04x`, r))
+			} else {
+				sb.WriteRune(r)
+			}
+		}
+	}
+
+	sb.WriteByte('"')
+	return sb.String()
 }
 
 // formatNumber formats a number without scientific notation.
@@ -446,11 +484,11 @@ func CanonicalizeURLEncoded(input string) (string, error) {
 		return pairs[i].Key < pairs[j].Key
 	})
 
-	// Encode and join (use %20 for spaces instead of +)
+	// Encode and join (use %20 for spaces instead of +, uppercase hex)
 	var parts []string
 	for _, pair := range pairs {
-		key := strings.ReplaceAll(url.QueryEscape(pair.Key), "+", "%20")
-		value := strings.ReplaceAll(url.QueryEscape(pair.Value), "+", "%20")
+		key := percentEncodeUppercase(pair.Key)
+		value := percentEncodeUppercase(pair.Value)
 		parts = append(parts, key+"="+value)
 	}
 
@@ -529,11 +567,11 @@ func CanonicalizeURLEncodedFromMap(data map[string][]string) string {
 		return pairs[i].Key < pairs[j].Key
 	})
 
-	// Encode and join (use %20 for spaces instead of +)
+	// Encode and join (use %20 for spaces instead of +, uppercase hex)
 	var parts []string
 	for _, pair := range pairs {
-		key := strings.ReplaceAll(url.QueryEscape(pair.Key), "+", "%20")
-		value := strings.ReplaceAll(url.QueryEscape(pair.Value), "+", "%20")
+		key := percentEncodeUppercase(pair.Key)
+		value := percentEncodeUppercase(pair.Value)
 		parts = append(parts, key+"="+value)
 	}
 
@@ -548,13 +586,18 @@ func CanonicalizeURLEncodedFromMap(data map[string][]string) string {
 //  3. MUST handle keys without values (treat as empty string)
 //  4. MUST percent-decode all keys and values
 //  5. MUST apply Unicode NFC normalization
-//  6. MUST sort pairs by key lexicographically (byte order)
+//  6. MUST sort pairs by key lexicographically (byte order), then by value
 //  7. MUST preserve order of duplicate keys
 //  8. MUST re-encode with uppercase hex (%XX)
 //  9. MUST join with & separator
 func CanonicalizeQuery(query string) (string, error) {
 	// Rule 1: Remove leading ? if present
 	query = strings.TrimPrefix(query, "?")
+
+	// Strip fragment (#...) if present
+	if fragIndex := strings.Index(query, "#"); fragIndex != -1 {
+		query = query[:fragIndex]
+	}
 
 	if query == "" {
 		return "", nil
@@ -582,23 +625,57 @@ func CanonicalizeQuery(query string) (string, error) {
 		}
 	}
 
-	// Rule 6 & 7: Sort by key (stable sort preserves duplicate key order)
+	// Rule 6 & 7: Sort by key (byte-wise), then by value for stable ordering
 	sort.SliceStable(pairs, func(i, j int) bool {
-		return pairs[i].key < pairs[j].key
+		if pairs[i].key != pairs[j].key {
+			return pairs[i].key < pairs[j].key
+		}
+		return pairs[i].value < pairs[j].value
 	})
 
-	// Rule 8 & 9: Re-encode and join
+	// Rule 8 & 9: Re-encode with uppercase hex and join
 	var parts []string
 	for _, p := range pairs {
-		encodedKey := url.QueryEscape(p.key)
-		encodedValue := url.QueryEscape(p.value)
-		// QueryEscape uses + for space, replace with %20
-		encodedKey = strings.ReplaceAll(encodedKey, "+", "%20")
-		encodedValue = strings.ReplaceAll(encodedValue, "+", "%20")
+		encodedKey := percentEncodeUppercase(p.key)
+		encodedValue := percentEncodeUppercase(p.value)
 		parts = append(parts, encodedKey+"="+encodedValue)
 	}
 
 	return strings.Join(parts, "&"), nil
+}
+
+// percentEncodeUppercase encodes a string with uppercase percent-encoding.
+// Uses %20 for spaces (not +), and uppercase hex (A-F not a-f).
+func percentEncodeUppercase(s string) string {
+	encoded := url.QueryEscape(s)
+	// Replace + with %20
+	encoded = strings.ReplaceAll(encoded, "+", "%20")
+	// Convert lowercase hex to uppercase in percent-encoding
+	return uppercasePercentEncoding(encoded)
+}
+
+// uppercasePercentEncoding converts lowercase hex in percent-encoding to uppercase.
+func uppercasePercentEncoding(s string) string {
+	var sb strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] == '%' && i+2 < len(s) {
+			sb.WriteByte('%')
+			sb.WriteByte(toUpperHex(s[i+1]))
+			sb.WriteByte(toUpperHex(s[i+2]))
+			i += 2
+		} else {
+			sb.WriteByte(s[i])
+		}
+	}
+	return sb.String()
+}
+
+// toUpperHex converts a hex character to uppercase.
+func toUpperHex(c byte) byte {
+	if c >= 'a' && c <= 'f' {
+		return c - 32 // Convert to uppercase
+	}
+	return c
 }
 
 // NormalizeBinding normalizes a binding string to canonical form (v2.3.2+ format).

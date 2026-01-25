@@ -38,7 +38,7 @@ final class UrlencodedCanonicalizer
             return strcmp($a[0], $b[0]);
         });
 
-        // Encode consistently
+        // Encode consistently with uppercase hex (ASH spec requirement)
         $encoded = [];
         foreach ($pairs as [$key, $value]) {
             // NFC normalize if available
@@ -47,11 +47,29 @@ final class UrlencodedCanonicalizer
                 $value = \Normalizer::normalize($value, \Normalizer::FORM_C) ?: $value;
             }
 
-            // Percent-encode with rawurlencode (RFC 3986)
-            $encoded[] = rawurlencode($key) . '=' . rawurlencode($value);
+            // Percent-encode with rawurlencode (RFC 3986) and convert to uppercase hex
+            $encoded[] = self::uppercasePercentEncode($key) . '=' . self::uppercasePercentEncode($value);
         }
 
         return implode('&', $encoded);
+    }
+
+    /**
+     * Percent-encode a string with uppercase hex digits (RFC 3986 + ASH spec).
+     *
+     * @param string $value String to encode
+     * @return string Percent-encoded string with uppercase hex
+     */
+    private static function uppercasePercentEncode(string $value): string
+    {
+        $encoded = rawurlencode($value);
+
+        // Convert lowercase hex in percent-encoding to uppercase
+        return preg_replace_callback(
+            '/%[0-9a-f]{2}/i',
+            fn(array $matches): string => strtoupper($matches[0]),
+            $encoded
+        ) ?? $encoded;
     }
 
     /**

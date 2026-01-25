@@ -185,6 +185,18 @@ public static partial class Canonicalize
         }
     }
 
+    /// <summary>
+    /// Escape a string for JSON according to RFC 8785 (JCS).
+    /// Minimal escaping rules:
+    /// - 0x08 -> \b
+    /// - 0x09 -> \t
+    /// - 0x0A -> \n
+    /// - 0x0C -> \f
+    /// - 0x0D -> \r
+    /// - 0x22 -> \"
+    /// - 0x5C -> \\
+    /// - 0x00-0x1F (other control chars) -> \uXXXX (lowercase hex)
+    /// </summary>
     private static void JsonEscapeString(string s, StringBuilder sb)
     {
         sb.Append('"');
@@ -192,24 +204,31 @@ public static partial class Canonicalize
         {
             switch (c)
             {
-                case '"':
+                case '"':   // 0x22
                     sb.Append("\\\"");
                     break;
-                case '\\':
+                case '\\':  // 0x5C
                     sb.Append("\\\\");
                     break;
-                case '\n':
+                case '\b':  // 0x08 - backspace
+                    sb.Append("\\b");
+                    break;
+                case '\t':  // 0x09 - tab
+                    sb.Append("\\t");
+                    break;
+                case '\n':  // 0x0A - newline
                     sb.Append("\\n");
                     break;
-                case '\r':
-                    sb.Append("\\r");
+                case '\f':  // 0x0C - form feed
+                    sb.Append("\\f");
                     break;
-                case '\t':
-                    sb.Append("\\t");
+                case '\r':  // 0x0D - carriage return
+                    sb.Append("\\r");
                     break;
                 default:
                     if (c < 0x20)
                     {
+                        // Other control characters (0x00-0x1F) -> \uXXXX with lowercase hex
                         sb.Append($"\\u{(int)c:x4}");
                     }
                     else
@@ -275,7 +294,25 @@ public static partial class Canonicalize
         return BuildCanonicalUrlEncoded(pairs);
     }
 
+    /// <summary>
+    /// Parse URL-encoded form data (application/x-www-form-urlencoded).
+    /// Treats + as space.
+    /// </summary>
     private static List<(string Key, string Value)> ParseUrlEncoded(string input)
+    {
+        return ParseUrlEncodedInternal(input, isFormData: true);
+    }
+
+    /// <summary>
+    /// Parse query string.
+    /// Treats + as literal plus (not space).
+    /// </summary>
+    private static List<(string Key, string Value)> ParseQueryString(string input)
+    {
+        return ParseUrlEncodedInternal(input, isFormData: false);
+    }
+
+    private static List<(string Key, string Value)> ParseUrlEncodedInternal(string input, bool isFormData)
     {
         var pairs = new List<(string Key, string Value)>();
 
@@ -289,13 +326,13 @@ public static partial class Canonicalize
 
             if (eqIndex == -1)
             {
-                key = DecodeUrlComponent(part);
+                key = isFormData ? DecodeUrlComponentFormData(part) : DecodeUrlComponentQuery(part);
                 value = "";
             }
             else
             {
-                key = DecodeUrlComponent(part[..eqIndex]);
-                value = DecodeUrlComponent(part[(eqIndex + 1)..]);
+                key = isFormData ? DecodeUrlComponentFormData(part[..eqIndex]) : DecodeUrlComponentQuery(part[..eqIndex]);
+                value = isFormData ? DecodeUrlComponentFormData(part[(eqIndex + 1)..]) : DecodeUrlComponentQuery(part[(eqIndex + 1)..]);
             }
 
             if (!string.IsNullOrEmpty(key))
@@ -307,54 +344,116 @@ public static partial class Canonicalize
         return pairs;
     }
 
-    private static string DecodeUrlComponent(string input)
+    /// <summary>
+    /// Decode URL component for form data (application/x-www-form-urlencoded).
+    /// In form data, + is treated as space.
+    /// </summary>
+    private static string DecodeUrlComponentFormData(string input)
     {
         // Replace + with space (per application/x-www-form-urlencoded spec)
         input = input.Replace('+', ' ');
         return HttpUtility.UrlDecode(input);
     }
 
+    /// <summary>
+    /// Decode URL component for query strings.
+    /// In query strings, + is literal (not space). Space is %20.
+    /// </summary>
+    private static string DecodeUrlComponentQuery(string input)
+    {
+        // DO NOT replace + with space - in query strings, + is literal
+        return HttpUtility.UrlDecode(input);
+    }
+
+    /// <summary>
+    /// Build canonical URL-encoded string for form data.
+    /// Sorts by key only, preserves value order for duplicate keys.
+    /// </summary>
     private static string BuildCanonicalUrlEncoded(List<(string Key, string Value)> pairs)
     {
-        // Normalize with NFC and sort by key
+        // Normalize with NFC and sort by key only (preserve value order for duplicate keys)
+        var normalized = pairs
+            .Select((p, index) => (
+                Key: p.Key.Normalize(NormalizationForm.FormC),
+                Value: p.Value.Normalize(NormalizationForm.FormC),
+                OriginalIndex: index
+            ))
+            .OrderBy(p => p.Key, StringComparer.Ordinal)
+            .ThenBy(p => p.OriginalIndex) // Stable sort: preserve original order for same keys
+            .Select(p => (p.Key, p.Value))
+            .ToList();
+
+        return BuildEncodedString(normalized);
+    }
+
+    /// <summary>
+    /// Build canonical URL-encoded string for query strings.
+    /// Sorts by key then by value (byte-wise).
+    /// </summary>
+    private static string BuildCanonicalQueryString(List<(string Key, string Value)> pairs)
+    {
+        // Normalize with NFC and sort by key, then by value (byte-wise, StringComparer.Ordinal)
         var normalized = pairs
             .Select(p => (
                 Key: p.Key.Normalize(NormalizationForm.FormC),
                 Value: p.Value.Normalize(NormalizationForm.FormC)
             ))
             .OrderBy(p => p.Key, StringComparer.Ordinal)
+            .ThenBy(p => p.Value, StringComparer.Ordinal)
             .ToList();
 
+        return BuildEncodedString(normalized);
+    }
+
+    private static string BuildEncodedString(List<(string Key, string Value)> pairs)
+    {
         var sb = new StringBuilder();
         var isFirst = true;
 
-        foreach (var (key, value) in normalized)
+        foreach (var (key, value) in pairs)
         {
             if (!isFirst) sb.Append('&');
             isFirst = false;
 
-            sb.Append(Uri.EscapeDataString(key));
+            sb.Append(PercentEncodeUppercase(key));
             sb.Append('=');
-            sb.Append(Uri.EscapeDataString(value));
+            sb.Append(PercentEncodeUppercase(value));
         }
 
         return sb.ToString();
     }
 
     /// <summary>
-    /// Canonicalize a URL query string according to ASH specification.
+    /// Percent-encode a string with uppercase hex digits (A-F not a-f).
+    /// Unreserved characters are not encoded: A-Z a-z 0-9 - _ . ~
+    /// </summary>
+    private static string PercentEncodeUppercase(string input)
+    {
+        // Uri.EscapeDataString produces uppercase hex in .NET Core/.NET 5+
+        // but we'll ensure uppercase explicitly for safety
+        var encoded = Uri.EscapeDataString(input);
+        // Ensure percent-encoded sequences are uppercase (A-F not a-f)
+        return UppercasePercentEncodingRegex().Replace(encoded, m => m.Value.ToUpperInvariant());
+    }
+
+    [GeneratedRegex(@"%[0-9a-fA-F]{2}")]
+    private static partial Regex UppercasePercentEncodingRegex();
+
+    /// <summary>
+    /// Canonicalize a URL query string according to ASH v2.3.1 specification.
     /// </summary>
     /// <remarks>
-    /// 9 MUST Rules:
-    /// 1. MUST parse query string after ? (or use full string if no ?)
-    /// 2. MUST split on &amp; to get key=value pairs
-    /// 3. MUST handle keys without values (treat as empty string)
-    /// 4. MUST percent-decode all keys and values
-    /// 5. MUST apply Unicode NFC normalization
-    /// 6. MUST sort pairs by key lexicographically (byte order)
-    /// 7. MUST preserve order of duplicate keys
+    /// MUST Rules:
+    /// 1. MUST remove leading ? if present
+    /// 2. MUST strip fragment (#...) if present
+    /// 3. MUST split on &amp; to get key=value pairs
+    /// 4. MUST handle keys without values (preserve empty: a= stays as a=)
+    /// 5. MUST percent-decode all keys and values
+    /// 6. MUST apply Unicode NFC normalization
+    /// 7. MUST sort pairs by key then by value (byte-wise, StringComparer.Ordinal)
     /// 8. MUST re-encode with uppercase hex (%XX)
     /// 9. MUST join with &amp; separator
+    /// 10. + is literal plus (not space); space is %20
     /// </remarks>
     /// <param name="query">Query string (with or without leading ?).</param>
     /// <returns>Canonical query string.</returns>
@@ -366,18 +465,25 @@ public static partial class Canonicalize
             query = query[1..];
         }
 
+        // Rule 2: Strip fragment (#...) if present
+        var fragmentIndex = query.IndexOf('#');
+        if (fragmentIndex != -1)
+        {
+            query = query[..fragmentIndex];
+        }
+
         if (string.IsNullOrEmpty(query))
             return "";
 
-        // Rule 2 & 3: Parse pairs
-        var pairs = ParseUrlEncoded(query);
+        // Rule 3-5: Parse pairs (using query string parser - + is literal)
+        var pairs = ParseQueryString(query);
 
-        // Rule 4-9: Normalize, sort, and re-encode
-        return BuildCanonicalUrlEncoded(pairs);
+        // Rule 6-9: Normalize, sort by key then value, and re-encode with uppercase hex
+        return BuildCanonicalQueryString(pairs);
     }
 
     /// <summary>
-    /// Normalize a binding string to canonical form (v2.3.2+ format).
+    /// Normalize a binding string to canonical form (v2.3.1 format).
     /// </summary>
     /// <remarks>
     /// Format: METHOD|PATH|CANONICAL_QUERY
@@ -424,7 +530,7 @@ public static partial class Canonicalize
         // Canonicalize query string
         var canonicalQuery = !string.IsNullOrEmpty(query) ? Query(query) : "";
 
-        // v2.3.2 format: METHOD|PATH|CANONICAL_QUERY
+        // v2.3.1 format: METHOD|PATH|CANONICAL_QUERY
         return $"{normalizedMethod}|{normalizedPath}|{canonicalQuery}";
     }
 

@@ -1,24 +1,35 @@
 """
 Canonicalization functions for deterministic serialization.
+
+This module provides RFC 8785 (JCS) compliant JSON canonicalization
+and ASH specification compliant query string canonicalization.
 """
 
 from __future__ import annotations
 
 import json
+import math
 import unicodedata
 from typing import Any
 from urllib.parse import parse_qsl, quote
 
 
+class CanonicalizationError(ValueError):
+    """Error during canonicalization."""
+
+    pass
+
+
 def ash_canonicalize_json(input_json: str) -> str:
     """
-    Canonicalize JSON to deterministic form.
+    Canonicalize JSON to deterministic form per RFC 8785 (JCS).
 
     Rules:
     - Object keys sorted lexicographically
     - No whitespace
     - Unicode NFC normalized
-    - Numbers normalized
+    - Numbers: -0 becomes 0, whole floats become integers
+    - MUST reject: NaN, Infinity
 
     Args:
         input_json: JSON string to canonicalize
@@ -28,6 +39,7 @@ def ash_canonicalize_json(input_json: str) -> str:
 
     Raises:
         json.JSONDecodeError: If input is not valid JSON
+        CanonicalizationError: If input contains NaN or Infinity
 
     Example:
         >>> ash_canonicalize_json('{"z":1,"a":2}')
@@ -35,7 +47,75 @@ def ash_canonicalize_json(input_json: str) -> str:
     """
     data = json.loads(input_json)
     normalized = _normalize_value(data)
-    return json.dumps(normalized, separators=(",", ":"), ensure_ascii=False, sort_keys=False)
+    return _build_canonical_json(normalized)
+
+
+def _build_canonical_json(value: Any) -> str:
+    """Build canonical JSON string manually to ensure proper escaping and key ordering."""
+    if value is None:
+        return "null"
+
+    if isinstance(value, bool):
+        return "true" if value else "false"
+
+    if isinstance(value, str):
+        return _json_escape_string(value)
+
+    if isinstance(value, (int, float)):
+        return str(value)
+
+    if isinstance(value, list):
+        items = [_build_canonical_json(item) for item in value]
+        return "[" + ",".join(items) + "]"
+
+    if isinstance(value, dict):
+        sorted_keys = sorted(value.keys())
+        pairs = [
+            _json_escape_string(key) + ":" + _build_canonical_json(value[key])
+            for key in sorted_keys
+        ]
+        return "{" + ",".join(pairs) + "}"
+
+    raise CanonicalizationError(f"Cannot serialize type: {type(value).__name__}")
+
+
+def _json_escape_string(s: str) -> str:
+    """
+    Escape a string for JSON output per RFC 8785 (JCS).
+
+    Minimal JSON escaping:
+    - 0x08 -> \\b (backspace)
+    - 0x09 -> \\t (tab)
+    - 0x0A -> \\n (newline)
+    - 0x0C -> \\f (form feed)
+    - 0x0D -> \\r (carriage return)
+    - 0x22 -> \\" (double quote)
+    - 0x5C -> \\\\ (backslash)
+    - 0x00-0x1F (other control chars) -> \\uXXXX (lowercase hex)
+    """
+    result = ['"']
+    for char in s:
+        code = ord(char)
+        if char == '"':  # 0x22
+            result.append('\\"')
+        elif char == "\\":  # 0x5C
+            result.append("\\\\")
+        elif char == "\b":  # 0x08 backspace
+            result.append("\\b")
+        elif char == "\t":  # 0x09 tab
+            result.append("\\t")
+        elif char == "\n":  # 0x0A newline
+            result.append("\\n")
+        elif char == "\f":  # 0x0C form feed
+            result.append("\\f")
+        elif char == "\r":  # 0x0D carriage return
+            result.append("\\r")
+        elif code < 0x20:  # Other control characters
+            result.append(f"\\u{code:04x}")
+        else:
+            result.append(char)
+    result.append('"')
+    return "".join(result)
 
 
 def ash_canonicalize_query(query: str) -> str:
@@ -66,6 +146,11 @@ def ash_canonicalize_query(query: str) -> str:
     # Rule 1: Remove leading ? if present
     if query.startswith("?"):
         query = query[1:]
+
+    # Strip fragment (#) if present
+    fragment_index = query.find("#")
+    if fragment_index != -1:
+        query = query[:fragment_index]
 
     if not query:
         return ""
@@ -141,14 +226,50 @@ def ash_canonicalize_urlencoded(input_data: str) -> str:
 
 def _normalize_value(value: Any) -> Any:
     """Normalize a value recursively."""
+    if value is None:
+        return None
+
+    if isinstance(value, bool):
+        return value
+
     if isinstance(value, dict):
         return _normalize_object(value)
     elif isinstance(value, list):
         return [_normalize_value(item) for item in value]
     elif isinstance(value, str):
         return unicodedata.normalize("NFC", value)
-    else:
+    elif isinstance(value, int):
         return value
+    elif isinstance(value, float):
+        return _normalize_number(value)
+    else:
+        raise CanonicalizationError(f"Unsupported type: {type(value).__name__}")
+
+
+def _normalize_number(num: float) -> int | float:
+    """
+    Normalize a number according to ASH/JCS spec.
+
+    Rules:
+    - Reject NaN and Infinity
+    - -0 becomes 0
+    - Whole floats become integers
+    """
+    if math.isnan(num):
+        raise CanonicalizationError("NaN values are not allowed")
+
+    if math.isinf(num):
+        raise CanonicalizationError("Infinity values are not allowed")
+
+    # Convert -0 to 0
+    if num == 0:
+        return 0
+
+    # Convert to int if whole number
+    if num == int(num):
+        return int(num)
+
+    return num
 
 
 def _normalize_object(obj: dict[str, Any]) -> dict[str, Any]:

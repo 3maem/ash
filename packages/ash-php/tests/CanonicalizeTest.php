@@ -66,6 +66,36 @@ final class CanonicalizeTest extends TestCase
     }
 
     #[Test]
+    public function jsonEscapesBackspace(): void
+    {
+        $result = Canonicalize::json("hello\x08world");
+        $this->assertSame('"hello\bworld"', $result);
+    }
+
+    #[Test]
+    public function jsonEscapesFormFeed(): void
+    {
+        $result = Canonicalize::json("hello\x0Cworld");
+        $this->assertSame('"hello\fworld"', $result);
+    }
+
+    #[Test]
+    public function jsonEscapesAllRfc8785ControlChars(): void
+    {
+        // Test all RFC 8785 required escapes
+        $result = Canonicalize::json("\x08\t\n\x0C\r");
+        $this->assertSame('"\b\t\n\f\r"', $result);
+    }
+
+    #[Test]
+    public function jsonEscapesOtherControlCharsAsUnicode(): void
+    {
+        // Control char 0x01 should become \u0001
+        $result = Canonicalize::json("\x01");
+        $this->assertSame('"\u0001"', $result);
+    }
+
+    #[Test]
     public function jsonHandlesIntegers(): void
     {
         $result = Canonicalize::json(42);
@@ -154,6 +184,16 @@ final class CanonicalizeTest extends TestCase
     {
         $result = Canonicalize::urlEncoded('a=hello world');
         $this->assertSame('a=hello%20world', $result);
+    }
+
+    #[Test]
+    public function urlEncodedUsesUppercaseHex(): void
+    {
+        // Verify that percent-encoding uses uppercase hex (A-F not a-f)
+        $result = Canonicalize::urlEncoded(['key' => 'hello/world']);
+        // / encodes to %2F (uppercase F, not lowercase f)
+        $this->assertSame('key=hello%2Fworld', $result);
+        $this->assertStringNotContainsString('%2f', $result); // No lowercase
     }
 
     // Binding Normalization Tests (v2.3.1+ format: METHOD|PATH|QUERY)

@@ -6,6 +6,19 @@ import (
 	"testing"
 )
 
+// TestVersionConstants tests that version constants are correctly set.
+func TestVersionConstants(t *testing.T) {
+	if Version != "2.3.1" {
+		t.Errorf("Expected Version to be \"2.3.1\", got %q", Version)
+	}
+	if AshVersionPrefix != "ASHv1" {
+		t.Errorf("Expected AshVersionPrefix to be \"ASHv1\", got %q", AshVersionPrefix)
+	}
+	if AshVersionPrefixV21 != "ASHv2.1" {
+		t.Errorf("Expected AshVersionPrefixV21 to be \"ASHv2.1\", got %q", AshVersionPrefixV21)
+	}
+}
+
 // TestBuildProof tests the BuildProof function.
 func TestBuildProof(t *testing.T) {
 	tests := []struct {
@@ -273,12 +286,12 @@ func TestCanonicalizeJSON(t *testing.T) {
 // TestCanonicalizeJSONKeyOrder tests that keys are sorted lexicographically.
 func TestCanonicalizeJSONKeyOrder(t *testing.T) {
 	input := map[string]interface{}{
-		"z": float64(1),
-		"a": float64(2),
-		"m": float64(3),
-		"1": float64(4),
+		"z":  float64(1),
+		"a":  float64(2),
+		"m":  float64(3),
+		"1":  float64(4),
 		"10": float64(5),
-		"2": float64(6),
+		"2":  float64(6),
 	}
 
 	result, err := CanonicalizeJSON(input)
@@ -289,6 +302,116 @@ func TestCanonicalizeJSONKeyOrder(t *testing.T) {
 	expected := `{"1":4,"10":5,"2":6,"a":2,"m":3,"z":1}`
 	if result != expected {
 		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+// TestCanonicalizeJSONRFC8785Escaping tests RFC 8785 (JCS) string escaping.
+func TestCanonicalizeJSONRFC8785Escaping(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{
+			name:     "backspace",
+			input:    "a\bb",
+			expected: `"a\bb"`,
+		},
+		{
+			name:     "tab",
+			input:    "a\tb",
+			expected: `"a\tb"`,
+		},
+		{
+			name:     "newline",
+			input:    "a\nb",
+			expected: `"a\nb"`,
+		},
+		{
+			name:     "form feed",
+			input:    "a\fb",
+			expected: `"a\fb"`,
+		},
+		{
+			name:     "carriage return",
+			input:    "a\rb",
+			expected: `"a\rb"`,
+		},
+		{
+			name:     "double quote",
+			input:    `a"b`,
+			expected: `"a\"b"`,
+		},
+		{
+			name:     "backslash",
+			input:    `a\b`,
+			expected: `"a\\b"`,
+		},
+		{
+			name:     "null char (control)",
+			input:    "a\x00b",
+			expected: `"a\u0000b"`,
+		},
+		{
+			name:     "other control char (0x01)",
+			input:    "a\x01b",
+			expected: `"a\u0001b"`,
+		},
+		{
+			name:     "control char 0x1F",
+			input:    "a\x1Fb",
+			expected: `"a\u001fb"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := CanonicalizeJSON(tt.input)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			if result != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestCanonicalizeJSONRejectsNaNAndInfinity tests that NaN and Infinity are rejected.
+func TestCanonicalizeJSONRejectsNaNAndInfinity(t *testing.T) {
+	tests := []struct {
+		name  string
+		input float64
+	}{
+		{"NaN", float64(0) / float64(0)},            // Creates NaN
+		{"positive infinity", float64(1) / float64(0)}, // Creates +Inf
+		{"negative infinity", float64(-1) / float64(0)}, // Creates -Inf
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := CanonicalizeJSON(tt.input)
+			if err == nil {
+				t.Errorf("Expected error for %s, got nil", tt.name)
+			}
+		})
+	}
+}
+
+// TestCanonicalizeJSONMinusZero tests that -0 becomes 0.
+func TestCanonicalizeJSONMinusZero(t *testing.T) {
+	// Create -0
+	minusZero := -0.0
+
+	result, err := CanonicalizeJSON(minusZero)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	if result != "0" {
+		t.Errorf("Expected \"0\", got %q", result)
 	}
 }
 
@@ -396,6 +519,115 @@ func TestCanonicalizeURLEncoded(t *testing.T) {
 				}
 				return
 			}
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			if result != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestCanonicalizeQueryUppercaseHex tests uppercase percent-encoding in query strings.
+func TestCanonicalizeQueryUppercaseHex(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "lowercase hex converted to uppercase",
+			input:    "key=%c3%a9", // e with acute in lowercase hex
+			expected: "key=%C3%A9", // should be uppercase
+		},
+		{
+			name:     "space as %20 not plus",
+			input:    "key=hello%20world",
+			expected: "key=hello%20world",
+		},
+		{
+			name:     "mixed case hex",
+			input:    "key=%aB%Cd",
+			expected: "key=%AB%CD",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := CanonicalizeQuery(tt.input)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			if result != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestCanonicalizeQueryFragmentStripping tests that fragments are stripped.
+func TestCanonicalizeQueryFragmentStripping(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "strip fragment",
+			input:    "a=1&b=2#section",
+			expected: "a=1&b=2",
+		},
+		{
+			name:     "fragment with query",
+			input:    "?foo=bar#anchor",
+			expected: "foo=bar",
+		},
+		{
+			name:     "fragment only",
+			input:    "#anchor",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := CanonicalizeQuery(tt.input)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			if result != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestCanonicalizeQueryEmptyValues tests that empty values are preserved.
+func TestCanonicalizeQueryEmptyValues(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "key with empty value",
+			input:    "a=",
+			expected: "a=",
+		},
+		{
+			name:     "mixed empty and non-empty",
+			input:    "a=&b=value",
+			expected: "a=&b=value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := CanonicalizeQuery(tt.input)
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
@@ -799,6 +1031,53 @@ func TestCanonicalizeURLEncodedFromMap(t *testing.T) {
 	bIdx := strings.Index(result, "b=")
 	if aIdx > bIdx {
 		t.Error("a should come before b in sorted result")
+	}
+}
+
+// TestHashBodyLowercaseHex tests that SHA-256 output is lowercase hex.
+func TestHashBodyLowercaseHex(t *testing.T) {
+	result := HashBody("test")
+
+	// SHA-256 of "test" is known value
+	expected := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
+
+	// Verify all characters are lowercase hex
+	for _, c := range result {
+		isLowerHex := (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
+		if !isLowerHex {
+			t.Errorf("Character %c is not lowercase hex", c)
+		}
+	}
+
+	// Verify length is 64 (32 bytes * 2 hex chars)
+	if len(result) != 64 {
+		t.Errorf("Expected length 64, got %d", len(result))
+	}
+}
+
+// TestConstantTimeComparison tests that timing-safe comparison is used.
+func TestConstantTimeComparison(t *testing.T) {
+	// These tests verify the function works correctly, not the timing properties
+	tests := []struct {
+		a        string
+		b        string
+		expected bool
+	}{
+		{"abc", "abc", true},
+		{"abc", "abd", false},
+		{"abc", "ab", false},
+		{"", "", true},
+	}
+
+	for _, tt := range tests {
+		result := TimingSafeCompare(tt.a, tt.b)
+		if result != tt.expected {
+			t.Errorf("TimingSafeCompare(%q, %q) = %v, expected %v", tt.a, tt.b, result, tt.expected)
+		}
 	}
 }
 

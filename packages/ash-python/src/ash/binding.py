@@ -11,13 +11,14 @@ from .canonicalize import ash_canonicalize_query
 
 def ash_normalize_binding(method: str, path: str, query: str = "") -> str:
     """
-    Normalize a binding string to canonical form (v2.3.2+ format).
+    Normalize a binding string to canonical form (v2.3.1+ format).
 
     Format: METHOD|PATH|CANONICAL_QUERY
 
     Rules:
     - Method uppercased
     - Path starts with /
+    - Fragment (#) stripped from path
     - Duplicate slashes collapsed
     - Trailing slash removed (except for root)
     - Query string canonicalized
@@ -40,6 +41,11 @@ def ash_normalize_binding(method: str, path: str, query: str = "") -> str:
     # Uppercase method
     method = method.upper()
 
+    # Strip fragment (#) from path
+    fragment_index = path.find("#")
+    if fragment_index != -1:
+        path = path[:fragment_index]
+
     # Extract path without query string (in case path contains ?)
     if "?" in path:
         path = path.split("?")[0]
@@ -58,7 +64,7 @@ def ash_normalize_binding(method: str, path: str, query: str = "") -> str:
     # Canonicalize query string
     canonical_query = ash_canonicalize_query(query) if query else ""
 
-    # v2.3.2 format: METHOD|PATH|CANONICAL_QUERY
+    # v2.3.1 format: METHOD|PATH|CANONICAL_QUERY
     return f"{method}|{path}|{canonical_query}"
 
 
@@ -79,6 +85,11 @@ def ash_normalize_binding_from_url(method: str, full_path: str) -> str:
         >>> ash_normalize_binding_from_url("GET", "/api/users?page=1&sort=name")
         'GET|/api/users|page=1&sort=name'
     """
+    # Strip fragment (#) first - it can appear in path or query
+    fragment_index = full_path.find("#")
+    if fragment_index != -1:
+        full_path = full_path[:fragment_index]
+
     if "?" in full_path:
         path, query = full_path.split("?", 1)
     else:

@@ -13,8 +13,21 @@ use crate::compare::timing_safe_equal;
 use crate::errors::AshError;
 use crate::types::{AshMode, BuildProofInput, VerifyInput};
 
-/// Protocol version identifier.
-const ASH_VERSION: &str = "ASHv1";
+// =========================================================================
+// ASH Version Constants (v2.3.1)
+// =========================================================================
+
+/// ASH SDK version (library version).
+pub const ASH_SDK_VERSION: &str = "2.3.1";
+
+/// ASH v1 protocol version prefix.
+pub const ASH_VERSION_PREFIX: &str = "ASHv1";
+
+/// ASH v2.1 protocol version prefix.
+pub const ASH_VERSION_PREFIX_V21: &str = "ASHv2.1";
+
+/// Protocol version identifier (legacy alias for ASH_VERSION_PREFIX).
+const ASH_VERSION: &str = ASH_VERSION_PREFIX;
 
 /// Build a cryptographic proof for request integrity.
 ///
@@ -359,10 +372,6 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256 as HmacSha256;
 
 type HmacSha256Type = Hmac<HmacSha256>;
-
-/// ASH v2.1 protocol version.
-#[allow(dead_code)]
-const ASH_VERSION_V21: &str = "ASHv2.1";
 
 /// Generate a cryptographically secure random nonce.
 ///

@@ -85,7 +85,12 @@ fn canonicalize_value(value: &Value) -> Result<Value, AshError> {
     }
 }
 
-/// Canonicalize a number value.
+/// Canonicalize a number value per RFC 8785 (JCS).
+///
+/// Rules:
+/// - MUST reject NaN and Infinity
+/// - MUST convert -0 to 0
+/// - MUST convert whole floats to integers (e.g., 5.0 -> 5)
 fn canonicalize_number(n: &serde_json::Number) -> Result<Value, AshError> {
     // Check for special values that shouldn't exist in valid JSON
     // but handle edge cases
@@ -103,28 +108,35 @@ fn canonicalize_number(n: &serde_json::Number) -> Result<Value, AshError> {
     }
 
     if let Some(f) = n.as_f64() {
-        // Check for NaN and Infinity
+        // Check for NaN and Infinity (MUST reject per RFC 8785)
         if f.is_nan() {
             return Err(AshError::new(
                 AshErrorCode::CanonicalizationFailed,
-                "NaN is not supported in ASH canonicalization",
+                "NaN is not supported in ASH canonicalization (RFC 8785)",
             ));
         }
         if f.is_infinite() {
             return Err(AshError::new(
                 AshErrorCode::CanonicalizationFailed,
-                "Infinity is not supported in ASH canonicalization",
+                "Infinity is not supported in ASH canonicalization (RFC 8785)",
             ));
         }
 
-        // Handle -0
+        // Handle -0 -> 0 (MUST per RFC 8785)
         let f = if f == 0.0 && f.is_sign_negative() {
             0.0
         } else {
             f
         };
 
-        // Convert back to Number
+        // RFC 8785: Whole floats MUST become integers (5.0 -> 5)
+        // Check if the float is a whole number within i64 range
+        if f.fract() == 0.0 && f >= (i64::MIN as f64) && f <= (i64::MAX as f64) {
+            let i = f as i64;
+            return Ok(Value::Number(serde_json::Number::from(i)));
+        }
+
+        // Convert back to Number for non-whole floats
         serde_json::Number::from_f64(f)
             .map(Value::Number)
             .ok_or_else(|| {
@@ -207,7 +219,8 @@ pub fn canonicalize_urlencoded(input: &str) -> Result<String, AshError> {
     Ok(encoded.join("&"))
 }
 
-/// Percent-decode a string.
+/// Percent-decode a string for URL-encoded form data.
+/// NOTE: This treats + as space per application/x-www-form-urlencoded.
 fn percent_decode(input: &str) -> Result<String, AshError> {
     let mut result = String::with_capacity(input.len());
     let mut chars = input.chars().peekable();
@@ -230,7 +243,7 @@ fn percent_decode(input: &str) -> Result<String, AshError> {
             })?;
             result.push(byte as char);
         } else if ch == '+' {
-            // Plus is space in form data
+            // Plus is space in form data (application/x-www-form-urlencoded)
             result.push(' ');
         } else {
             result.push(ch);
@@ -240,19 +253,52 @@ fn percent_decode(input: &str) -> Result<String, AshError> {
     Ok(result)
 }
 
-/// Canonicalize a URL query string according to ASH specification.
+/// Percent-decode a string for query strings (RFC 3986).
+/// NOTE: + is treated as literal plus, NOT space. Space must be %20.
+fn percent_decode_query(input: &str) -> Result<String, AshError> {
+    let mut result = String::with_capacity(input.len());
+    let mut chars = input.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '%' {
+            // Read two hex digits
+            let hex: String = chars.by_ref().take(2).collect();
+            if hex.len() != 2 {
+                return Err(AshError::new(
+                    AshErrorCode::CanonicalizationFailed,
+                    "Invalid percent encoding",
+                ));
+            }
+            let byte = u8::from_str_radix(&hex, 16).map_err(|_| {
+                AshError::new(
+                    AshErrorCode::CanonicalizationFailed,
+                    "Invalid percent encoding hex",
+                )
+            })?;
+            result.push(byte as char);
+        } else {
+            // + is literal plus in query strings (not space)
+            result.push(ch);
+        }
+    }
+
+    Ok(result)
+}
+
+/// Canonicalize a URL query string according to ASH v2.3.1 specification.
 ///
-/// # Canonicalization Rules (9 MUST rules)
+/// # Canonicalization Rules (10 MUST rules)
 ///
 /// 1. MUST parse query string after `?` (or use full string if no `?`)
-/// 2. MUST split on `&` to get key=value pairs
-/// 3. MUST handle keys without values (treat as empty string)
-/// 4. MUST percent-decode all keys and values
-/// 5. MUST apply Unicode NFC normalization
-/// 6. MUST sort pairs by key lexicographically (byte order)
-/// 7. MUST preserve order of duplicate keys
-/// 8. MUST re-encode with uppercase hex (%XX)
-/// 9. MUST join with `&` separator
+/// 2. MUST strip fragment (#) and everything after it
+/// 3. MUST split on `&` to get key=value pairs
+/// 4. MUST handle keys without values (treat as empty string)
+/// 5. MUST percent-decode all keys and values (+ is literal plus, NOT space)
+/// 6. MUST apply Unicode NFC normalization
+/// 7. MUST sort pairs by key lexicographically (byte order, strcmp)
+/// 8. MUST sort by value for duplicate keys (byte order, strcmp)
+/// 9. MUST re-encode with uppercase hex (%XX)
+/// 10. MUST join with `&` separator
 ///
 /// # Example
 ///
@@ -267,16 +313,24 @@ fn percent_decode(input: &str) -> Result<String, AshError> {
 /// let input2 = "?z=3&a=1";
 /// let output2 = canonicalize_query(input2).unwrap();
 /// assert_eq!(output2, "a=1&z=3");
+///
+/// // Fragment is stripped
+/// let input3 = "z=3&a=1#section";
+/// let output3 = canonicalize_query(input3).unwrap();
+/// assert_eq!(output3, "a=1&z=3");
 /// ```
 pub fn canonicalize_query(input: &str) -> Result<String, AshError> {
     // Rule 1: Remove leading ? if present
     let query = input.strip_prefix('?').unwrap_or(input);
 
+    // Rule 2: Strip fragment (#) and everything after
+    let query = query.split('#').next().unwrap_or(query);
+
     if query.is_empty() {
         return Ok(String::new());
     }
 
-    // Rule 2 & 3: Parse pairs
+    // Rule 3 & 4: Parse pairs
     let mut pairs: Vec<(String, String)> = Vec::new();
 
     for part in query.split('&') {
@@ -286,24 +340,29 @@ pub fn canonicalize_query(input: &str) -> Result<String, AshError> {
 
         let (key, value) = match part.find('=') {
             Some(pos) => (&part[..pos], &part[pos + 1..]),
-            None => (part, ""), // Rule 3: keys without values
+            None => (part, ""), // Rule 4: keys without values
         };
 
-        // Rule 4: Percent-decode
-        let decoded_key = percent_decode(key)?;
-        let decoded_value = percent_decode(value)?;
+        // Rule 5: Percent-decode (+ is literal plus in query strings, NOT space)
+        let decoded_key = percent_decode_query(key)?;
+        let decoded_value = percent_decode_query(value)?;
 
-        // Rule 5: NFC normalize
+        // Rule 6: NFC normalize
         let normalized_key: String = decoded_key.nfc().collect();
         let normalized_value: String = decoded_value.nfc().collect();
 
         pairs.push((normalized_key, normalized_value));
     }
 
-    // Rule 6 & 7: Sort by key (stable sort preserves order of duplicate keys)
-    pairs.sort_by(|a, b| a.0.cmp(&b.0));
+    // Rule 7 & 8: Sort by key, then by value (byte-wise strcmp order)
+    pairs.sort_by(|a, b| {
+        match a.0.as_bytes().cmp(b.0.as_bytes()) {
+            std::cmp::Ordering::Equal => a.1.as_bytes().cmp(b.1.as_bytes()),
+            other => other,
+        }
+    });
 
-    // Rule 8 & 9: Re-encode with uppercase hex and join
+    // Rule 9 & 10: Re-encode with uppercase hex and join
     let encoded: Vec<String> = pairs
         .into_iter()
         .map(|(k, v)| {
@@ -444,6 +503,40 @@ mod tests {
         assert!(canonicalize_json(input).is_err());
     }
 
+    #[test]
+    fn test_canonicalize_json_whole_float_becomes_integer() {
+        // RFC 8785: Whole floats MUST become integers (5.0 -> 5)
+        let input = r#"{"a":5.0}"#;
+        let output = canonicalize_json(input).unwrap();
+        assert_eq!(output, r#"{"a":5}"#);
+    }
+
+    #[test]
+    fn test_canonicalize_json_negative_zero_becomes_zero() {
+        // RFC 8785: -0 MUST become 0
+        // Note: serde_json may normalize -0.0 on parse, but we handle it anyway
+        let input = r#"{"a":-0.0}"#;
+        let output = canonicalize_json(input).unwrap();
+        // Should be 0, not -0
+        assert_eq!(output, r#"{"a":0}"#);
+    }
+
+    #[test]
+    fn test_canonicalize_json_preserves_fractional() {
+        // Non-whole floats should preserve their fractional part
+        let input = r#"{"a":5.5}"#;
+        let output = canonicalize_json(input).unwrap();
+        assert_eq!(output, r#"{"a":5.5}"#);
+    }
+
+    #[test]
+    fn test_canonicalize_json_large_whole_float() {
+        // Large whole floats within i64 range should become integers
+        let input = r#"{"a":1000000.0}"#;
+        let output = canonicalize_json(input).unwrap();
+        assert_eq!(output, r#"{"a":1000000}"#);
+    }
+
     // URL-Encoded Canonicalization Tests
 
     #[test]
@@ -487,5 +580,91 @@ mod tests {
         let input = "a&b=2";
         let output = canonicalize_urlencoded(input).unwrap();
         assert_eq!(output, "a=&b=2");
+    }
+
+    // Query String Canonicalization Tests (v2.3.1 compliance)
+
+    #[test]
+    fn test_canonicalize_query_strips_fragment() {
+        let input = "z=3&a=1#section";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "a=1&z=3");
+    }
+
+    #[test]
+    fn test_canonicalize_query_strips_fragment_with_question_mark() {
+        let input = "?z=3&a=1#fragment";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "a=1&z=3");
+    }
+
+    #[test]
+    fn test_canonicalize_query_plus_is_literal() {
+        // In query strings, + is literal plus, not space
+        let input = "a=hello+world";
+        let output = canonicalize_query(input).unwrap();
+        // + is preserved as %2B (encoded plus)
+        assert_eq!(output, "a=hello%2Bworld");
+    }
+
+    #[test]
+    fn test_canonicalize_query_space_is_percent20() {
+        let input = "a=hello%20world";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "a=hello%20world");
+    }
+
+    #[test]
+    fn test_canonicalize_query_preserves_empty_value() {
+        let input = "a=&b=2";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "a=&b=2");
+    }
+
+    #[test]
+    fn test_canonicalize_query_key_without_equals() {
+        let input = "flag&b=2";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "b=2&flag=");
+    }
+
+    #[test]
+    fn test_canonicalize_query_sorts_by_key_then_value() {
+        // When keys are equal, sort by value
+        let input = "a=2&a=1&a=3";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "a=1&a=2&a=3");
+    }
+
+    #[test]
+    fn test_canonicalize_query_uppercase_hex() {
+        let input = "a=hello%20world"; // lowercase input
+        let output = canonicalize_query(input).unwrap();
+        // Should be uppercase hex in output
+        assert!(output.contains("%20"));
+        assert!(!output.contains("%2a")); // no lowercase hex
+    }
+
+    #[test]
+    fn test_canonicalize_query_byte_order_sorting() {
+        // Ensure byte-wise (strcmp) sorting, not locale-dependent
+        // ASCII order: '0' (48) < 'A' (65) < 'Z' (90) < 'a' (97) < 'z' (122)
+        let input = "z=1&A=2&a=3&0=4";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "0=4&A=2&a=3&z=1");
+    }
+
+    #[test]
+    fn test_canonicalize_query_only_fragment() {
+        let input = "#onlyfragment";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "");
+    }
+
+    #[test]
+    fn test_canonicalize_query_empty_with_question_mark() {
+        let input = "?";
+        let output = canonicalize_query(input).unwrap();
+        assert_eq!(output, "");
     }
 }

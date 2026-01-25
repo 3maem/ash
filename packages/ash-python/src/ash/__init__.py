@@ -19,6 +19,8 @@ Example:
 """
 
 from ash.core import (
+    ASH_VERSION_PREFIX,
+    ASH_VERSION_PREFIX_V21,
     AshError,
     CanonicalizationError,
     ContextExpiredError,
@@ -39,6 +41,9 @@ __version__ = "2.3.1"
 __author__ = "3maem"
 
 __all__ = [
+    # Version constants
+    "ASH_VERSION_PREFIX",
+    "ASH_VERSION_PREFIX_V21",
     # Core functions
     "canonicalize_json",
     "canonicalize_url_encoded",
