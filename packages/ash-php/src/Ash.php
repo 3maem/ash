@@ -39,7 +39,7 @@ use Ash\Core\Proof;
  */
 final class Ash
 {
-    public const VERSION = '2.3.1';
+    public const VERSION = '2.3.2';
 
     /**
      * Canonicalize a JSON value to a deterministic string.

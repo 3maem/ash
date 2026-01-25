@@ -37,7 +37,7 @@ from ash.core import (
 )
 from ash.server import context, middleware, stores, verify
 
-__version__ = "2.3.1"
+__version__ = "2.3.2"
 __author__ = "3maem"
 
 __all__ = [

@@ -28,7 +28,7 @@ import (
 )
 
 // Version is the ASH protocol version.
-const Version = "2.3.1"
+const Version = "2.3.2"
 
 // AshVersionPrefix is the ASH v1 protocol version prefix used in proof generation.
 const AshVersionPrefix = "ASHv1"

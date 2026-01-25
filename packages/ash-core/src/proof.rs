@@ -18,7 +18,7 @@ use crate::types::{AshMode, BuildProofInput, VerifyInput};
 // =========================================================================
 
 /// ASH SDK version (library version).
-pub const ASH_SDK_VERSION: &str = "2.3.1";
+pub const ASH_SDK_VERSION: &str = "2.3.2";
 
 /// ASH v1 protocol version prefix.
 pub const ASH_VERSION_PREFIX: &str = "ASHv1";

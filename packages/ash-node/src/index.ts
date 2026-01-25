@@ -25,7 +25,7 @@ export { wasm };
 /**
  * ASH SDK version (library version, not protocol version).
  */
-export const ASH_SDK_VERSION = '2.3.1';
+export const ASH_SDK_VERSION = '2.3.2';
 
 /**
  * ASH protocol version prefix (v1.x legacy).
