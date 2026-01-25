@@ -25,9 +25,88 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
+/// Scope policy registry that can be instantiated for isolated testing.
+///
+/// For most use cases, use the global functions (`register_scope_policy`, etc.)
+/// which operate on a shared global registry.
+#[derive(Debug, Default)]
+pub struct ScopePolicyRegistry {
+    policies: HashMap<String, Vec<String>>,
+}
+
+impl ScopePolicyRegistry {
+    /// Create a new empty registry.
+    pub fn new() -> Self {
+        Self {
+            policies: HashMap::new(),
+        }
+    }
+
+    /// Register a scope policy for a binding pattern.
+    pub fn register(&mut self, binding: &str, fields: &[&str]) {
+        self.policies.insert(
+            binding.to_string(),
+            fields.iter().map(|s| s.to_string()).collect(),
+        );
+    }
+
+    /// Register multiple scope policies at once.
+    pub fn register_many(&mut self, policies_map: &HashMap<&str, Vec<&str>>) {
+        for (binding, fields) in policies_map {
+            self.policies.insert(
+                binding.to_string(),
+                fields.iter().map(|s| s.to_string()).collect(),
+            );
+        }
+    }
+
+    /// Get the scope policy for a binding.
+    pub fn get(&self, binding: &str) -> Vec<String> {
+        // Exact match first
+        if let Some(fields) = self.policies.get(binding) {
+            return fields.clone();
+        }
+
+        // Pattern match
+        for (pattern, fields) in self.policies.iter() {
+            if matches_pattern(binding, pattern) {
+                return fields.clone();
+            }
+        }
+
+        // Default: no scoping (full payload protection)
+        Vec::new()
+    }
+
+    /// Check if a binding has a scope policy defined.
+    pub fn has(&self, binding: &str) -> bool {
+        if self.policies.contains_key(binding) {
+            return true;
+        }
+
+        for pattern in self.policies.keys() {
+            if matches_pattern(binding, pattern) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Get all registered policies.
+    pub fn get_all(&self) -> HashMap<String, Vec<String>> {
+        self.policies.clone()
+    }
+
+    /// Clear all registered policies.
+    pub fn clear(&mut self) {
+        self.policies.clear();
+    }
+}
+
 lazy_static::lazy_static! {
-    /// Internal storage for scope policies
-    static ref POLICIES: RwLock<HashMap<String, Vec<String>>> = RwLock::new(HashMap::new());
+    /// Global scope policy registry
+    static ref GLOBAL_REGISTRY: RwLock<ScopePolicyRegistry> = RwLock::new(ScopePolicyRegistry::new());
 }
 
 /// Register a scope policy for a binding pattern.
@@ -47,11 +126,8 @@ lazy_static::lazy_static! {
 /// register_scope_policy("PUT|/api/users/<id>|", &["role", "permissions"]);
 /// ```
 pub fn register_scope_policy(binding: &str, fields: &[&str]) {
-    let mut policies = POLICIES.write().unwrap();
-    policies.insert(
-        binding.to_string(),
-        fields.iter().map(|s| s.to_string()).collect(),
-    );
+    let mut registry = GLOBAL_REGISTRY.write().unwrap();
+    registry.register(binding, fields);
 }
 
 /// Register multiple scope policies at once.
@@ -73,13 +149,8 @@ pub fn register_scope_policy(binding: &str, fields: &[&str]) {
 /// register_scope_policies(&policies);
 /// ```
 pub fn register_scope_policies(policies_map: &HashMap<&str, Vec<&str>>) {
-    let mut policies = POLICIES.write().unwrap();
-    for (binding, fields) in policies_map {
-        policies.insert(
-            binding.to_string(),
-            fields.iter().map(|s| s.to_string()).collect(),
-        );
-    }
+    let mut registry = GLOBAL_REGISTRY.write().unwrap();
+    registry.register_many(policies_map);
 }
 
 /// Get the scope policy for a binding.
@@ -109,22 +180,8 @@ pub fn register_scope_policies(policies_map: &HashMap<&str, Vec<&str>>) {
 /// assert!(no_scope.is_empty());
 /// ```
 pub fn get_scope_policy(binding: &str) -> Vec<String> {
-    let policies = POLICIES.read().unwrap();
-
-    // Exact match first
-    if let Some(fields) = policies.get(binding) {
-        return fields.clone();
-    }
-
-    // Pattern match
-    for (pattern, fields) in policies.iter() {
-        if matches_pattern(binding, pattern) {
-            return fields.clone();
-        }
-    }
-
-    // Default: no scoping (full payload protection)
-    Vec::new()
+    let registry = GLOBAL_REGISTRY.read().unwrap();
+    registry.get(binding)
 }
 
 /// Check if a binding has a scope policy defined.
@@ -137,19 +194,8 @@ pub fn get_scope_policy(binding: &str) -> Vec<String> {
 ///
 /// True if a policy exists
 pub fn has_scope_policy(binding: &str) -> bool {
-    let policies = POLICIES.read().unwrap();
-
-    if policies.contains_key(binding) {
-        return true;
-    }
-
-    for pattern in policies.keys() {
-        if matches_pattern(binding, pattern) {
-            return true;
-        }
-    }
-
-    false
+    let registry = GLOBAL_REGISTRY.read().unwrap();
+    registry.has(binding)
 }
 
 /// Get all registered policies.
@@ -158,16 +204,16 @@ pub fn has_scope_policy(binding: &str) -> bool {
 ///
 /// All registered scope policies
 pub fn get_all_scope_policies() -> HashMap<String, Vec<String>> {
-    let policies = POLICIES.read().unwrap();
-    policies.clone()
+    let registry = GLOBAL_REGISTRY.read().unwrap();
+    registry.get_all()
 }
 
 /// Clear all registered policies.
 ///
 /// Useful for testing.
 pub fn clear_scope_policies() {
-    let mut policies = POLICIES.write().unwrap();
-    policies.clear();
+    let mut registry = GLOBAL_REGISTRY.write().unwrap();
+    registry.clear();
 }
 
 /// Check if a binding matches a pattern with wildcards.
@@ -223,97 +269,112 @@ fn matches_pattern(binding: &str, pattern: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
+
+    // Tests using isolated ScopePolicyRegistry instances - can run in parallel
 
     #[test]
-    #[serial]
-    fn test_register_and_get_scope_policy() {
-        clear_scope_policies();
-        register_scope_policy("POST|/api/transfer|", &["amount", "recipient"]);
+    fn test_registry_register_and_get() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("POST|/api/transfer|", &["amount", "recipient"]);
 
-        let scope = get_scope_policy("POST|/api/transfer|");
+        let scope = registry.get("POST|/api/transfer|");
         assert_eq!(scope, vec!["amount", "recipient"]);
     }
 
     #[test]
-    #[serial]
-    fn test_get_scope_policy_no_match() {
-        clear_scope_policies();
+    fn test_registry_get_no_match() {
+        let registry = ScopePolicyRegistry::new();
 
-        let scope = get_scope_policy("GET|/api/users|");
+        let scope = registry.get("GET|/api/users|");
         assert!(scope.is_empty());
     }
 
     #[test]
-    #[serial]
-    fn test_has_scope_policy() {
-        clear_scope_policies();
-        register_scope_policy("POST|/api/transfer|", &["amount"]);
+    fn test_registry_has() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("POST|/api/transfer|", &["amount"]);
 
-        assert!(has_scope_policy("POST|/api/transfer|"));
-        assert!(!has_scope_policy("GET|/api/users|"));
+        assert!(registry.has("POST|/api/transfer|"));
+        assert!(!registry.has("GET|/api/users|"));
     }
 
     #[test]
-    #[serial]
-    fn test_pattern_matching_flask_style() {
-        clear_scope_policies();
-        register_scope_policy("PUT|/api/users/<id>|", &["role", "permissions"]);
+    fn test_registry_pattern_matching_flask_style() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("PUT|/api/users/<id>|", &["role", "permissions"]);
 
-        let scope = get_scope_policy("PUT|/api/users/123|");
+        let scope = registry.get("PUT|/api/users/123|");
         assert_eq!(scope, vec!["role", "permissions"]);
     }
 
     #[test]
-    #[serial]
-    fn test_pattern_matching_express_style() {
-        clear_scope_policies();
-        register_scope_policy("PUT|/api/users/:id|", &["role"]);
+    fn test_registry_pattern_matching_express_style() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("PUT|/api/users/:id|", &["role"]);
 
-        let scope = get_scope_policy("PUT|/api/users/456|");
+        let scope = registry.get("PUT|/api/users/456|");
         assert_eq!(scope, vec!["role"]);
     }
 
     #[test]
-    #[serial]
-    fn test_pattern_matching_laravel_style() {
-        clear_scope_policies();
-        register_scope_policy("PUT|/api/users/{id}|", &["email"]);
+    fn test_registry_pattern_matching_laravel_style() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("PUT|/api/users/{id}|", &["email"]);
 
-        let scope = get_scope_policy("PUT|/api/users/789|");
+        let scope = registry.get("PUT|/api/users/789|");
         assert_eq!(scope, vec!["email"]);
     }
 
     #[test]
-    #[serial]
-    fn test_pattern_matching_wildcard() {
-        clear_scope_policies();
-        register_scope_policy("POST|/api/*/transfer|", &["amount"]);
+    fn test_registry_pattern_matching_wildcard() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("POST|/api/*/transfer|", &["amount"]);
 
-        let scope = get_scope_policy("POST|/api/v1/transfer|");
+        let scope = registry.get("POST|/api/v1/transfer|");
         assert_eq!(scope, vec!["amount"]);
     }
 
     #[test]
-    #[serial]
-    fn test_pattern_matching_double_wildcard() {
-        clear_scope_policies();
-        register_scope_policy("POST|/api/**/transfer|", &["amount"]);
+    fn test_registry_pattern_matching_double_wildcard() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("POST|/api/**/transfer|", &["amount"]);
 
-        let scope = get_scope_policy("POST|/api/v1/users/transfer|");
+        let scope = registry.get("POST|/api/v1/users/transfer|");
         assert_eq!(scope, vec!["amount"]);
     }
 
     #[test]
-    #[serial]
-    fn test_clear_policies() {
-        clear_scope_policies();
-        register_scope_policy("POST|/api/transfer|", &["amount"]);
+    fn test_registry_clear() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("POST|/api/transfer|", &["amount"]);
 
-        assert!(has_scope_policy("POST|/api/transfer|"));
+        assert!(registry.has("POST|/api/transfer|"));
 
-        clear_scope_policies();
+        registry.clear();
 
-        assert!(!has_scope_policy("POST|/api/transfer|"));
+        assert!(!registry.has("POST|/api/transfer|"));
+    }
+
+    #[test]
+    fn test_registry_register_many() {
+        let mut registry = ScopePolicyRegistry::new();
+        let mut policies = HashMap::new();
+        policies.insert("POST|/api/transfer|", vec!["amount"]);
+        policies.insert("POST|/api/payment|", vec!["card"]);
+
+        registry.register_many(&policies);
+
+        assert!(registry.has("POST|/api/transfer|"));
+        assert!(registry.has("POST|/api/payment|"));
+    }
+
+    #[test]
+    fn test_registry_get_all() {
+        let mut registry = ScopePolicyRegistry::new();
+        registry.register("POST|/api/transfer|", &["amount"]);
+        registry.register("POST|/api/payment|", &["card"]);
+
+        let all = registry.get_all();
+        assert_eq!(all.len(), 2);
     }
 }
