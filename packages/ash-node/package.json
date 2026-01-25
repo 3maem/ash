@@ -1,7 +1,7 @@
 {
   "name": "@3maem/ash-node",
   "version": "2.3.2",
-  "description": "ASH SDK for Node.js - Request integrity and anti-replay protection library",
+  "description": "ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

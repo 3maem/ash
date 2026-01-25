@@ -2,12 +2,12 @@
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH SDK provides request integrity and anti-replay protection for web applications. This package offers canonicalization, proof generation, and secure comparison utilities for Go applications.
+ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This package offers JCS canonicalization, proof generation, and constant-time comparison utilities for Go applications.
 
 ## Installation
 
 ```bash
-go get github.com/3maem/ash-go
+go get github.com/3maem/ash-go/v2@v2.3.2
 ```
 
 **Requirements:** Go 1.21 or later
@@ -21,7 +21,7 @@ package main
 
 import (
     "fmt"
-    ash "github.com/3maem/ash-go"
+    ash "github.com/3maem/ash-go/v2"
 )
 
 func main() {
@@ -53,7 +53,7 @@ package main
 
 import (
     "fmt"
-    ash "github.com/3maem/ash-go"
+    ash "github.com/3maem/ash-go/v2"
 )
 
 func main() {
@@ -87,7 +87,7 @@ package main
 
 import (
     "fmt"
-    ash "github.com/3maem/ash-go"
+    ash "github.com/3maem/ash-go/v2"
 )
 
 func main() {
@@ -311,7 +311,7 @@ import (
     "fmt"
     "net/http"
 
-    ash "github.com/3maem/ash-go"
+    ash "github.com/3maem/ash-go/v2"
 )
 
 // Client-side: Build proof for a request

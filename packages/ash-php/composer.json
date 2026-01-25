@@ -1,6 +1,6 @@
 {
     "name": "3maem/ash-sdk-php",
-    "description": "ASH SDK for PHP - Request integrity and anti-replay protection library",
+    "description": "ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets",
     "type": "library",
     "license": "proprietary",
     "authors": [
