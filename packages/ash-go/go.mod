@@ -1,4 +1,4 @@
-module github.com/3maem/ash-go
+module github.com/3maem/ash-go/v2
 
 go 1.21
 
