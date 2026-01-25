@@ -111,10 +111,11 @@ func main() {
 
 Canonicalizes any Go value to a deterministic JSON string.
 
-**Rules:**
-- Object keys sorted lexicographically
+**Rules (RFC 8785 JCS):**
+- Object keys sorted lexicographically (UTF-16 code units)
 - No whitespace
 - Unicode NFC normalized
+- Minimal JSON escaping (only \b, \t, \n, \f, \r, \", \\)
 - Numbers normalized (no scientific notation, no trailing zeros)
 - NaN and Infinity values are rejected
 

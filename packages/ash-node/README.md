@@ -2,7 +2,7 @@
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH SDK provides request integrity and anti-replay protection for web applications. This SDK provides request integrity protection, anti-replay mechanisms, and middleware for Express and Fastify.
+ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This package provides JCS canonicalization, proof generation, and middleware for Express and Fastify.
 
 ## Installation
 
@@ -189,12 +189,14 @@ ashInit();
 
 #### `ashCanonicalizeJson(input: string): string`
 
-Canonicalizes JSON to deterministic form.
+Canonicalizes JSON to deterministic form per RFC 8785 (JCS).
 
 **Rules:**
-- Object keys sorted lexicographically
+- Object keys sorted lexicographically (UTF-16 code units)
 - No whitespace
 - Unicode NFC normalized
+- Minimal JSON escaping (only \b, \t, \n, \f, \r, \", \\)
+- Numbers normalized (no leading zeros, no trailing decimal zeros)
 
 ```typescript
 const canonical = ashCanonicalizeJson('{"z":1,"a":2}');

@@ -1,14 +1,16 @@
-# ash-core
+# ASH SDK for Rust
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH (Application Security Hash) Core - Request integrity and anti-replay protection library for Rust.
+ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This crate provides JCS canonicalization, proof generation, and constant-time comparison utilities for Rust applications.
 
 ## Features
 
-- **Tamper Detection**: Cryptographic proof ensures payload integrity
-- **Replay Prevention**: One-time contexts prevent request replay
-- **Deterministic**: Byte-identical output across all platforms
+- **RFC 8785 Compliant**: JSON Canonicalization Scheme (JCS) for deterministic serialization
+- **Server-Signed Seals**: Cryptographic proof ensures payload integrity without client secrets
+- **Anti-Replay Protection**: One-time contexts prevent request replay attacks
+- **Zero Client Secrets**: No sensitive keys stored or transmitted by clients
+- **Constant-Time Comparison**: Timing-safe verification prevents side-channel attacks
 - **WASM Compatible**: Works in browsers and server environments
 
 ## Installation

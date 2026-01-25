@@ -2,7 +2,7 @@
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH SDK provides request integrity and anti-replay protection for web applications. This package offers request integrity protection, anti-replay mechanisms, and middleware for Laravel, CodeIgniter, WordPress, and Drupal.
+ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This package provides JCS canonicalization, proof generation, and middleware for Laravel, CodeIgniter, WordPress, and Drupal.
 
 ## Installation
 
@@ -231,12 +231,14 @@ class AshMiddleware implements HttpKernelInterface
 
 #### `canonicalize(string $json): string`
 
-Canonicalizes JSON to deterministic form.
+Canonicalizes JSON to deterministic form per RFC 8785 (JCS).
 
 **Rules:**
-- Object keys sorted lexicographically
+- Object keys sorted lexicographically (UTF-16 code units)
 - No whitespace
 - Unicode NFC normalized
+- Minimal JSON escaping (only \b, \t, \n, \f, \r, \", \\)
+- Numbers normalized (no leading zeros, no trailing decimal zeros)
 
 ```php
 use Ash\Canonicalize\JsonCanonicalizer;

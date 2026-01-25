@@ -2,7 +2,7 @@
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH SDK provides request integrity and anti-replay protection for web applications. This package offers request integrity protection, anti-replay mechanisms, and ASP.NET Core middleware for .NET applications.
+ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This package provides JCS canonicalization, proof generation, and ASP.NET Core middleware for .NET applications.
 
 ## Installation
 
@@ -178,16 +178,18 @@ public string AshCanonicalize(string payload, string contentType)
 
 #### `AshCanonicalizeJson`
 
-Canonicalizes JSON to deterministic form.
+Canonicalizes JSON to deterministic form per RFC 8785 (JCS).
 
 ```csharp
 public static string AshCanonicalizeJson(string json)
 ```
 
-**Rules:**
-- Object keys sorted lexicographically
+**Rules (RFC 8785 JCS):**
+- Object keys sorted lexicographically (UTF-16 code units)
 - No whitespace
 - Unicode NFC normalized
+- Minimal JSON escaping (only \b, \t, \n, \f, \r, \", \\)
+- Numbers normalized (no leading zeros, no trailing decimal zeros)
 
 ```csharp
 var canonical = AshService.AshCanonicalizeJson(@"{""z"":1,""a"":2}");

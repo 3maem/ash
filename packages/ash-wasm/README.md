@@ -1,14 +1,17 @@
-# ash-wasm
+# ASH WASM
 
 **Developed by 3maem Co. | شركة عمائم**
 
-ASH (Application Security Hash) WebAssembly bindings - Request integrity and anti-replay protection library.
+ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This package provides WebAssembly bindings for browser environments.
 
 ## Features
 
+- **RFC 8785 Compliant**: JSON Canonicalization Scheme (JCS) for deterministic serialization
 - **Browser Compatible**: Works in browsers via WebAssembly
+- **Server-Signed Seals**: Cryptographic proof ensures payload integrity without client secrets
+- **Zero Client Secrets**: No sensitive keys stored or transmitted by clients
 - **Same API**: Consistent with ash-core Rust API
-- **Zero Dependencies**: Minimal bundle size
+- **Minimal Bundle Size**: Optimized for web delivery
 
 ## Installation
 
