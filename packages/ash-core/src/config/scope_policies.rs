@@ -223,8 +223,10 @@ fn matches_pattern(binding: &str, pattern: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
+    #[serial]
     fn test_register_and_get_scope_policy() {
         clear_scope_policies();
         register_scope_policy("POST|/api/transfer|", &["amount", "recipient"]);
@@ -234,6 +236,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_get_scope_policy_no_match() {
         clear_scope_policies();
 
@@ -242,6 +245,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_has_scope_policy() {
         clear_scope_policies();
         register_scope_policy("POST|/api/transfer|", &["amount"]);
@@ -251,6 +255,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_pattern_matching_flask_style() {
         clear_scope_policies();
         register_scope_policy("PUT|/api/users/<id>|", &["role", "permissions"]);
@@ -260,6 +265,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_pattern_matching_express_style() {
         clear_scope_policies();
         register_scope_policy("PUT|/api/users/:id|", &["role"]);
@@ -269,6 +275,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_pattern_matching_laravel_style() {
         clear_scope_policies();
         register_scope_policy("PUT|/api/users/{id}|", &["email"]);
@@ -278,6 +285,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_pattern_matching_wildcard() {
         clear_scope_policies();
         register_scope_policy("POST|/api/*/transfer|", &["amount"]);
@@ -287,6 +295,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_pattern_matching_double_wildcard() {
         clear_scope_policies();
         register_scope_policy("POST|/api/**/transfer|", &["amount"]);
@@ -296,6 +305,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_clear_policies() {
         clear_scope_policies();
         register_scope_policy("POST|/api/transfer|", &["amount"]);
