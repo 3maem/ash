@@ -7,7 +7,7 @@ ASH (Application Security Hash) - RFC 8785 compliant request integrity verificat
 ## Installation
 
 ```bash
-go get github.com/3maem/ash-go/v2@v2.3.2
+go get github.com/3maem/ash-go/v2@v2.3.3
 ```
 
 **Requirements:** Go 1.21 or later

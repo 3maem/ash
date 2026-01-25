@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.package]
-version = "2.3.2"
+version = "2.3.3"
 edition = "2021"
 license-file = "LICENSE"
 repository = "https://github.com/3maem/ash"
