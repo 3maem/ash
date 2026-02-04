@@ -93,6 +93,19 @@ htmlcov/
 *.wasm
 *.wasm.gz
 
+# ASH Project - Internal Tests
+tests/security/
+tests/security_assurance/
+tests/security_assurance_go/
+tests/security_assurance_node/
+tests/comprehensive/
+tests/ASH-PROTOCOL-TESTS.md
+tests/MIDDLEWARE-TESTS.md
+tests/README.md
+tests/SDK-SPECIFIC-TESTS.md
+tests/SECURITY_ASSURANCE_PACK.md
+tests/unified_proof_test_vectors.json
+
 # ASH Project - Internal/Private
 enhancements/
 guidance/
