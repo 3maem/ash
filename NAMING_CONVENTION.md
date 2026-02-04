@@ -34,73 +34,73 @@ This document defines the standard naming convention for all ASH SDK functions a
 
 ### Scoped Proof Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| Build Scoped | `ash_build_proof_scoped` | `AshBuildProofScoped` | `ashBuildProofScoped` | `ash_build_proof_scoped` |
-| Verify Scoped | `ash_verify_proof_scoped` | `AshVerifyProofScoped` | `ashVerifyProofScoped` | `ash_verify_proof_scoped` |
-| Extract Fields | `ash_extract_scoped_fields` | `AshExtractScopedFields` | `ashExtractScopedFields` | `ash_extract_scoped_fields` |
-| Hash Scoped Body | `ash_hash_scoped_body` | `AshHashScopedBody` | `ashHashScopedBody` | `ash_hash_scoped_body` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Build Scoped | `ash_build_proof_scoped` | `AshBuildProofScoped` | `ashBuildProofScoped` | `ash_build_proof_scoped` | `ashBuildProofScoped` | `AshBuildProofScoped` |
+| Verify Scoped | `ash_verify_proof_scoped` | `AshVerifyProofScoped` | `ashVerifyProofScoped` | `ash_verify_proof_scoped` | `ashVerifyProofScoped` | `AshVerifyProofScoped` |
+| Extract Fields | `ash_extract_scoped_fields` | `AshExtractScopedFields` | `ashExtractScopedFields` | `ash_extract_scoped_fields` | `ashExtractScopedFields` | `AshExtractScopedFields` |
+| Hash Scoped Body | `ash_hash_scoped_body` | `AshHashScopedBody` | `ashHashScopedBody` | `ash_hash_scoped_body` | `ashHashScopedBody` | `AshHashScopedBody` |
 
 ### Unified Proof Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| Build Unified | `ash_build_proof_unified` | `AshBuildProofUnified` | `ashBuildProofUnified` | `ash_build_proof_unified` |
-| Verify Unified | `ash_verify_proof_unified` | `AshVerifyProofUnified` | `ashVerifyProofUnified` | `ash_verify_proof_unified` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Build Unified | `ash_build_proof_unified` | `AshBuildProofUnified` | `ashBuildProofUnified` | `ash_build_proof_unified` | `ashBuildProofUnified` | `AshBuildProofUnified` |
+| Verify Unified | `ash_verify_proof_unified` | `AshVerifyProofUnified` | `ashVerifyProofUnified` | `ash_verify_proof_unified` | `ashVerifyProofUnified` | `AshVerifyProofUnified` |
 
 ### Canonicalization Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| Canonicalize JSON | `ash_canonicalize_json` | `AshCanonicalizeJSON` | `ashCanonicalizeJson` | `ash_canonicalize_json` |
-| Canonicalize Query | `ash_canonicalize_query` | `AshCanonicalizeQuery` | `ashCanonicalizeQuery` | `ash_canonicalize_query` |
-| Canonicalize URL Encoded | `ash_canonicalize_urlencoded` | `AshCanonicalizeURLEncoded` | `ashCanonicalizeUrlEncoded` | `ash_canonicalize_urlencoded` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Canonicalize JSON | `ash_canonicalize_json` | `AshCanonicalizeJSON` | `ashCanonicalizeJson` | `ash_canonicalize_json` | `ashCanonicalizeJson` | `AshCanonicalizeJson` |
+| Canonicalize Query | `ash_canonicalize_query` | `AshCanonicalizeQuery` | `ashCanonicalizeQuery` | `ash_canonicalize_query` | `ashCanonicalizeQuery` | `AshCanonicalizeQuery` |
+| Canonicalize URL Encoded | `ash_canonicalize_urlencoded` | `AshCanonicalizeURLEncoded` | `ashCanonicalizeUrlEncoded` | `ash_canonicalize_urlencoded` | `ashCanonicalizeUrlEncoded` | `AshCanonicalizeUrlEncoded` |
 
 ### Binding Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| Normalize Binding | `ash_normalize_binding` | `AshNormalizeBinding` | `ashNormalizeBinding` | `ash_normalize_binding` |
-| Normalize From URL | `ash_normalize_binding_from_url` | `AshNormalizeBindingFromURL` | `ashNormalizeBindingFromUrl` | `ash_normalize_binding_from_url` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Normalize Binding | `ash_normalize_binding` | `AshNormalizeBinding` | `ashNormalizeBinding` | `ash_normalize_binding` | `ashNormalizeBinding` | `AshNormalizeBinding` |
+| Normalize From URL | `ash_normalize_binding_from_url` | `AshNormalizeBindingFromURL` | `ashNormalizeBindingFromUrl` | `ash_normalize_binding_from_url` | `ashNormalizeBindingFromUrl` | `AshNormalizeBindingFromUrl` |
 
 ### Utility Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| Timing Safe Compare | `ash_timing_safe_compare` | `AshTimingSafeCompare` | `ashTimingSafeCompare` | `ash_timing_safe_compare` |
-| Generate Nonce | `ash_generate_nonce` | `AshGenerateNonce` | `ashGenerateNonce` | `ash_generate_nonce` |
-| Generate Context ID | `ash_generate_context_id` | `AshGenerateContextID` | `ashGenerateContextId` | `ash_generate_context_id` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Timing Safe Compare | `ash_timing_safe_compare` | `AshTimingSafeCompare` | `ashTimingSafeCompare` | `ash_timing_safe_compare` | `ashTimingSafeCompare` | `AshTimingSafeCompare` |
+| Generate Nonce | `ash_generate_nonce` | `AshGenerateNonce` | `ashGenerateNonce` | `ash_generate_nonce` | `ashGenerateNonce` | `AshGenerateNonce` |
+| Generate Context ID | `ash_generate_context_id` | `AshGenerateContextID` | `ashGenerateContextId` | `ash_generate_context_id` | `ashGenerateContextId` | `AshGenerateContextId` |
 
 ### Scope Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| Normalize Scope | `ash_normalize_scope_fields` | `AshNormalizeScopeFields` | `ashNormalizeScopeFields` | `ash_normalize_scope_fields` |
-| Join Scope | `ash_join_scope_fields` | `AshJoinScopeFields` | `ashJoinScopeFields` | `ash_join_scope_fields` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Normalize Scope | `ash_normalize_scope_fields` | `AshNormalizeScopeFields` | `ashNormalizeScopeFields` | `ash_normalize_scope_fields` | `ashNormalizeScopeFields` | `AshNormalizeScopeFields` |
+| Join Scope | `ash_join_scope_fields` | `AshJoinScopeFields` | `ashJoinScopeFields` | `ash_join_scope_fields` | `ashJoinScopeFields` | `AshJoinScopeFields` |
 
 ### Base64 Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| Base64URL Encode | `ash_base64url_encode` | `AshBase64URLEncode` | `ashBase64UrlEncode` | `ash_base64url_encode` |
-| Base64URL Decode | `ash_base64url_decode` | `AshBase64URLDecode` | `ashBase64UrlDecode` | `ash_base64url_decode` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Base64URL Encode | `ash_base64url_encode` | `AshBase64URLEncode` | `ashBase64UrlEncode` | `ash_base64url_encode` | `ashBase64UrlEncode` | `AshBase64UrlEncode` |
+| Base64URL Decode | `ash_base64url_decode` | `AshBase64URLDecode` | `ashBase64UrlDecode` | `ash_base64url_decode` | `ashBase64UrlDecode` | `AshBase64UrlDecode` |
 
 ### Validation Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| Is Valid Mode | `ash_is_valid_mode` | `AshIsValidMode` | `ashIsValidMode` | `ash_is_valid_mode` |
-| Is Valid HTTP Method | `ash_is_valid_http_method` | `AshIsValidHTTPMethod` | `ashIsValidHttpMethod` | `ash_is_valid_http_method` |
-| Validate Proof Input | `ash_validate_proof_input` | `AshValidateProofInput` | `ashValidateProofInput` | `ash_validate_proof_input` |
-| Is ASCII | `ash_is_ascii` | `AshIsASCII` | `ashIsAscii` | `ash_is_ascii` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Is Valid Mode | `ash_is_valid_mode` | `AshIsValidMode` | `ashIsValidMode` | `ash_is_valid_mode` | `ashIsValidMode` | `AshIsValidMode` |
+| Is Valid HTTP Method | `ash_is_valid_http_method` | `AshIsValidHTTPMethod` | `ashIsValidHttpMethod` | `ash_is_valid_http_method` | `ashIsValidHttpMethod` | `AshIsValidHttpMethod` |
+| Validate Proof Input | `ash_validate_proof_input` | `AshValidateProofInput` | `ashValidateProofInput` | `ash_validate_proof_input` | `ashValidateProofInput` | `AshValidateProofInput` |
+| Is ASCII | `ash_is_ascii` | `AshIsASCII` | `ashIsAscii` | `ash_is_ascii` | `ashIsAscii` | `AshIsAscii` |
 
 ### Error Functions
 
-| Category | Rust | Go | Node.js | Python |
-|----------|------|----|---------|--------|
-| New Error | `ash_new_error` | `AshNewError` | `ashNewError` | `ash_new_error` |
-| Get Version | `ash_get_version` | `AshGetVersion` | `ashGetVersion` | `ash_get_version` |
-| Parse JSON | `ash_parse_json` | `AshParseJSON` | `ashParseJson` | `ash_parse_json` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| New Error | `ash_new_error` | `AshNewError` | `ashNewError` | `ash_new_error` | `ashNewError` | `AshNewError` |
+| Get Version | `ash_get_version` | `AshGetVersion` | `ashGetVersion` | `ash_get_version` | `ashGetVersion` | `AshGetVersion` |
+| Parse JSON | `ash_parse_json` | `AshParseJSON` | `ashParseJson` | `ash_parse_json` | `ashParseJson` | `AshParseJson` |
 
 ## Internal/Private Functions
 
