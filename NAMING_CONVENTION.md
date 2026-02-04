@@ -174,12 +174,3 @@ The following old function names are deprecated but kept for backward compatibil
 | `buildProof` | `ashBuildProof` | Deprecated |
 | `verifyProof` | `ashVerifyProof` | Deprecated |
 
-## Implementation Checklist
-
-- [x] **Go SDK** - All functions renamed with `Ash`/`ash` prefix ✅
-- [x] **Rust SDK** - All functions renamed with `ash_` prefix ✅
-- [x] **Node.js SDK** - All functions renamed with `ash` prefix (713 tests pass) ✅
-- [x] **Python SDK** - All functions renamed with `ash_` prefix (89 tests pass) ✅
-- [x] **PHP SDK** - All functions renamed with `ash` prefix (99 tests pass) ✅
-- [x] **.NET SDK** - All methods renamed with `Ash` prefix (98 tests pass) ✅
-- [x] **Middlewares** - Updated to use new function names ✅
