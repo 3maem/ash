@@ -159,10 +159,11 @@ final class CanonicalizeTest extends TestCase
     }
 
     #[Test]
-    public function urlEncodedPreservesValueOrderForDuplicateKeys(): void
+    public function urlEncodedSortsDuplicateKeysByValue(): void
     {
+        // Duplicate keys should be sorted by value (byte-wise) per ASH spec
         $result = Canonicalize::urlEncoded('a=2&a=1&a=3');
-        $this->assertSame('a=2&a=1&a=3', $result);
+        $this->assertSame('a=1&a=2&a=3', $result);
     }
 
     #[Test]
@@ -173,10 +174,11 @@ final class CanonicalizeTest extends TestCase
     }
 
     #[Test]
-    public function urlEncodedDecodesPlusAsSpace(): void
+    public function urlEncodedTreatsPlusAsLiteral(): void
     {
+        // ASH protocol treats + as literal plus, not space
         $result = Canonicalize::urlEncoded('a=hello+world');
-        $this->assertSame('a=hello%20world', $result);
+        $this->assertSame('a=hello%2Bworld', $result);
     }
 
     #[Test]

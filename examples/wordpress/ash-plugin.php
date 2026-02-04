@@ -1,13 +1,13 @@
 <?php
 /**
- * Plugin Name: ASH Security
- * Plugin URI: https://github.com/3meam/ash
+ * Plugin Name: ASH SDK
+ * Plugin URI: https://github.com/3maem/ash
  * Description: Anti-tamper Security Hash protection for WordPress REST API
- * Version: 1.0.0
- * Author: 3meam Co. | شركة عمائم
- * Author URI: https://3meam.com
- * License: Proprietary
- * Text Domain: ash-security
+ * Version: 2.3.3
+ * Author: 3maem Co. | شركة عمائم
+ * Author URI: https://3maem.com
+ * License: ASAL-1.0
+ * Text Domain: ash-sdk
  */
 
 declare(strict_types=1);
@@ -181,7 +181,7 @@ final class AshSecurityPlugin
             'ASH Security',
             'ASH Security',
             'manage_options',
-            'ash-security',
+            'ash-sdk',
             [$this, 'renderAdminPage'],
         );
     }

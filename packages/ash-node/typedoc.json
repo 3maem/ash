@@ -1,0 +1,36 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/middleware/index.ts"],
+  "out": "docs",
+  "name": "@3maem/ash-node API Documentation",
+  "readme": "README.md",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Canonicalization",
+    "Proof Generation",
+    "Proof Verification",
+    "Context Management",
+    "Utilities",
+    "Middleware",
+    "Types",
+    "*"
+  ],
+  "navigationLinks": {
+    "GitHub": "https://github.com/3maem/ash",
+    "npm": "https://www.npmjs.com/package/@3maem/ash-node"
+  },
+  "plugin": [],
+  "theme": "default",
+  "hideGenerator": true,
+  "searchInComments": true,
+  "cleanOutputDir": true,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  }
+}

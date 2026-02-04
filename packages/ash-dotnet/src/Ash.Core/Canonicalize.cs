@@ -33,7 +33,7 @@ public static partial class Canonicalize
     /// <param name="json">The JSON element to canonicalize.</param>
     /// <returns>Canonical JSON string.</returns>
     /// <exception cref="CanonicalizationException">If value contains unsupported types.</exception>
-    public static string Json(JsonElement json)
+    public static string AshCanonicalizeJson(JsonElement json)
     {
         var sb = new StringBuilder();
         BuildCanonicalJson(json, sb);
@@ -41,17 +41,35 @@ public static partial class Canonicalize
     }
 
     /// <summary>
+    /// Canonicalize a JSON value to a deterministic string.
+    /// </summary>
+    /// <remarks>
+    /// Rules (from ASH-Spec-v1.0):
+    /// - JSON minified (no whitespace)
+    /// - Object keys sorted lexicographically (ascending)
+    /// - Arrays preserve order
+    /// - Unicode normalization: NFC
+    /// - Numbers: no scientific notation, remove trailing zeros, -0 becomes 0
+    /// - Unsupported values REJECT: NaN, Infinity, None type objects
+    /// </remarks>
+    /// <param name="json">The JSON element to canonicalize.</param>
+    /// <returns>Canonical JSON string.</returns>
+    /// <exception cref="CanonicalizationException">If value contains unsupported types.</exception>
+    [Obsolete("Use AshCanonicalizeJson instead")]
+    public static string Json(JsonElement json) => AshCanonicalizeJson(json);
+
+    /// <summary>
     /// Canonicalize a JSON string to a deterministic string.
     /// </summary>
     /// <param name="jsonString">The JSON string to canonicalize.</param>
     /// <returns>Canonical JSON string.</returns>
     /// <exception cref="CanonicalizationException">If value contains unsupported types.</exception>
-    public static string Json(string jsonString)
+    public static string AshCanonicalizeJson(string jsonString)
     {
         try
         {
             using var doc = JsonDocument.Parse(jsonString);
-            return Json(doc.RootElement);
+            return AshCanonicalizeJson(doc.RootElement);
         }
         catch (JsonException ex)
         {
@@ -60,16 +78,34 @@ public static partial class Canonicalize
     }
 
     /// <summary>
+    /// Canonicalize a JSON string to a deterministic string.
+    /// </summary>
+    /// <param name="jsonString">The JSON string to canonicalize.</param>
+    /// <returns>Canonical JSON string.</returns>
+    /// <exception cref="CanonicalizationException">If value contains unsupported types.</exception>
+    [Obsolete("Use AshCanonicalizeJson instead")]
+    public static string Json(string jsonString) => AshCanonicalizeJson(jsonString);
+
+    /// <summary>
     /// Canonicalize a dictionary to a deterministic JSON string.
     /// </summary>
     /// <param name="obj">The dictionary to canonicalize.</param>
     /// <returns>Canonical JSON string.</returns>
     /// <exception cref="CanonicalizationException">If value contains unsupported types.</exception>
-    public static string Json(IDictionary<string, object?> obj)
+    public static string AshCanonicalizeJson(IDictionary<string, object?> obj)
     {
         var jsonString = JsonSerializer.Serialize(obj);
-        return Json(jsonString);
+        return AshCanonicalizeJson(jsonString);
     }
+
+    /// <summary>
+    /// Canonicalize a dictionary to a deterministic JSON string.
+    /// </summary>
+    /// <param name="obj">The dictionary to canonicalize.</param>
+    /// <returns>Canonical JSON string.</returns>
+    /// <exception cref="CanonicalizationException">If value contains unsupported types.</exception>
+    [Obsolete("Use AshCanonicalizeJson instead")]
+    public static string Json(IDictionary<string, object?> obj) => AshCanonicalizeJson(obj);
 
     private static void BuildCanonicalJson(JsonElement element, StringBuilder sb)
     {
@@ -120,10 +156,6 @@ public static partial class Canonicalize
                 var isFirstProp = true;
                 foreach (var prop in properties)
                 {
-                    // Skip null values in objects
-                    if (prop.Value.ValueKind == JsonValueKind.Null)
-                        continue;
-
                     if (!isFirstProp) sb.Append(',');
                     isFirstProp = false;
 
@@ -249,14 +281,14 @@ public static partial class Canonicalize
     /// - Parse into key-value pairs
     /// - Percent-decode consistently
     /// - Sort keys lexicographically
-    /// - For duplicate keys: preserve value order per key
+    /// - For duplicate keys: sort by value (byte-wise)
     /// - Output format: k1=v1&amp;k1=v2&amp;k2=v3
     /// - Unicode NFC applies after decoding
     /// </remarks>
     /// <param name="input">URL-encoded string.</param>
     /// <returns>Canonical URL-encoded string.</returns>
     /// <exception cref="CanonicalizationException">If input cannot be parsed.</exception>
-    public static string UrlEncoded(string input)
+    public static string AshCanonicalizeUrlEncoded(string input)
     {
         if (string.IsNullOrEmpty(input))
             return "";
@@ -266,22 +298,48 @@ public static partial class Canonicalize
     }
 
     /// <summary>
+    /// Canonicalize URL-encoded form data.
+    /// </summary>
+    /// <remarks>
+    /// Rules (from ASH-Spec-v1.0):
+    /// - Parse into key-value pairs
+    /// - Percent-decode consistently
+    /// - Sort keys lexicographically
+    /// - For duplicate keys: sort by value (byte-wise)
+    /// - Output format: k1=v1&amp;k1=v2&amp;k2=v3
+    /// - Unicode NFC applies after decoding
+    /// </remarks>
+    /// <param name="input">URL-encoded string.</param>
+    /// <returns>Canonical URL-encoded string.</returns>
+    /// <exception cref="CanonicalizationException">If input cannot be parsed.</exception>
+    [Obsolete("Use AshCanonicalizeUrlEncoded instead")]
+    public static string UrlEncoded(string input) => AshCanonicalizeUrlEncoded(input);
+
+    /// <summary>
     /// Canonicalize URL-encoded form data from a dictionary.
     /// </summary>
     /// <param name="data">Dictionary of key-value pairs.</param>
     /// <returns>Canonical URL-encoded string.</returns>
-    public static string UrlEncoded(IDictionary<string, string> data)
+    public static string AshCanonicalizeUrlEncoded(IDictionary<string, string> data)
     {
         var pairs = data.Select(kvp => (kvp.Key, kvp.Value)).ToList();
         return BuildCanonicalUrlEncoded(pairs);
     }
 
     /// <summary>
+    /// Canonicalize URL-encoded form data from a dictionary.
+    /// </summary>
+    /// <param name="data">Dictionary of key-value pairs.</param>
+    /// <returns>Canonical URL-encoded string.</returns>
+    [Obsolete("Use AshCanonicalizeUrlEncoded instead")]
+    public static string UrlEncoded(IDictionary<string, string> data) => AshCanonicalizeUrlEncoded(data);
+
+    /// <summary>
     /// Canonicalize URL-encoded form data from a dictionary with multiple values per key.
     /// </summary>
     /// <param name="data">Dictionary of key-value pairs where values can be lists.</param>
     /// <returns>Canonical URL-encoded string.</returns>
-    public static string UrlEncoded(IDictionary<string, IEnumerable<string>> data)
+    public static string AshCanonicalizeUrlEncoded(IDictionary<string, IEnumerable<string>> data)
     {
         var pairs = new List<(string Key, string Value)>();
         foreach (var kvp in data)
@@ -295,12 +353,20 @@ public static partial class Canonicalize
     }
 
     /// <summary>
-    /// Parse URL-encoded form data (application/x-www-form-urlencoded).
-    /// Treats + as space.
+    /// Canonicalize URL-encoded form data from a dictionary with multiple values per key.
+    /// </summary>
+    /// <param name="data">Dictionary of key-value pairs where values can be lists.</param>
+    /// <returns>Canonical URL-encoded string.</returns>
+    [Obsolete("Use AshCanonicalizeUrlEncoded instead")]
+    public static string UrlEncoded(IDictionary<string, IEnumerable<string>> data) => AshCanonicalizeUrlEncoded(data);
+
+    /// <summary>
+    /// Parse URL-encoded data per ASH protocol.
+    /// Treats + as literal plus (not space).
     /// </summary>
     private static List<(string Key, string Value)> ParseUrlEncoded(string input)
     {
-        return ParseUrlEncodedInternal(input, isFormData: true);
+        return ParseUrlEncodedInternal(input, isFormData: false);
     }
 
     /// <summary>
@@ -361,26 +427,26 @@ public static partial class Canonicalize
     /// </summary>
     private static string DecodeUrlComponentQuery(string input)
     {
-        // DO NOT replace + with space - in query strings, + is literal
+        // HttpUtility.UrlDecode treats + as space, but ASH protocol treats + as literal.
+        // Replace + with %2B before decoding so it becomes + after decode.
+        input = input.Replace("+", "%2B");
         return HttpUtility.UrlDecode(input);
     }
 
     /// <summary>
     /// Build canonical URL-encoded string for form data.
-    /// Sorts by key only, preserves value order for duplicate keys.
+    /// Sorts by key first, then by value for duplicate keys (byte-wise).
     /// </summary>
     private static string BuildCanonicalUrlEncoded(List<(string Key, string Value)> pairs)
     {
-        // Normalize with NFC and sort by key only (preserve value order for duplicate keys)
+        // Normalize with NFC and sort by key, then by value (byte-wise, StringComparer.Ordinal)
         var normalized = pairs
-            .Select((p, index) => (
+            .Select(p => (
                 Key: p.Key.Normalize(NormalizationForm.FormC),
-                Value: p.Value.Normalize(NormalizationForm.FormC),
-                OriginalIndex: index
+                Value: p.Value.Normalize(NormalizationForm.FormC)
             ))
             .OrderBy(p => p.Key, StringComparer.Ordinal)
-            .ThenBy(p => p.OriginalIndex) // Stable sort: preserve original order for same keys
-            .Select(p => (p.Key, p.Value))
+            .ThenBy(p => p.Value, StringComparer.Ordinal)
             .ToList();
 
         return BuildEncodedString(normalized);
@@ -457,7 +523,7 @@ public static partial class Canonicalize
     /// </remarks>
     /// <param name="query">Query string (with or without leading ?).</param>
     /// <returns>Canonical query string.</returns>
-    public static string Query(string query)
+    public static string AshCanonicalizeQuery(string query)
     {
         // Rule 1: Remove leading ? if present
         if (query.StartsWith('?'))
@@ -483,6 +549,27 @@ public static partial class Canonicalize
     }
 
     /// <summary>
+    /// Canonicalize a URL query string according to ASH v2.3.1 specification.
+    /// </summary>
+    /// <remarks>
+    /// MUST Rules:
+    /// 1. MUST remove leading ? if present
+    /// 2. MUST strip fragment (#...) if present
+    /// 3. MUST split on &amp; to get key=value pairs
+    /// 4. MUST handle keys without values (preserve empty: a= stays as a=)
+    /// 5. MUST percent-decode all keys and values
+    /// 6. MUST apply Unicode NFC normalization
+    /// 7. MUST sort pairs by key then by value (byte-wise, StringComparer.Ordinal)
+    /// 8. MUST re-encode with uppercase hex (%XX)
+    /// 9. MUST join with &amp; separator
+    /// 10. + is literal plus (not space); space is %20
+    /// </remarks>
+    /// <param name="query">Query string (with or without leading ?).</param>
+    /// <returns>Canonical query string.</returns>
+    [Obsolete("Use AshCanonicalizeQuery instead")]
+    public static string Query(string query) => AshCanonicalizeQuery(query);
+
+    /// <summary>
     /// Normalize a binding string to canonical form (v2.3.1 format).
     /// </summary>
     /// <remarks>
@@ -500,7 +587,7 @@ public static partial class Canonicalize
     /// <param name="path">Request path.</param>
     /// <param name="query">Query string (empty string if none).</param>
     /// <returns>Canonical binding string (METHOD|PATH|QUERY).</returns>
-    public static string Binding(string method, string path, string query = "")
+    public static string AshNormalizeBinding(string method, string path, string query = "")
     {
         var normalizedMethod = method.ToUpperInvariant();
 
@@ -528,11 +615,32 @@ public static partial class Canonicalize
         }
 
         // Canonicalize query string
-        var canonicalQuery = !string.IsNullOrEmpty(query) ? Query(query) : "";
+        var canonicalQuery = !string.IsNullOrEmpty(query) ? AshCanonicalizeQuery(query) : "";
 
         // v2.3.1 format: METHOD|PATH|CANONICAL_QUERY
         return $"{normalizedMethod}|{normalizedPath}|{canonicalQuery}";
     }
+
+    /// <summary>
+    /// Normalize a binding string to canonical form (v2.3.1 format).
+    /// </summary>
+    /// <remarks>
+    /// Format: METHOD|PATH|CANONICAL_QUERY
+    ///
+    /// Rules:
+    /// - Method uppercased
+    /// - Path must start with /
+    /// - Duplicate slashes collapsed
+    /// - Trailing slash removed (except for root)
+    /// - Query string canonicalized
+    /// - Parts joined with | (pipe)
+    /// </remarks>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="path">Request path.</param>
+    /// <param name="query">Query string (empty string if none).</param>
+    /// <returns>Canonical binding string (METHOD|PATH|QUERY).</returns>
+    [Obsolete("Use AshNormalizeBinding instead")]
+    public static string Binding(string method, string path, string query = "") => AshNormalizeBinding(method, path, query);
 
     /// <summary>
     /// Normalize a binding from a full URL path (including query string).
@@ -540,7 +648,7 @@ public static partial class Canonicalize
     /// <param name="method">HTTP method.</param>
     /// <param name="fullPath">Full URL path including query string (e.g., "/api/users?page=1").</param>
     /// <returns>Canonical binding string (METHOD|PATH|QUERY).</returns>
-    public static string BindingFromUrl(string method, string fullPath)
+    public static string AshNormalizeBindingFromUrl(string method, string fullPath)
     {
         var queryIndex = fullPath.IndexOf('?');
         string path, query;
@@ -556,8 +664,17 @@ public static partial class Canonicalize
             query = "";
         }
 
-        return Binding(method, path, query);
+        return AshNormalizeBinding(method, path, query);
     }
+
+    /// <summary>
+    /// Normalize a binding from a full URL path (including query string).
+    /// </summary>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="fullPath">Full URL path including query string (e.g., "/api/users?page=1").</param>
+    /// <returns>Canonical binding string (METHOD|PATH|QUERY).</returns>
+    [Obsolete("Use AshNormalizeBindingFromUrl instead")]
+    public static string BindingFromUrl(string method, string fullPath) => AshNormalizeBindingFromUrl(method, fullPath);
 
     [GeneratedRegex(@"/+")]
     private static partial Regex DuplicateSlashRegex();

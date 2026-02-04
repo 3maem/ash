@@ -1,5 +1,10 @@
 # ASH SDK for Python
 
+[![PyPI](https://img.shields.io/pypi/v/ash-sdk.svg)](https://pypi.org/project/ash-sdk/)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-brightgreen)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](../../LICENSE)
+[![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
+
 **Developed by 3maem Co. | شركة عمائم**
 
 ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This package provides JCS canonicalization, proof generation, and middleware for Flask, FastAPI, and Django.
@@ -178,6 +183,78 @@ async def get_context(request):
         "mode": ctx.mode.value,
     })
 ```
+
+## Environment Configuration (v2.3.4)
+
+The SDK supports environment-based configuration:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ASH_TRUST_PROXY` | `false` | Enable X-Forwarded-For handling |
+| `ASH_TRUSTED_PROXIES` | (empty) | Comma-separated trusted proxy IPs |
+| `ASH_RATE_LIMIT_WINDOW` | `60` | Rate limit window in seconds |
+| `ASH_RATE_LIMIT_MAX` | `10` | Max contexts per window per IP |
+| `ASH_TIMESTAMP_TOLERANCE` | `30` | Clock skew tolerance in seconds |
+
+```python
+from ash import AshConfig, ash_get_client_ip
+
+# Load configuration from environment
+config = AshConfig()
+
+# Get client IP with proxy support (Flask example)
+client_ip = ash_get_client_ip(request)
+```
+
+## IP and User Binding (v2.3.4)
+
+Enforce that the client IP address and/or authenticated user matches the values stored in the context metadata:
+
+### Flask
+
+```python
+from ash.middleware.flask import ash_flask_middleware
+
+# Store client IP and user ID when creating context
+@app.route("/ash/context", methods=["POST"])
+def get_context():
+    ctx = asyncio.run(context.create(
+        store,
+        binding="POST /api/transfer",
+        ttl_ms=30000,
+        metadata={"ip": request.remote_addr, "user_id": current_user.id}
+    ))
+    return jsonify({"contextId": ctx.context_id})
+
+# Verify IP and user binding in middleware
+@app.route("/api/transfer", methods=["POST"])
+@ash_flask_middleware(
+    store,
+    expected_binding="POST /api/transfer",
+    enforce_ip=True,
+    enforce_user=True
+)
+def transfer():
+    return jsonify({"status": "success"})
+```
+
+### FastAPI
+
+```python
+from ash.middleware.fastapi import AshMiddleware
+
+# Add ASH middleware with binding enforcement
+app.add_middleware(
+    AshMiddleware,
+    store=store,
+    protected_paths=["/api/*"],
+    enforce_ip=True,
+    enforce_user=True,
+    user_id_extractor=lambda req: req.state.user.get("id")
+)
+```
+
+If the IP or user doesn't match, the middleware returns HTTP 461 (`ASH_BINDING_MISMATCH`).
 
 ## API Reference
 
@@ -449,19 +526,79 @@ if __name__ == "__main__":
     app.run(debug=True)
 ```
 
-## Error Handling
+## Input Validation (v2.3.4)
+
+All SDKs now implement consistent input validation in `ash_derive_client_secret`. Invalid inputs raise `ValidationError`.
+
+### Validation Rules
+
+| Parameter | Rule | Code |
+|-----------|------|------|
+| `nonce` | Minimum 32 hex characters | SEC-014 |
+| `nonce` | Maximum 128 characters | SEC-NONCE-001 |
+| `nonce` | Hexadecimal only (0-9, a-f, A-F) | BUG-004 |
+| `context_id` | Cannot be empty | BUG-041 |
+| `context_id` | Maximum 256 characters | SEC-CTX-001 |
+| `context_id` | Alphanumeric, underscore, hyphen, dot only | SEC-CTX-001 |
+| `binding` | Maximum 8192 bytes | SEC-AUDIT-004 |
+
+### Example
 
 ```python
-from ash.core import AshErrorCode
+from ash.core.proof import ash_derive_client_secret
+from ash.core.errors import ValidationError
 
-class AshErrorCode(Enum):
-    INVALID_CONTEXT = "ASH_INVALID_CONTEXT"
-    CONTEXT_EXPIRED = "ASH_CONTEXT_EXPIRED"
-    REPLAY_DETECTED = "ASH_REPLAY_DETECTED"
-    INTEGRITY_FAILED = "ASH_INTEGRITY_FAILED"
-    ENDPOINT_MISMATCH = "ASH_ENDPOINT_MISMATCH"
-    CANONICALIZATION_FAILED = "ASH_CANONICALIZATION_FAILED"
+try:
+    secret = ash_derive_client_secret(nonce, context_id, binding)
+except ValidationError as e:
+    print(f"Validation failed: {e.message}")
+    print(f"Error code: {e.code}")  # ASH_VALIDATION_ERROR
 ```
+
+### Validation Constants
+
+```python
+MIN_NONCE_HEX_CHARS = 32    # Minimum nonce length
+MAX_NONCE_LENGTH = 128      # Maximum nonce length
+MAX_CONTEXT_ID_LENGTH = 256 # Maximum context ID length
+MAX_BINDING_LENGTH = 8192   # Maximum binding length (8KB)
+```
+
+## Error Handling (v2.3.4 - Unique HTTP Status Codes)
+
+ASH uses unique HTTP status codes in the 450-499 range for precise error identification.
+
+```python
+# Error classes with unique HTTP status codes
+from ash.core.errors import (
+    InvalidContextError,      # HTTP 450 - Context not found
+    ContextExpiredError,      # HTTP 451 - Context expired
+    ReplayDetectedError,      # HTTP 452 - Replay detected
+    IntegrityFailedError,     # HTTP 460 - Proof invalid
+    BindingMismatchError,     # HTTP 461 - IP/User binding mismatch
+    ScopeMismatchError,       # HTTP 473 - Scope mismatch
+    ChainBrokenError,         # HTTP 474 - Chain broken
+    TimestampInvalidError,    # HTTP 482 - Timestamp invalid
+    ProofMissingError,        # HTTP 483 - Proof missing
+    CanonicalizationError,    # HTTP 422 - Canonicalization failed
+    ValidationError,          # HTTP 400 - Validation failed
+    UnsupportedContentTypeError,  # HTTP 415 - Content type not supported
+)
+```
+
+| Exception | HTTP | Description |
+|-----------|------|-------------|
+| `InvalidContextError` | 450 | Context not found |
+| `ContextExpiredError` | 451 | Context expired |
+| `ReplayDetectedError` | 452 | Replay detected |
+| `IntegrityFailedError` | 460 | Proof invalid |
+| `BindingMismatchError` | 461 | IP/User binding mismatch |
+| `ScopeMismatchError` | 473 | Scope mismatch |
+| `ChainBrokenError` | 474 | Chain broken |
+| `TimestampInvalidError` | 482 | Timestamp invalid |
+| `ProofMissingError` | 483 | Proof missing |
+| `CanonicalizationError` | 422 | Canonicalization failed |
+| `ValidationError` | 400 | Validation failed |
 
 ## Type Hints
 

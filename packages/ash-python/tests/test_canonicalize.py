@@ -95,19 +95,19 @@ class TestCanonicalizeUrlEncoded:
         assert result == "a=1&b=2"
 
     def test_duplicate_keys(self):
-        """Should preserve value order for duplicate keys."""
+        """Should sort duplicate keys by value (byte-wise)."""
         result = canonicalize_url_encoded("a=2&a=1&a=3")
-        assert result == "a=2&a=1&a=3"
+        assert result == "a=1&a=2&a=3"
 
     def test_empty_value(self):
         """Should handle empty values."""
         result = canonicalize_url_encoded("a=&b=2")
         assert result == "a=&b=2"
 
-    def test_plus_as_space(self):
-        """Should decode + as space."""
+    def test_plus_as_literal(self):
+        """Should treat + as literal plus (not space). ASH protocol spec."""
         result = canonicalize_url_encoded("a=hello+world")
-        assert result == "a=hello%20world"
+        assert result == "a=hello%2Bworld"
 
     def test_percent_encoding(self):
         """Should properly percent-encode."""

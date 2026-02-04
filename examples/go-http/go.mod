@@ -1,3 +1,3 @@
-module github.com/3meam/ash-example
+module github.com/3maem/ash-example
 
 go 1.21

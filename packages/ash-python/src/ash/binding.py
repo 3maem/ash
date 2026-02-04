@@ -96,3 +96,36 @@ def ash_normalize_binding_from_url(method: str, full_path: str) -> str:
         path, query = full_path, ""
 
     return ash_normalize_binding(method, path, query)
+
+
+# =========================================================================
+# Deprecated Aliases for Backward Compatibility
+# =========================================================================
+
+import warnings
+
+
+def normalize_binding(method: str, path: str, query: str = "") -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_normalize_binding` instead.
+    """
+    warnings.warn(
+        "normalize_binding is deprecated, use ash_normalize_binding instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_normalize_binding(method, path, query)
+
+
+def normalize_binding_from_url(method: str, full_path: str) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_normalize_binding_from_url` instead.
+    """
+    warnings.warn(
+        "normalize_binding_from_url is deprecated, use ash_normalize_binding_from_url instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_normalize_binding_from_url(method, full_path)

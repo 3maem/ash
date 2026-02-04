@@ -8,7 +8,7 @@
 //! ## Usage (JavaScript/TypeScript)
 //!
 //! ```javascript
-//! import * as ash from '@3meam/ash';
+//! import * as ash from '@3maem/ash';
 //!
 //! // Canonicalize JSON
 //! const canonical = ash.canonicalizeJson('{"z":1,"a":2}');
@@ -52,7 +52,7 @@ pub fn ash_init() {
 /// @throws Error if input is not valid JSON
 #[wasm_bindgen(js_name = "ashCanonicalizeJson")]
 pub fn ash_canonicalize_json(input: &str) -> Result<String, JsValue> {
-    ash_core::canonicalize_json(input).map_err(|e| JsValue::from_str(&e.to_string()))
+    ash_core::ash_canonicalize_json(input).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Canonicalize URL-encoded form data to deterministic form.
@@ -61,48 +61,17 @@ pub fn ash_canonicalize_json(input: &str) -> Result<String, JsValue> {
 /// - Key-value pairs sorted by key
 /// - Percent-decoded and re-encoded consistently
 /// - Unicode NFC normalized
+/// - + is treated as literal plus (encoded as %2B), NOT space
 ///
 /// @param input - URL-encoded string to canonicalize
 /// @returns Canonical URL-encoded string
 /// @throws Error if input cannot be canonicalized
 #[wasm_bindgen(js_name = "ashCanonicalizeUrlencoded")]
 pub fn ash_canonicalize_urlencoded(input: &str) -> Result<String, JsValue> {
-    ash_core::canonicalize_urlencoded(input).map_err(|e| JsValue::from_str(&e.to_string()))
+    ash_core::ash_canonicalize_urlencoded(input).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
-/// Build a cryptographic proof for request integrity.
-///
-/// The proof binds the payload to a specific context and endpoint,
-/// preventing tampering and replay attacks.
-///
-/// @param mode - Security mode: "minimal", "balanced", or "strict"
-/// @param binding - Endpoint binding: "METHOD /path"
-/// @param contextId - Context ID from server
-/// @param nonce - Optional nonce for server-assisted mode (null if not used)
-/// @param canonicalPayload - Canonicalized payload string
-/// @returns Base64URL-encoded proof string
-/// @throws Error if mode is invalid
-#[wasm_bindgen(js_name = "ashBuildProof")]
-pub fn ash_build_proof(
-    mode: &str,
-    binding: &str,
-    context_id: &str,
-    nonce: Option<String>,
-    canonical_payload: &str,
-) -> Result<String, JsValue> {
-    let ash_mode: ash_core::AshMode = mode
-        .parse()
-        .map_err(|e: ash_core::AshError| JsValue::from_str(&e.to_string()))?;
-
-    ash_core::build_proof(
-        ash_mode,
-        binding,
-        context_id,
-        nonce.as_deref(),
-        canonical_payload,
-    )
-    .map_err(|e| JsValue::from_str(&e.to_string()))
-}
+// Note: Legacy ashBuildProof removed - use ashBuildProofV21 or ashBuildProofUnified instead
 
 /// Verify that two proofs match using constant-time comparison.
 ///
@@ -114,23 +83,24 @@ pub fn ash_build_proof(
 /// @returns true if proofs match, false otherwise
 #[wasm_bindgen(js_name = "ashVerifyProof")]
 pub fn ash_verify_proof(expected: &str, actual: &str) -> bool {
-    ash_core::timing_safe_equal(expected.as_bytes(), actual.as_bytes())
+    ash_core::ash_timing_safe_equal(expected.as_bytes(), actual.as_bytes())
 }
 
 /// Canonicalize a URL query string according to ASH specification.
 ///
-/// # Canonicalization Rules (9 MUST rules)
+/// # Canonicalization Rules (10 MUST rules)
 /// - Sort by key lexicographically
-/// - Preserve order of duplicate keys
+/// - Sort duplicate keys by value (byte-wise)
 /// - Percent-decode and re-encode consistently
 /// - Unicode NFC normalized
+/// - + is treated as literal plus (encoded as %2B), NOT space
 ///
 /// @param query - Query string to canonicalize (with or without leading ?)
 /// @returns Canonical query string
 /// @throws Error if query cannot be canonicalized
 #[wasm_bindgen(js_name = "ashCanonicalizeQuery")]
 pub fn ash_canonicalize_query(query: &str) -> Result<String, JsValue> {
-    ash_core::canonicalize_query(query).map_err(|e| JsValue::from_str(&e.to_string()))
+    ash_core::ash_canonicalize_query(query).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Normalize a binding string to canonical form (v2.3.2+ format).
@@ -152,7 +122,7 @@ pub fn ash_canonicalize_query(query: &str) -> Result<String, JsValue> {
 /// @throws Error if method is empty or path doesn't start with /
 #[wasm_bindgen(js_name = "ashNormalizeBinding")]
 pub fn ash_normalize_binding(method: &str, path: &str, query: &str) -> Result<String, JsValue> {
-    ash_core::normalize_binding(method, path, query).map_err(|e| JsValue::from_str(&e.to_string()))
+    ash_core::ash_normalize_binding(method, path, query).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Normalize a binding from a full URL path (including query string).
@@ -165,7 +135,7 @@ pub fn ash_normalize_binding(method: &str, path: &str, query: &str) -> Result<St
 /// @throws Error if method is empty or path doesn't start with /
 #[wasm_bindgen(js_name = "ashNormalizeBindingFromUrl")]
 pub fn ash_normalize_binding_from_url(method: &str, full_path: &str) -> Result<String, JsValue> {
-    ash_core::normalize_binding_from_url(method, full_path)
+    ash_core::ash_normalize_binding_from_url(method, full_path)
         .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
@@ -178,7 +148,7 @@ pub fn ash_normalize_binding_from_url(method: &str, full_path: &str) -> Result<S
 /// @returns true if strings are equal, false otherwise
 #[wasm_bindgen(js_name = "ashTimingSafeEqual")]
 pub fn ash_timing_safe_equal(a: &str, b: &str) -> bool {
-    ash_core::timing_safe_equal(a.as_bytes(), b.as_bytes())
+    ash_core::ash_timing_safe_equal(a.as_bytes(), b.as_bytes())
 }
 
 /// Get the ASH protocol version.
@@ -210,16 +180,7 @@ pub fn canonicalize_urlencoded(input: &str) -> Result<String, JsValue> {
     ash_canonicalize_urlencoded(input)
 }
 
-#[wasm_bindgen(js_name = "buildProof")]
-pub fn build_proof(
-    mode: &str,
-    binding: &str,
-    context_id: &str,
-    nonce: Option<String>,
-    canonical_payload: &str,
-) -> Result<String, JsValue> {
-    ash_build_proof(mode, binding, context_id, nonce, canonical_payload)
-}
+// Note: Legacy buildProof removed - use ashBuildProofV21 instead
 
 #[wasm_bindgen(js_name = "verifyProof")]
 pub fn verify_proof(expected: &str, actual: &str) -> bool {
@@ -257,16 +218,7 @@ mod tests {
         assert_eq!(result, "a=2&z=1");
     }
 
-    #[test]
-    fn test_build_and_verify_proof() {
-        let proof1 =
-            ash_build_proof("balanced", "POST /api/test", "ctx123", None, r#"{"a":1}"#).unwrap();
-
-        let proof2 =
-            ash_build_proof("balanced", "POST /api/test", "ctx123", None, r#"{"a":1}"#).unwrap();
-
-        assert!(ash_verify_proof(&proof1, &proof2));
-    }
+    // Note: Legacy build_and_verify_proof test removed - test v2.1 functions instead
 
     #[test]
     fn test_normalize_binding() {
@@ -305,44 +257,63 @@ mod tests {
 /// Generate a cryptographically secure random nonce.
 /// @param bytes - Number of bytes (default 32)
 /// @returns Hex-encoded nonce
+/// @throws Error if random number generation fails
 #[wasm_bindgen(js_name = "ashGenerateNonce")]
-pub fn ash_generate_nonce(bytes: Option<usize>) -> String {
-    ash_core::generate_nonce(bytes.unwrap_or(32))
+pub fn ash_generate_nonce(bytes: Option<usize>) -> Result<String, JsValue> {
+    ash_core::ash_generate_nonce(bytes.unwrap_or(32))
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Generate a unique context ID with "ash_" prefix.
+/// @throws Error if random number generation fails
 #[wasm_bindgen(js_name = "ashGenerateContextId")]
-pub fn ash_generate_context_id() -> String {
-    ash_core::generate_context_id()
+pub fn ash_generate_context_id() -> Result<String, JsValue> {
+    ash_core::ash_generate_context_id()
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Derive client secret from server nonce (v2.1).
 /// @param nonce - Server-side secret nonce
-/// @param contextId - Context identifier  
+/// @param contextId - Context identifier
 /// @param binding - Request binding (e.g., "POST /login")
 /// @returns Derived client secret (64 hex chars)
+/// @throws Error if validation fails
 #[wasm_bindgen(js_name = "ashDeriveClientSecret")]
-pub fn ash_derive_client_secret(nonce: &str, context_id: &str, binding: &str) -> String {
-    ash_core::derive_client_secret(nonce, context_id, binding)
+pub fn ash_derive_client_secret(nonce: &str, context_id: &str, binding: &str) -> Result<String, JsValue> {
+    ash_core::ash_derive_client_secret(nonce, context_id, binding)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
-/// Build v2.1 cryptographic proof.
+/// Build HMAC-based cryptographic proof.
 /// @param clientSecret - Derived client secret
-/// @param timestamp - Request timestamp (milliseconds as string)
+/// @param timestamp - Request timestamp (seconds as string)
 /// @param binding - Request binding
 /// @param bodyHash - SHA-256 hash of canonical body
 /// @returns Proof (64 hex chars)
+/// @throws Error if validation fails
+#[wasm_bindgen(js_name = "ashBuildProofHmac")]
+pub fn ash_build_proof_hmac(
+    client_secret: &str,
+    timestamp: &str,
+    binding: &str,
+    body_hash: &str,
+) -> Result<String, JsValue> {
+    ash_core::ash_build_proof(client_secret, timestamp, binding, body_hash)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// @deprecated Use ashBuildProofHmac instead
 #[wasm_bindgen(js_name = "ashBuildProofV21")]
 pub fn ash_build_proof_v21(
     client_secret: &str,
     timestamp: &str,
     binding: &str,
     body_hash: &str,
-) -> String {
-    ash_core::build_proof_v21(client_secret, timestamp, binding, body_hash)
+) -> Result<String, JsValue> {
+    ash_build_proof_hmac(client_secret, timestamp, binding, body_hash)
 }
 
-/// Verify v2.1 proof.
+/// Verify HMAC-based proof.
 /// @param nonce - Server-side secret nonce
 /// @param contextId - Context identifier
 /// @param binding - Request binding
@@ -350,6 +321,27 @@ pub fn ash_build_proof_v21(
 /// @param bodyHash - SHA-256 hash of canonical body
 /// @param clientProof - Proof received from client
 /// @returns true if proof is valid
+/// @throws Error if validation fails
+#[wasm_bindgen(js_name = "ashVerifyProofHmac")]
+pub fn ash_verify_proof_hmac(
+    nonce: &str,
+    context_id: &str,
+    binding: &str,
+    timestamp: &str,
+    body_hash: &str,
+    client_proof: &str,
+) -> Result<bool, JsValue> {
+    ash_core::ash_verify_proof(
+        nonce,
+        context_id,
+        binding,
+        timestamp,
+        body_hash,
+        client_proof,
+    ).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// @deprecated Use ashVerifyProofHmac instead
 #[wasm_bindgen(js_name = "ashVerifyProofV21")]
 pub fn ash_verify_proof_v21(
     nonce: &str,
@@ -358,15 +350,8 @@ pub fn ash_verify_proof_v21(
     timestamp: &str,
     body_hash: &str,
     client_proof: &str,
-) -> bool {
-    ash_core::verify_proof_v21(
-        nonce,
-        context_id,
-        binding,
-        timestamp,
-        body_hash,
-        client_proof,
-    )
+) -> Result<bool, JsValue> {
+    ash_verify_proof_hmac(nonce, context_id, binding, timestamp, body_hash, client_proof)
 }
 
 /// Compute SHA-256 hash of canonical body.
@@ -374,7 +359,7 @@ pub fn ash_verify_proof_v21(
 /// @returns SHA-256 hash (64 hex chars)
 #[wasm_bindgen(js_name = "ashHashBody")]
 pub fn ash_hash_body(canonical_body: &str) -> String {
-    ash_core::hash_body(canonical_body)
+    ash_core::ash_hash_body(canonical_body)
 }
 
 // =========================================================================
@@ -383,7 +368,7 @@ pub fn ash_hash_body(canonical_body: &str) -> String {
 
 /// Build v2.2 cryptographic proof with scoped fields.
 /// @param clientSecret - Derived client secret
-/// @param timestamp - Request timestamp (milliseconds as string)
+/// @param timestamp - Request timestamp (seconds as string)
 /// @param binding - Request binding
 /// @param payload - Full JSON payload
 /// @param scope - Comma-separated list of fields to protect (e.g., "amount,recipient")
@@ -403,7 +388,7 @@ pub fn ash_build_proof_scoped(
     };
 
     let (proof, scope_hash) =
-        ash_core::build_proof_v21_scoped(client_secret, timestamp, binding, payload, &scope_vec)
+        ash_core::ash_build_proof_scoped(client_secret, timestamp, binding, payload, &scope_vec)
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     let result = serde_json::json!({
@@ -442,7 +427,7 @@ pub fn ash_verify_proof_scoped(
         scope.split(',').collect()
     };
 
-    ash_core::verify_proof_v21_scoped(
+    ash_core::ash_verify_proof_scoped(
         nonce,
         context_id,
         binding,
@@ -467,7 +452,7 @@ pub fn ash_hash_scoped_body(payload: &str, scope: &str) -> Result<String, JsValu
         scope.split(',').collect()
     };
 
-    ash_core::hash_scoped_body(payload, &scope_vec).map_err(|e| JsValue::from_str(&e.to_string()))
+    ash_core::ash_hash_scoped_body(payload, &scope_vec).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 // =========================================================================
@@ -477,14 +462,15 @@ pub fn ash_hash_scoped_body(payload: &str, scope: &str) -> Result<String, JsValu
 /// Hash a proof for chaining purposes.
 /// @param proof - Proof to hash
 /// @returns SHA-256 hash of the proof (64 hex chars)
+/// @throws Error if proof is empty
 #[wasm_bindgen(js_name = "ashHashProof")]
-pub fn ash_hash_proof(proof: &str) -> String {
-    ash_core::hash_proof(proof)
+pub fn ash_hash_proof(proof: &str) -> Result<String, JsValue> {
+    ash_core::ash_hash_proof(proof).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Build unified v2.3 cryptographic proof with optional scoping and chaining.
 /// @param clientSecret - Derived client secret
-/// @param timestamp - Request timestamp (milliseconds as string)
+/// @param timestamp - Request timestamp (seconds as string)
 /// @param binding - Request binding
 /// @param payload - Full JSON payload
 /// @param scope - Comma-separated list of fields to protect (empty for full payload)
@@ -507,7 +493,7 @@ pub fn ash_build_proof_unified(
 
     let prev_proof = previous_proof.as_deref().filter(|s| !s.is_empty());
 
-    let result = ash_core::build_proof_v21_unified(
+    let result = ash_core::ash_build_proof_unified(
         client_secret,
         timestamp,
         binding,
@@ -560,7 +546,7 @@ pub fn ash_verify_proof_unified(
 
     let prev_proof = previous_proof.as_deref().filter(|s| !s.is_empty());
 
-    ash_core::verify_proof_v21_unified(
+    ash_core::ash_verify_proof_unified(
         nonce,
         context_id,
         binding,

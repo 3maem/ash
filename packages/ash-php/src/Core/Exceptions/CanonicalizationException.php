@@ -13,6 +13,6 @@ class CanonicalizationException extends AshException
 {
     public function __construct(string $message = 'Failed to canonicalize payload')
     {
-        parent::__construct(AshErrorCode::CanonicalizationFailed, 400, $message);
+        parent::__construct(AshErrorCode::CanonicalizationError, $message);
     }
 }

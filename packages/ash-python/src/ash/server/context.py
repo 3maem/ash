@@ -19,7 +19,7 @@ NONCE_BYTES = 16  # 128 bits
 
 def _generate_secure_id(num_bytes: int) -> str:
     """Generate a cryptographically secure random ID using CSPRNG."""
-    return secrets.token_urlsafe(num_bytes)
+    return secrets.token_hex(num_bytes)
 
 
 async def create(

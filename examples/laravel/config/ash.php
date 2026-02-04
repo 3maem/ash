@@ -38,6 +38,45 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Rate Limiting
+    |--------------------------------------------------------------------------
+    |
+    | Configure rate limiting for context creation per IP.
+    |
+    */
+
+    'rate_limit_window' => env('ASH_RATE_LIMIT_WINDOW', 60),
+    'rate_limit_max' => env('ASH_RATE_LIMIT_MAX', 10),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Timestamp Tolerance
+    |--------------------------------------------------------------------------
+    |
+    | Acceptable time difference between client and server in seconds.
+    | Prevents replay attacks with old timestamps while allowing clock skew.
+    |
+    */
+
+    'timestamp_tolerance' => env('ASH_TIMESTAMP_TOLERANCE', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Proxy Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure X-Forwarded-For handling for deployments behind proxies/CDNs.
+    |
+    | trust_proxy: Enable X-Forwarded-For handling
+    | trusted_proxies: Comma-separated list of trusted proxy IPs (optional)
+    |
+    */
+
+    'trust_proxy' => env('ASH_TRUST_PROXY', false),
+    'trusted_proxies' => env('ASH_TRUSTED_PROXIES', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Protected Routes
     |--------------------------------------------------------------------------
     |
@@ -51,5 +90,22 @@ return [
         'api/profile',
         'api/transactions/*',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scope Policies (ENH-003)
+    |--------------------------------------------------------------------------
+    |
+    | Server-side scope policies enforce which fields must be protected
+    | for each endpoint. This provides additional security without requiring
+    | client-side scope management.
+    |
+    | Register policies in AppServiceProvider:
+    |
+    |   ScopePolicies::register('POST|/api/transfer|', ['amount', 'recipient']);
+    |
+    */
+
+    'scope_policies' => [],
 
 ];

@@ -21,27 +21,25 @@ public class AshException : Exception
     /// Creates a new ASH exception.
     /// </summary>
     /// <param name="code">The error code.</param>
-    /// <param name="httpStatus">The HTTP status code.</param>
     /// <param name="message">The error message.</param>
-    public AshException(string code, int httpStatus, string? message = null)
+    public AshException(string code, string? message = null)
         : base(message ?? "ASH error")
     {
         Code = code;
-        HttpStatus = httpStatus;
+        HttpStatus = AshErrorCode.GetHttpStatus(code);
     }
 
     /// <summary>
     /// Creates a new ASH exception with an inner exception.
     /// </summary>
     /// <param name="code">The error code.</param>
-    /// <param name="httpStatus">The HTTP status code.</param>
     /// <param name="message">The error message.</param>
     /// <param name="innerException">The inner exception.</param>
-    public AshException(string code, int httpStatus, string? message, Exception? innerException)
+    public AshException(string code, string? message, Exception? innerException)
         : base(message ?? "ASH error", innerException)
     {
         Code = code;
-        HttpStatus = httpStatus;
+        HttpStatus = AshErrorCode.GetHttpStatus(code);
     }
 }
 
@@ -54,7 +52,7 @@ public class InvalidContextException : AshException
     /// Creates a new InvalidContextException.
     /// </summary>
     public InvalidContextException(string? message = null)
-        : base(AshErrorCode.InvalidContext, 401, message ?? "Context not found or invalid")
+        : base(AshErrorCode.CtxNotFound, message ?? "Context not found or invalid")
     {
     }
 }
@@ -68,7 +66,7 @@ public class ContextExpiredException : AshException
     /// Creates a new ContextExpiredException.
     /// </summary>
     public ContextExpiredException(string? message = null)
-        : base(AshErrorCode.ContextExpired, 401, message ?? "Context has expired")
+        : base(AshErrorCode.CtxExpired, message ?? "Context has expired")
     {
     }
 }
@@ -82,7 +80,7 @@ public class ReplayDetectedException : AshException
     /// Creates a new ReplayDetectedException.
     /// </summary>
     public ReplayDetectedException(string? message = null)
-        : base(AshErrorCode.ReplayDetected, 409, message ?? "Request replay detected - context already consumed")
+        : base(AshErrorCode.CtxAlreadyUsed, message ?? "Request replay detected - context already consumed")
     {
     }
 }
@@ -96,7 +94,7 @@ public class IntegrityFailedException : AshException
     /// Creates a new IntegrityFailedException.
     /// </summary>
     public IntegrityFailedException(string? message = null)
-        : base(AshErrorCode.IntegrityFailed, 400, message ?? "Proof verification failed - payload may have been tampered")
+        : base(AshErrorCode.ProofInvalid, message ?? "Proof verification failed - payload may have been tampered")
     {
     }
 }
@@ -110,7 +108,7 @@ public class EndpointMismatchException : AshException
     /// Creates a new EndpointMismatchException.
     /// </summary>
     public EndpointMismatchException(string? message = null)
-        : base(AshErrorCode.EndpointMismatch, 400, message ?? "Context binding does not match requested endpoint")
+        : base(AshErrorCode.BindingMismatch, message ?? "Context binding does not match requested endpoint")
     {
     }
 }
@@ -124,7 +122,7 @@ public class CanonicalizationException : AshException
     /// Creates a new CanonicalizationException.
     /// </summary>
     public CanonicalizationException(string? message = null)
-        : base(AshErrorCode.CanonicalizationFailed, 400, message ?? "Failed to canonicalize payload")
+        : base(AshErrorCode.CanonicalizationError, message ?? "Failed to canonicalize payload")
     {
     }
 
@@ -132,7 +130,7 @@ public class CanonicalizationException : AshException
     /// Creates a new CanonicalizationException with an inner exception.
     /// </summary>
     public CanonicalizationException(string? message, Exception? innerException)
-        : base(AshErrorCode.CanonicalizationFailed, 400, message ?? "Failed to canonicalize payload", innerException)
+        : base(AshErrorCode.CanonicalizationError, message ?? "Failed to canonicalize payload", innerException)
     {
     }
 }
@@ -146,7 +144,21 @@ public class UnsupportedContentTypeException : AshException
     /// Creates a new UnsupportedContentTypeException.
     /// </summary>
     public UnsupportedContentTypeException(string? message = null)
-        : base(AshErrorCode.UnsupportedContentType, 415, message ?? "Content type not supported by ASH protocol")
+        : base(AshErrorCode.UnsupportedContentType, message ?? "Content type not supported by ASH protocol")
+    {
+    }
+}
+
+/// <summary>
+/// Thrown when input validation fails.
+/// </summary>
+public class ValidationException : AshException
+{
+    /// <summary>
+    /// Creates a new ValidationException.
+    /// </summary>
+    public ValidationException(string? message = null)
+        : base(AshErrorCode.ValidationError, message ?? "Input validation failed")
     {
     }
 }

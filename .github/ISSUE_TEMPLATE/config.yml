@@ -1,10 +1,10 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://github.com/3meam/ash#readme
+    url: https://github.com/3maem/ash#readme
     about: Check the documentation before opening an issue
   - name: Discussions
-    url: https://github.com/3meam/ash/discussions
+    url: https://github.com/3maem/ash/discussions
     about: Ask questions and discuss ASH
   - name: Security Vulnerabilities
     url: mailto:security@3maem.com

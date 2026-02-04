@@ -13,7 +13,7 @@ on:
 
 jobs:
   publish:
-    name: Publish Ash.Security
+    name: Publish Ash.Core
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -52,6 +52,6 @@ jobs:
           VERSION=$(grep -oP '<Version>\K[^<]+' Ash.csproj)
           echo "## Published to NuGet" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Package: Ash.Security" >> $GITHUB_STEP_SUMMARY
+          echo "- Package: Ash.Core" >> $GITHUB_STEP_SUMMARY
           echo "- Version: $VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "- Registry: https://www.nuget.org/packages/Ash.Security" >> $GITHUB_STEP_SUMMARY
+          echo "- Registry: https://www.nuget.org/packages/Ash.Core" >> $GITHUB_STEP_SUMMARY

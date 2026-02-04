@@ -69,7 +69,7 @@ public class ProofTests
             Binding = "POST /api/update",
             ContextId = "ctx_123",
             CanonicalPayload = "{\"data\":\"test\"}",
-            Nonce = "nonce_abc"
+            Nonce = "abcd1234abcd1234abcd1234abcd1234"
         };
 
         var proofWithoutNonce = Proof.Build(inputWithoutNonce);

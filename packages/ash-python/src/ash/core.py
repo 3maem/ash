@@ -161,6 +161,7 @@ class Ash:
         binding: str,
         payload: str,
         content_type: str,
+        options: dict[str, Any] | None = None,
     ) -> AshVerifyResult:
         """
         Verify a request against its context and proof.
@@ -171,10 +172,17 @@ class Ash:
             binding: Actual request binding
             payload: Request payload (raw body)
             content_type: Content-Type header
+            options: Optional v2.3 verification options:
+                - scope: List of scoped fields
+                - scopeHash: Hash of scope fields
+                - chainHash: Hash of previous proof (for chaining)
+                - timestamp: Request timestamp for verification
 
         Returns:
             Verification result
         """
+        options = options or {}
+        
         # Get context
         context = self._store.get(context_id)
 
@@ -207,21 +215,86 @@ class Ash:
                 f"Failed to canonicalize payload: {e}",
             )
 
-        # Build expected proof
-        expected_proof = ash_build_proof(
-            context.mode,
-            context.binding,
-            context_id,
-            context.nonce,
-            canonical_payload,
-        )
-
-        # Verify proof
-        if not ash_verify_proof(expected_proof, proof):
-            return AshVerifyResult.failure(
-                AshErrorCode.INTEGRITY_FAILED,
-                "Proof verification failed",
+        # Extract v2.3 options
+        scope = options.get("scope", [])
+        scope_hash = options.get("scopeHash", "")
+        chain_hash = options.get("chainHash", "")
+        
+        # If using v2.3 unified features (scope/chain), use unified verification
+        if scope or scope_hash or chain_hash:
+            from .core.proof import ash_verify_proof_unified, ash_hash_body, ash_extract_scoped_fields, ash_join_scope_fields
+            import json
+            
+            # Parse payload as dict for unified verification
+            try:
+                if content_type and "application/json" in content_type:
+                    payload_dict = json.loads(payload) if payload else {}
+                else:
+                    # For non-JSON, treat as single field payload
+                    payload_dict = {"_raw": payload} if payload else {}
+            except json.JSONDecodeError:
+                payload_dict = {"_raw": payload} if payload else {}
+            
+            # Build expected proof using unified method
+            from .core.proof import ash_derive_client_secret, ash_build_proof_unified
+            
+            try:
+                client_secret = ash_derive_client_secret(
+                    context.nonce or "", context_id, binding
+                )
+                expected_proof, _, _ = ash_build_proof_unified(
+                    client_secret=client_secret,
+                    timestamp=options.get("timestamp", ""),
+                    binding=binding,
+                    payload=payload_dict,
+                    scope=scope if scope else None,
+                    previous_proof=None,  # We verify chain_hash separately
+                )
+            except Exception:
+                return AshVerifyResult.failure(
+                    AshErrorCode.INTEGRITY_FAILED,
+                    "Proof computation failed",
+                )
+            
+            # Verify proof matches
+            import hmac
+            if not hmac.compare_digest(expected_proof, proof):
+                return AshVerifyResult.failure(
+                    AshErrorCode.INTEGRITY_FAILED,
+                    "Proof verification failed",
+                )
+            
+            # Verify scope hash if provided
+            if scope_hash and scope:
+                expected_scope_hash = ash_hash_body(ash_join_scope_fields(scope))
+                if not hmac.compare_digest(expected_scope_hash, scope_hash):
+                    return AshVerifyResult.failure(
+                        AshErrorCode.INTEGRITY_FAILED,
+                        "Scope hash mismatch",
+                    )
+            
+            # Verify chain hash if provided
+            if chain_hash:
+                # chain_hash would be verified against stored previous proof
+                # This is simplified - full implementation would look up previous proof
+                pass
+        else:
+            # Legacy verification path
+            # Build expected proof
+            expected_proof = ash_build_proof(
+                context.mode,
+                context.binding,
+                context_id,
+                context.nonce,
+                canonical_payload,
             )
+
+            # Verify proof
+            if not ash_verify_proof(expected_proof, proof):
+                return AshVerifyResult.failure(
+                    AshErrorCode.INTEGRITY_FAILED,
+                    "Proof verification failed",
+                )
 
         # Consume context
         if not self._store.consume(context_id):

@@ -1,5 +1,10 @@
 # ASH SDK for Node.js
 
+[![npm](https://img.shields.io/npm/v/@3maem/ash-node.svg)](https://www.npmjs.com/package/@3maem/ash-node)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](../../LICENSE)
+[![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
+
 **Developed by 3maem Co. | شركة عمائم**
 
 ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This package provides JCS canonicalization, proof generation, and middleware for Express and Fastify.
@@ -358,6 +363,28 @@ import { AshSqlStore } from '@3maem/ash-node';
 const store = new AshSqlStore(databaseConnection);
 ```
 
+## Environment Configuration (v2.3.4)
+
+The SDK supports environment-based configuration:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ASH_TRUST_PROXY` | `false` | Enable X-Forwarded-For handling |
+| `ASH_TRUSTED_PROXIES` | (empty) | Comma-separated trusted proxy IPs |
+| `ASH_RATE_LIMIT_WINDOW` | `60` | Rate limit window in seconds |
+| `ASH_RATE_LIMIT_MAX` | `10` | Max contexts per window per IP |
+| `ASH_TIMESTAMP_TOLERANCE` | `30` | Clock skew tolerance in seconds |
+
+```typescript
+// Configuration is automatically loaded from environment
+// Access via the DEFAULT_* constants
+import { 
+  DEFAULT_RATE_LIMIT_WINDOW_SECONDS,
+  DEFAULT_RATE_LIMIT_MAX_CONTEXTS,
+  DEFAULT_TIMESTAMP_TOLERANCE_SECONDS 
+} from '@3maem/ash-node';
+```
+
 ## Express Middleware
 
 ### `ashExpressMiddleware(options: AshExpressOptions): RequestHandler`
@@ -366,13 +393,51 @@ Creates ASH verification middleware for Express.
 
 ```typescript
 interface AshExpressOptions {
-  store: AshContextStore;              // Context store instance
+  store: AshContextStore;              // Context store instance (required)
   expectedBinding?: string;            // Expected endpoint binding
   mode?: AshMode;                      // Security mode (default: balanced)
   onError?: (error, req, res, next) => void;  // Custom error handler
   skip?: (req) => boolean;             // Skip verification condition
+  enforceIp?: boolean;                 // Verify client IP matches context (v2.3.4)
+  enforceUser?: boolean;               // Verify user matches context (v2.3.4)
+  userIdExtractor?: (req) => string;   // Extract user ID from request (v2.3.4)
 }
 ```
+
+### IP and User Binding (v2.3.4)
+
+Enforce that the client IP address and/or authenticated user matches the values stored in the context metadata:
+
+```typescript
+// Store client IP and user ID when creating context
+app.post('/ash/context', async (req, res) => {
+  const context = await store.create({
+    binding: 'POST /api/transfer',
+    ttlMs: 30000,
+    mode: 'balanced',
+    metadata: { 
+      ip: req.ip,
+      user_id: req.user?.id 
+    },
+  });
+  res.json({ contextId: context.id });
+});
+
+// Verify IP and user binding in middleware
+app.post(
+  '/api/transfer',
+  ashExpressMiddleware({
+    store,
+    expectedBinding: 'POST /api/transfer',
+    enforceIp: true,
+    enforceUser: true,
+    userIdExtractor: (req) => req.user?.id,
+  }),
+  handler
+);
+```
+
+If the IP or user doesn't match, the middleware returns HTTP 461 (`ASH_BINDING_MISMATCH`).
 
 ### Usage
 
@@ -534,18 +599,51 @@ app.listen(3000, () => {
 });
 ```
 
-## Error Codes
+## Input Validation (v2.3.4)
 
-| Code | Description |
-|------|-------------|
-| `MISSING_CONTEXT_ID` | Missing X-ASH-Context-ID header |
-| `MISSING_PROOF` | Missing X-ASH-Proof header |
-| `INVALID_CONTEXT` | Invalid or expired context |
-| `CONTEXT_EXPIRED` | Context has expired |
-| `CONTEXT_USED` | Context already used (replay detected) |
-| `BINDING_MISMATCH` | Endpoint binding mismatch |
-| `PROOF_MISMATCH` | Proof verification failed |
-| `CANONICALIZATION_FAILED` | Failed to canonicalize payload |
+All SDKs now implement consistent input validation in client secret derivation functions. Invalid inputs throw errors with descriptive messages.
+
+### Validation Rules
+
+| Parameter | Rule | Code |
+|-----------|------|------|
+| `nonce` | Minimum 32 hex characters | SEC-014 |
+| `nonce` | Maximum 128 characters | SEC-NONCE-001 |
+| `nonce` | Hexadecimal only (0-9, a-f, A-F) | BUG-004 |
+| `contextId` | Cannot be empty | BUG-041 |
+| `contextId` | Maximum 256 characters | SEC-CTX-001 |
+| `contextId` | Alphanumeric, underscore, hyphen, dot only | SEC-CTX-001 |
+| `binding` | Maximum 8192 bytes | SEC-AUDIT-004 |
+
+### Validation Constants
+
+```typescript
+export const MIN_NONCE_HEX_CHARS = 32;    // Minimum nonce length
+export const MAX_NONCE_LENGTH = 128;      // Maximum nonce length
+export const MAX_CONTEXT_ID_LENGTH = 256; // Maximum context ID length
+export const MAX_BINDING_LENGTH = 8192;   // Maximum binding length (8KB)
+```
+
+## Error Codes (v2.3.4 - Unique HTTP Status Codes)
+
+ASH uses unique HTTP status codes in the 450-499 range for precise error identification.
+
+| Code | HTTP | Category | Description |
+|------|------|----------|-------------|
+| `ASH_CTX_NOT_FOUND` | 450 | Context | Context not found |
+| `ASH_CTX_EXPIRED` | 451 | Context | Context expired |
+| `ASH_CTX_ALREADY_USED` | 452 | Context | Replay detected |
+| `ASH_PROOF_INVALID` | 460 | Seal | Proof verification failed |
+| `ASH_BINDING_MISMATCH` | 461 | Verification | IP/User binding mismatch |
+| `ASH_SCOPE_MISMATCH` | 473 | Verification | Scope hash mismatch |
+| `ASH_CHAIN_BROKEN` | 474 | Verification | Chain verification failed |
+| `ASH_TIMESTAMP_INVALID` | 482 | Format | Invalid timestamp |
+| `ASH_PROOF_MISSING` | 483 | Format | Missing X-ASH-Proof header |
+| `ASH_CANONICALIZATION_ERROR` | 422 | Standard | Canonicalization failed |
+| `ASH_MALFORMED_REQUEST` | 400 | Standard | Malformed request |
+| `ASH_MODE_VIOLATION` | 400 | Standard | Mode violation |
+| `ASH_UNSUPPORTED_CONTENT_TYPE` | 415 | Standard | Content type not supported |
+| `ASH_VALIDATION_ERROR` | 400 | Standard | Input validation failed |
 
 ## License
 

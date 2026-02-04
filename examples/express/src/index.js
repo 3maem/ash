@@ -10,7 +10,7 @@ import {
   AshMemoryStore,
   ashExpressMiddleware,
   ashNormalizeBinding,
-} from '@3meam/ash-node';
+} from '@3maem/ash-node';
 
 // Initialize ASH
 ashInit();

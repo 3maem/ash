@@ -55,7 +55,7 @@ class TestBuildProof:
             binding="POST /api/update",
             context_id="test-context-123",
             canonical_payload='{"name":"test"}',
-            nonce="server-nonce-456",
+            nonce="abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
         )
 
         proof_without = build_proof(without_nonce)

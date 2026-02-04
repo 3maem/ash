@@ -13,6 +13,6 @@ class IntegrityFailedException extends AshException
 {
     public function __construct(string $message = 'Proof verification failed - payload may have been tampered')
     {
-        parent::__construct(AshErrorCode::IntegrityFailed, 400, $message);
+        parent::__construct(AshErrorCode::ProofInvalid, $message);
     }
 }

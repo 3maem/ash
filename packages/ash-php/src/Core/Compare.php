@@ -18,8 +18,16 @@ final class Compare
      * @param string $userInput The user-provided string to compare
      * @return bool True if strings are equal, false otherwise
      */
-    public static function timingSafe(string $known, string $userInput): bool
+    public static function ashTimingSafeEqual(string $known, string $userInput): bool
     {
         return hash_equals($known, $userInput);
+    }
+
+    /**
+     * @deprecated Use ashTimingSafeEqual() instead
+     */
+    public static function timingSafe(string $known, string $userInput): bool
+    {
+        return self::ashTimingSafeEqual($known, $userInput);
     }
 }

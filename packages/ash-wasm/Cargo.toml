@@ -12,7 +12,7 @@ readme = "README.md"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ash-core = { version = "2.3.1", path = "../ash-core" }
+ash-core = { version = "2.3.4", path = "../ash-core" }
 wasm-bindgen.workspace = true
 js-sys.workspace = true
 serde.workspace = true

@@ -29,6 +29,13 @@ from ash.core import (
     InvalidContextError,
     ReplayDetectedError,
     UnsupportedContentTypeError,
+    # New ASH-prefixed functions
+    ash_build_proof,
+    ash_canonicalize_json,
+    ash_canonicalize_url_encoded,
+    ash_normalize_binding,
+    ash_timing_safe_equal,
+    # Deprecated aliases
     build_proof,
     canonicalize_json,
     canonicalize_url_encoded,
@@ -36,15 +43,22 @@ from ash.core import (
     timing_safe_compare,
 )
 from ash.server import context, middleware, stores, verify
+from ash.config.settings import get_client_ip, get_config
 
-__version__ = "2.3.2"
+__version__ = "2.3.4"
 __author__ = "3maem"
 
 __all__ = [
     # Version constants
     "ASH_VERSION_PREFIX",
     "ASH_VERSION_PREFIX_V21",
-    # Core functions
+    # Core functions - New ASH-prefixed
+    "ash_canonicalize_json",
+    "ash_canonicalize_url_encoded",
+    "ash_normalize_binding",
+    "ash_build_proof",
+    "ash_timing_safe_equal",
+    # Core functions - Deprecated aliases
     "canonicalize_json",
     "canonicalize_url_encoded",
     "normalize_binding",
@@ -64,4 +78,7 @@ __all__ = [
     "stores",
     "middleware",
     "verify",
+    # Config functions
+    "get_client_ip",
+    "get_config",
 ]

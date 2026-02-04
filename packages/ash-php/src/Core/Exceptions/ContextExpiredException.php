@@ -13,6 +13,6 @@ class ContextExpiredException extends AshException
 {
     public function __construct(string $message = 'Context has expired')
     {
-        parent::__construct(AshErrorCode::ContextExpired, 401, $message);
+        parent::__construct(AshErrorCode::CtxExpired, $message);
     }
 }

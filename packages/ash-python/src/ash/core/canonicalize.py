@@ -7,13 +7,14 @@ Same input MUST produce identical output across all implementations.
 
 import re
 import unicodedata
+import warnings
 from typing import Any, Union
-from urllib.parse import quote, unquote_plus
+from urllib.parse import quote, unquote
 
 from ash.core.errors import CanonicalizationError
 
 
-def canonicalize_json(value: Any) -> str:
+def ash_canonicalize_json(value: Any) -> str:
     """
     Canonicalize a JSON value to a deterministic string.
 
@@ -131,9 +132,8 @@ def _canonicalize_value(value: Any) -> Any:
         result = {}
         for key in sorted_keys:
             val = value[key]
-            if val is not None:
-                normalized_key = unicodedata.normalize("NFC", key)
-                result[normalized_key] = _canonicalize_value(val)
+            normalized_key = unicodedata.normalize("NFC", key)
+            result[normalized_key] = _canonicalize_value(val)
         return result
 
     raise CanonicalizationError(f"Unsupported type: {type(value).__name__}")
@@ -168,7 +168,7 @@ def _canonicalize_number(num: float) -> Union[int, float]:
     return num
 
 
-def canonicalize_url_encoded(
+def ash_canonicalize_url_encoded(
     input_data: Union[str, dict[str, Union[str, list[str]]]]
 ) -> str:
     """
@@ -178,7 +178,7 @@ def canonicalize_url_encoded(
     - Parse into key-value pairs
     - Percent-decode consistently
     - Sort keys lexicographically
-    - For duplicate keys: preserve value order per key
+    - For duplicate keys: sort by value (byte-wise)
     - Output format: k1=v1&k1=v2&k2=v3
     - Unicode NFC applies after decoding
 
@@ -202,8 +202,8 @@ def canonicalize_url_encoded(
         for key, value in pairs
     ]
 
-    # Sort by key (stable sort preserves value order for same keys)
-    normalized_pairs.sort(key=lambda x: x[0])
+    # Sort by key first, then by value for duplicate keys (byte-wise)
+    normalized_pairs.sort(key=lambda x: (x[0], x[1]))
 
     # Encode and join
     return "&".join(
@@ -217,7 +217,8 @@ def _parse_url_encoded(input_str: str) -> list[tuple[str, str]]:
     """
     Parse URL-encoded string into key-value pairs.
 
-    Handles + as space (per application/x-www-form-urlencoded spec).
+    Note: Uses unquote (not unquote_plus) to preserve + as literal character.
+    ASH protocol treats + as a literal plus sign, not a space.
     Skips empty parts from && or leading/trailing &.
     """
     if input_str == "":
@@ -231,12 +232,12 @@ def _parse_url_encoded(input_str: str) -> list[tuple[str, str]]:
 
         eq_index = part.find("=")
         if eq_index == -1:
-            key = unquote_plus(part)
+            key = unquote(part)
             if key != "":
                 pairs.append((key, ""))
         else:
-            key = unquote_plus(part[:eq_index])
-            value = unquote_plus(part[eq_index + 1 :])
+            key = unquote(part[:eq_index])
+            value = unquote(part[eq_index + 1 :])
             if key != "":
                 pairs.append((key, value))
 
@@ -257,7 +258,7 @@ def _object_to_pairs(obj: dict[str, Union[str, list[str]]]) -> list[tuple[str, s
     return pairs
 
 
-def canonicalize_query(query: str) -> str:
+def ash_canonicalize_query(query: str) -> str:
     """
     Canonicalize a URL query string according to ASH specification.
 
@@ -268,7 +269,7 @@ def canonicalize_query(query: str) -> str:
     4. MUST percent-decode all keys and values
     5. MUST apply Unicode NFC normalization
     6. MUST sort pairs by key lexicographically (byte order)
-    7. MUST preserve order of duplicate keys
+    7. MUST sort duplicate keys by value (byte-wise)
     8. MUST re-encode with uppercase hex (%XX)
     9. MUST join with & separator
 
@@ -299,8 +300,8 @@ def canonicalize_query(query: str) -> str:
         for key, value in pairs
     ]
 
-    # Rule 6 & 7: Sort by key (stable sort preserves duplicate key order)
-    normalized_pairs.sort(key=lambda x: x[0])
+    # Rule 6 & 7: Sort by key first, then by value for duplicate keys (byte-wise)
+    normalized_pairs.sort(key=lambda x: (x[0], x[1]))
 
     # Rule 8 & 9: Re-encode and join
     return "&".join(
@@ -310,7 +311,7 @@ def canonicalize_query(query: str) -> str:
     )
 
 
-def normalize_binding(method: str, path: str, query: str = "") -> str:
+def ash_normalize_binding(method: str, path: str, query: str = "") -> str:
     """
     Normalize a binding string to canonical form (v2.3.1+ format).
 
@@ -356,13 +357,13 @@ def normalize_binding(method: str, path: str, query: str = "") -> str:
         normalized_path = normalized_path[:-1]
 
     # Canonicalize query string
-    canonical_query = canonicalize_query(query) if query else ""
+    canonical_query = ash_canonicalize_query(query) if query else ""
 
     # v2.3.1 format: METHOD|PATH|CANONICAL_QUERY
     return f"{normalized_method}|{normalized_path}|{canonical_query}"
 
 
-def normalize_binding_from_url(method: str, full_path: str) -> str:
+def ash_normalize_binding_from_url(method: str, full_path: str) -> str:
     """
     Normalize a binding from a full URL path (including query string).
 
@@ -378,4 +379,75 @@ def normalize_binding_from_url(method: str, full_path: str) -> str:
     else:
         path, query = full_path, ""
 
-    return normalize_binding(method, path, query)
+    return ash_normalize_binding(method, path, query)
+
+
+# =========================================================================
+# Deprecated Aliases for Backward Compatibility
+# =========================================================================
+
+def canonicalize_json(value: Any) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_canonicalize_json` instead.
+    """
+    warnings.warn(
+        "canonicalize_json is deprecated, use ash_canonicalize_json instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_canonicalize_json(value)
+
+
+def canonicalize_url_encoded(
+    input_data: Union[str, dict[str, Union[str, list[str]]]]
+) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_canonicalize_url_encoded` instead.
+    """
+    warnings.warn(
+        "canonicalize_url_encoded is deprecated, use ash_canonicalize_url_encoded instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_canonicalize_url_encoded(input_data)
+
+
+def canonicalize_query(query: str) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_canonicalize_query` instead.
+    """
+    warnings.warn(
+        "canonicalize_query is deprecated, use ash_canonicalize_query instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_canonicalize_query(query)
+
+
+def normalize_binding(method: str, path: str, query: str = "") -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_normalize_binding` instead.
+    """
+    warnings.warn(
+        "normalize_binding is deprecated, use ash_normalize_binding instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_normalize_binding(method, path, query)
+
+
+def normalize_binding_from_url(method: str, full_path: str) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_normalize_binding_from_url` instead.
+    """
+    warnings.warn(
+        "normalize_binding_from_url is deprecated, use ash_normalize_binding_from_url instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_normalize_binding_from_url(method, full_path)

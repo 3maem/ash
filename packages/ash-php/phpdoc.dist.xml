@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpdocumentor
+    configVersion="3"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://www.phpdoc.org"
+    xsi:noNamespaceSchemaLocation="https://docs.phpdoc.org/latest/phpdoc.xsd"
+>
+    <title>ASH SDK for PHP</title>
+
+    <paths>
+        <output>docs/api</output>
+        <cache>.phpdoc/cache</cache>
+    </paths>
+
+    <version number="2.3.4">
+        <api>
+            <source dsn=".">
+                <path>src</path>
+            </source>
+            <output>api</output>
+
+            <ignore hidden="true" symlinks="true">
+                <path>vendor/**/*</path>
+                <path>tests/**/*</path>
+            </ignore>
+
+            <extensions>
+                <extension>php</extension>
+            </extensions>
+
+            <visibility>public</visibility>
+            <visibility>protected</visibility>
+
+            <default-package-name>Ash</default-package-name>
+
+            <markers>
+                <marker>TODO</marker>
+                <marker>FIXME</marker>
+            </markers>
+        </api>
+    </version>
+
+    <setting name="graphs.enabled" value="true"/>
+
+    <template name="default"/>
+</phpdocumentor>

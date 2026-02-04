@@ -9,7 +9,7 @@ on:
         type: boolean
         default: true
       pypi:
-        description: 'Publish to PyPI (ash-protocol)'
+        description: 'Publish to PyPI (ash-sdk)'
         required: false
         type: boolean
         default: true
@@ -19,12 +19,12 @@ on:
         type: boolean
         default: true
       nuget:
-        description: 'Publish to NuGet (Ash.Security)'
+        description: 'Publish to NuGet (Ash.Core)'
         required: false
         type: boolean
         default: true
       packagist:
-        description: 'Notify Packagist (3maem/ash-protocol)'
+        description: 'Notify Packagist (3maem/ash-sdk)'
         required: false
         type: boolean
         default: true
@@ -77,7 +77,7 @@ jobs:
           echo "| Registry | Package | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| npm | @3maem/ash-node | ${{ needs.publish-npm.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| PyPI | ash-protocol | ${{ needs.publish-pypi.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PyPI | ash-sdk | ${{ needs.publish-pypi.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| crates.io | ash-core, ash-wasm | ${{ needs.publish-crates.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| NuGet | Ash.Security | ${{ needs.publish-nuget.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Packagist | 3maem/ash-protocol | ${{ needs.publish-packagist.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| NuGet | Ash.Core | ${{ needs.publish-nuget.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Packagist | 3maem/ash-sdk | ${{ needs.publish-packagist.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY

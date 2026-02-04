@@ -17,11 +17,10 @@ class AshException extends Exception
 
     public function __construct(
         AshErrorCode $errorCode,
-        int $httpStatus,
         string $message = 'ASH error',
     ) {
         parent::__construct($message);
         $this->errorCode = $errorCode;
-        $this->httpStatus = $httpStatus;
+        $this->httpStatus = $errorCode->httpStatus();
     }
 }

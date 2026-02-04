@@ -13,6 +13,6 @@ class InvalidContextException extends AshException
 {
     public function __construct(string $message = 'Context not found or invalid')
     {
-        parent::__construct(AshErrorCode::InvalidContext, 401, $message);
+        parent::__construct(AshErrorCode::CtxNotFound, $message);
     }
 }

@@ -35,3 +35,23 @@ def ash_timing_safe_equal(a: str | bytes, b: str | bytes) -> bool:
 
     # Use hmac.compare_digest for constant-time comparison
     return hmac.compare_digest(a, b)
+
+
+# =========================================================================
+# Deprecated Aliases for Backward Compatibility
+# =========================================================================
+
+import warnings
+
+
+def timing_safe_equal(a: str | bytes, b: str | bytes) -> bool:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_timing_safe_equal` instead.
+    """
+    warnings.warn(
+        "timing_safe_equal is deprecated, use ash_timing_safe_equal instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_timing_safe_equal(a, b)

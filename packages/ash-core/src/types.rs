@@ -1,4 +1,40 @@
 //! Core types for ASH protocol.
+//!
+//! This module defines the data structures used throughout ASH:
+//!
+//! ## Types
+//!
+//! | Type | Purpose |
+//! |------|---------|
+//! | [`AshMode`] | Security mode (minimal, balanced, strict) |
+//! | [`BuildProofInput`] | Input parameters for proof generation |
+//! | [`VerifyInput`] | Input parameters for proof verification |
+//! | [`StoredContext`] | Server-side context storage |
+//!
+//! ## Security Modes
+//!
+//! | Mode | Use Case | Protection Level |
+//! |------|----------|------------------|
+//! | `Minimal` | Low-risk operations | Basic integrity |
+//! | `Balanced` | Default for most APIs | Good security/performance balance |
+//! | `Strict` | Financial/sensitive data | Maximum protection |
+//!
+//! ## Example
+//!
+//! ```rust
+//! use ash_core::AshMode;
+//! use std::str::FromStr;
+//!
+//! // Parse from string
+//! let mode = AshMode::from_str("balanced").unwrap();
+//! assert_eq!(mode, AshMode::Balanced);
+//!
+//! // Default is Balanced
+//! assert_eq!(AshMode::default(), AshMode::Balanced);
+//!
+//! // Display as string
+//! assert_eq!(format!("{}", AshMode::Strict), "strict");
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::fmt;

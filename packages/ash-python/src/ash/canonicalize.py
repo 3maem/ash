@@ -129,7 +129,7 @@ def ash_canonicalize_query(query: str) -> str:
     4. MUST percent-decode all keys and values
     5. MUST apply Unicode NFC normalization
     6. MUST sort pairs by key lexicographically (byte order)
-    7. MUST preserve order of duplicate keys
+    7. MUST sort duplicate keys by value (byte-wise)
     8. MUST re-encode with uppercase hex (%XX)
     9. MUST join with & separator
 
@@ -165,8 +165,8 @@ def ash_canonicalize_query(query: str) -> str:
         value = unicodedata.normalize("NFC", value)
         normalized_pairs.append((key, value))
 
-    # Rule 6 & 7: Sort by key (stable sort preserves duplicate key order)
-    normalized_pairs.sort(key=lambda x: x[0])
+    # Rule 6 & 7: Sort by key first, then by value for duplicate keys (byte-wise)
+    normalized_pairs.sort(key=lambda x: (x[0], x[1]))
 
     # Rule 8 & 9: Re-encode with uppercase hex and join
     encoded_pairs = []
@@ -204,15 +204,15 @@ def ash_canonicalize_urlencoded(input_data: str) -> str:
     # Parse into key-value pairs
     pairs = parse_qsl(input_data, keep_blank_values=True)
 
-    # NFC normalize and sort by key
+    # NFC normalize and sort by key, then by value for duplicate keys
     normalized_pairs = []
     for key, value in pairs:
         key = unicodedata.normalize("NFC", key)
         value = unicodedata.normalize("NFC", value)
         normalized_pairs.append((key, value))
 
-    # Sort by key
-    normalized_pairs.sort(key=lambda x: x[0])
+    # Sort by key first, then by value for duplicate keys (byte-wise)
+    normalized_pairs.sort(key=lambda x: (x[0], x[1]))
 
     # Encode consistently using RFC 3986
     encoded_pairs = []
@@ -282,3 +282,49 @@ def _normalize_object(obj: dict[str, Any]) -> dict[str, Any]:
         normalized[normalized_key] = _normalize_value(obj[key])
 
     return normalized
+
+
+# =========================================================================
+# Deprecated Aliases for Backward Compatibility
+# =========================================================================
+
+import warnings
+
+
+def canonicalize_json(input_json: str) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_canonicalize_json` instead.
+    """
+    warnings.warn(
+        "canonicalize_json is deprecated, use ash_canonicalize_json instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_canonicalize_json(input_json)
+
+
+def canonicalize_query(query: str) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_canonicalize_query` instead.
+    """
+    warnings.warn(
+        "canonicalize_query is deprecated, use ash_canonicalize_query instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_canonicalize_query(query)
+
+
+def canonicalize_urlencoded(input_data: str) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_canonicalize_urlencoded` instead.
+    """
+    warnings.warn(
+        "canonicalize_urlencoded is deprecated, use ash_canonicalize_urlencoded instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_canonicalize_urlencoded(input_data)

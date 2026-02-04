@@ -1,6 +1,29 @@
 # ASH SDK
 
+[![Build Status](https://img.shields.io/github/actions/workflow/status/3maem/ash/test-all-sdks.yml?branch=main&label=build)](https://github.com/3maem/ash/actions/workflows/test-all-sdks.yml)
+[![Cross-SDK Tests](https://img.shields.io/badge/cross--SDK-passing-brightgreen)](tests/cross-sdk/)
+[![Security Rating](https://img.shields.io/badge/security-10%2F10-brightgreen)](reports/security-audit/SECURITY_AUDIT_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-134%20passed-brightgreen)](tests/security_assurance/)
+[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.3.3-blue)](CHANGELOG.md)
+[![Docs](https://img.shields.io/badge/docs-available-blue)](docs/)
+
 **Developed by 3maem Co. | شركة عمائم**
+
+---
+
+## What's New in v2.3
+
+**ASH v2.3 Unified Proof** introduces advanced security features while maintaining backward compatibility:
+
+- **Context Scoping** - Protect specific fields while allowing others to change
+- **Request Chaining** - Cryptographically link sequential operations for workflow integrity
+- **Server-Side Scope Policies** - Enforce scoping requirements at the server level
+- **Unified Error Codes** - Consistent error handling across all 6 SDKs
+- **Cross-SDK Test Vectors** - Comprehensive interoperability testing
+- **Cross-SDK Input Validation** - All SDKs validate inputs identically (SEC-014, BUG-004, SEC-CTX-001)
+
+See the [CHANGELOG](CHANGELOG.md) for complete release notes.
 
 ---
 
@@ -215,8 +238,101 @@ All public APIs use the `ash` prefix for consistency and to avoid naming conflic
 |------------|---------|
 | `ashExpressMiddleware()` | Express.js request verification |
 | `ashFastifyPlugin()` | Fastify request verification |
+| `AshLaravelMiddleware` | Laravel request verification |
+| `AshFilter` | CodeIgniter request verification |
+| `WordPressHandler` | WordPress REST API verification |
 
 This naming convention applies across all SDKs (Node.js, Python, Go, .NET, PHP, Rust).
+
+### Configuration
+
+ASH supports environment-based configuration for deployment flexibility across all SDKs:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ASH_TRUST_PROXY` | `false` | Enable X-Forwarded-For handling |
+| `ASH_TRUSTED_PROXIES` | (empty) | Comma-separated trusted proxy IPs |
+| `ASH_RATE_LIMIT_WINDOW` | `60` | Rate limit window in seconds |
+| `ASH_RATE_LIMIT_MAX` | `10` | Max contexts per window per IP |
+| `ASH_TIMESTAMP_TOLERANCE` | `30` | Acceptable clock skew in seconds |
+
+#### IP and User Binding Guards
+
+All ASH middlewares support optional IP and user binding verification to prevent context theft:
+
+| SDK | IP Binding | User Binding | Syntax |
+|-----|------------|--------------|--------|
+| **PHP Laravel** | `enforce_ip` | `enforce_user` | `middleware('ash:enforce_ip,enforce_user')` |
+| **PHP CodeIgniter** | `enforce_ip` | `enforce_user` | `['before' => ['api/*' => ['enforce_ip']]]` |
+| **PHP WordPress** | `enforce_ip` | `enforce_user` | `['enforce_ip' => true]` |
+| **Node.js** | `enforceIp` | `enforceUser` | `ashExpressMiddleware({ enforceIp: true })` |
+| **Python Flask** | `enforce_ip` | `enforce_user` | `@middleware.flask(store, enforce_ip=True)` |
+| **Go Gin** | `EnforceIP` | `EnforceUser` | `AshGinMiddleware(&AshMiddlewareOptions{EnforceIP: true})` |
+| **.NET Core** | `EnforceIp` | `EnforceUser` | `UseAsh(ash, new AshMiddlewareOptions { EnforceIp = true })` |
+
+When enabled, the middleware verifies that the current request's IP address and/or authenticated user matches the values stored in the context metadata. If mismatched, returns HTTP 461 (`ASH_BINDING_MISMATCH`).
+
+**Environment Configuration Examples:**
+
+```bash
+# .env file
+ASH_TRUST_PROXY=true
+ASH_TRUSTED_PROXIES=10.0.0.1,10.0.0.2
+ASH_RATE_LIMIT_WINDOW=60
+ASH_RATE_LIMIT_MAX=100
+ASH_TIMESTAMP_TOLERANCE=30
+```
+
+**PHP with IP Binding:**
+```php
+// Store client IP when creating context
+$ctx = $store->create([
+    'binding' => 'POST /api/transfer',
+    'metadata' => ['ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $userId]
+]);
+
+// Verify IP in middleware
+Route::post('/api/transfer', ...)
+    ->middleware('ash:enforce_ip,enforce_user');
+```
+
+**Node.js with User Binding:**
+```javascript
+// Store user ID in context
+const ctx = await store.create({
+    binding: 'POST /api/transfer',
+    metadata: { user_id: req.user.id }
+});
+
+// Verify user in middleware
+app.post('/api/transfer',
+    ashExpressMiddleware({ 
+        store, 
+        enforceUser: true,
+        userIdExtractor: (req) => req.user?.id 
+    }),
+    handler
+);
+```
+
+**Go with IP and User Binding:**
+```go
+// Store metadata when creating context
+ctx, _ := store.Create(ash.ContextConfig{
+    Binding:  "POST /api/transfer",
+    Metadata: map[string]string{
+        "ip":       c.ClientIP(),
+        "user_id":  userID,
+    },
+})
+
+// Verify in middleware
+router.POST("/api/transfer", ash.AshGinMiddleware(&ash.AshMiddlewareOptions{
+    Store:       store,
+    EnforceIP:   true,
+    EnforceUser: true,
+}))
+```
 
 ---
 
@@ -329,13 +445,81 @@ await fetch('/api/transfer', {
 
 ---
 
+## Secure Memory Utilities
+
+For high-security environments, ASH provides secure memory handling to prevent secrets from lingering in memory.
+
+### Python
+
+```python
+from ash.core import SecureString, secure_derive_client_secret
+
+# Automatic cleanup with context manager
+with secure_derive_client_secret(nonce, context_id, binding) as secret:
+    proof = build_proof_v21(secret.get(), timestamp, binding, body_hash)
+# Memory automatically zeroed here
+```
+
+### Node.js
+
+```typescript
+import { withSecureString, secureDeriveClientSecret } from '@3maem/ash-node';
+
+// Automatic cleanup with helper function
+const proof = await withSecureString(clientSecret, (secret) => {
+  return buildProofV21(secret, timestamp, binding, bodyHash);
+});
+// Memory automatically cleared
+```
+
+---
+
+## Integration Examples
+
+Ready-to-use examples for popular web frameworks:
+
+| Framework | Language | Location |
+|-----------|----------|----------|
+| **Express** | Node.js | [`examples/express/`](examples/express/) |
+| **Flask** | Python | [`examples/flask/`](examples/flask/) |
+| **ASP.NET Core** | C# | [`examples/aspnet/`](examples/aspnet/) |
+| **Gin** | Go | [`examples/gin/`](examples/gin/) |
+| **Laravel** | PHP | [`examples/laravel/`](examples/laravel/) |
+| **Actix-web** | Rust | [`examples/actix/`](examples/actix/) |
+
+Each example includes server implementation, client usage, and setup instructions.
+
+---
+
 ## Error Reference
 
 This section defines common error conditions returned by ASH
 during request verification. Error codes are prefixed with `ASH_`
 for consistent handling across SDKs.
 
-### ASH_CTX_NOT_FOUND
+**v2.3.3+**: ASH uses unique HTTP status codes in the 450-499 range for precise error identification.
+
+### Error Code Quick Reference
+
+| Code | HTTP | Category | Description |
+|------|------|----------|-------------|
+| `ASH_CTX_NOT_FOUND` | 450 | Context | Context not found |
+| `ASH_CTX_EXPIRED` | 451 | Context | Context expired |
+| `ASH_CTX_ALREADY_USED` | 452 | Context | Replay detected |
+| `ASH_PROOF_INVALID` | 460 | Seal | Proof verification failed |
+| `ASH_BINDING_MISMATCH` | 461 | Binding | Endpoint mismatch |
+| `ASH_SCOPE_MISMATCH` | 473 | Verification | Scope hash mismatch |
+| `ASH_CHAIN_BROKEN` | 474 | Verification | Chain verification failed |
+| `ASH_TIMESTAMP_INVALID` | 482 | Format | Invalid timestamp |
+| `ASH_PROOF_MISSING` | 483 | Format | Missing proof header |
+| `ASH_CANONICALIZATION_ERROR` | 422 | Standard | Canonicalization failed |
+| `ASH_MODE_VIOLATION` | 400 | Standard | Mode requirements not met |
+| `ASH_UNSUPPORTED_CONTENT_TYPE` | 415 | Standard | Content type not supported |
+| `ASH_VALIDATION_ERROR` | 400 | Standard | Input validation failed |
+
+### Context Errors (450-459)
+
+#### ASH_CTX_NOT_FOUND (HTTP 450)
 
 The provided `contextId` does not exist or is unknown to the server.
 
@@ -344,7 +528,7 @@ The provided `contextId` does not exist or is unknown to the server.
 - Context already consumed
 - Context store reset
 
-### ASH_CTX_EXPIRED
+#### ASH_CTX_EXPIRED (HTTP 451)
 
 The context exists but has exceeded its TTL.
 
@@ -352,7 +536,7 @@ The context exists but has exceeded its TTL.
 - Request sent after expiration
 - Client/server clock drift beyond tolerance
 
-### ASH_CTX_ALREADY_USED
+#### ASH_CTX_ALREADY_USED (HTTP 452)
 
 The context or proof has already been successfully consumed.
 
@@ -361,24 +545,9 @@ The context or proof has already been successfully consumed.
 - Duplicate request submission
 - Network retry without new context
 
-### ASH_BINDING_MISMATCH
+### Seal/Proof Errors (460-469)
 
-The request does not match the binding associated with the context.
-
-**Possible causes:**
-- Different endpoint
-- Different HTTP method
-- Context reused for another operation
-
-### ASH_PROOF_MISSING
-
-The request did not include a required proof value.
-
-**Possible causes:**
-- Client integration error
-- Missing headers
-
-### ASH_PROOF_INVALID
+#### ASH_PROOF_INVALID (HTTP 460)
 
 The provided proof does not match the expected value.
 
@@ -388,7 +557,56 @@ The provided proof does not match the expected value.
 - Incorrect mode or binding
 - Implementation mismatch across SDKs
 
-### ASH_CANONICALIZATION_ERROR
+### Binding Errors (461)
+
+#### ASH_BINDING_MISMATCH (HTTP 461)
+
+The request does not match the binding associated with the context.
+
+**Possible causes:**
+- Different endpoint
+- Different HTTP method
+- Context reused for another operation
+
+#### ASH_SCOPE_MISMATCH (HTTP 473)
+
+The scope hash does not match the expected value for scoped fields.
+
+**Possible causes:**
+- Scoped field values were modified
+- Scope header mismatch between client and server
+- Server-side scope policy violation
+
+#### ASH_CHAIN_BROKEN (HTTP 474)
+
+The chain hash verification failed for linked requests.
+
+**Possible causes:**
+- Invalid previous proof reference
+- Chain sequence disrupted
+- Missing chain hash header
+
+### Format/Protocol Errors (480-489)
+
+#### ASH_TIMESTAMP_INVALID (HTTP 482)
+
+The timestamp validation failed.
+
+**Possible causes:**
+- Timestamp outside allowed drift window
+- Invalid timestamp format
+
+#### ASH_PROOF_MISSING (HTTP 483)
+
+The request did not include a required proof value.
+
+**Possible causes:**
+- Client integration error
+- Missing headers
+
+### Standard HTTP Errors
+
+#### ASH_CANONICALIZATION_ERROR (HTTP 422)
 
 The payload could not be canonicalized deterministically.
 
@@ -397,14 +615,24 @@ The payload could not be canonicalized deterministically.
 - Invalid JSON
 - Non-deterministic serialization
 
-### ASH_VERIFICATION_FAILED
+#### ASH_MODE_VIOLATION (HTTP 400)
 
-A generic verification failure when a more specific error
-cannot be safely disclosed.
+The request does not meet the requirements of the specified security mode.
 
-**Recommended usage:**
-- Return a generic client-facing error
-- Log detailed diagnostics server-side only
+**Possible causes:**
+- Required fields missing for strict mode
+- Mode-specific constraints not satisfied
+
+#### ASH_UNSUPPORTED_CONTENT_TYPE (HTTP 415)
+
+The request content type is not supported for canonicalization.
+
+**Possible causes:**
+- Unknown or unsupported Content-Type header
+- Binary content without proper handling
+- Missing Content-Type header
+
+For complete error code documentation, see [Error Code Specification](docs/ERROR_CODE_SPECIFICATION.md).
 
 ---
 
@@ -419,6 +647,64 @@ cannot be safely disclosed.
 | **.NET** | [`Ash.Core`](https://www.nuget.org/packages/Ash.Core) | `dotnet add package Ash.Core` |
 | **Rust** | [`ash-core`](https://crates.io/crates/ash-core) | `cargo add ash-core` |
 | **Rust WASM** | [`ash-wasm`](https://crates.io/crates/ash-wasm) | `cargo add ash-wasm` |
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [SECURITY.md](SECURITY.md) | Security policy and vulnerability reporting |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
+| [Error Code Specification](docs/ERROR_CODE_SPECIFICATION.md) | Unified error codes across all SDKs |
+| [Troubleshooting Guide](TROUBLESHOOTING.md) | Common issues and debugging tips |
+| [Cross-SDK Test Vectors](tests/cross-sdk/) | Interoperability test suite |
+| [Security Audit](reports/security-audit/SECURITY_AUDIT_REPORT.md) | Full security audit report |
+| [Benchmarks](reports/benchmarks/BENCHMARK_REPORT.md) | Performance benchmarks |
+| [Security Tests](tests/SECURITY_ASSURANCE_PACK.md) | Security test documentation |
+
+---
+
+## Cross-SDK Testing
+
+ASH includes comprehensive test vectors to ensure interoperability across all SDKs.
+
+```bash
+# Run Python test vectors
+python tests/cross-sdk/run_tests.py
+
+# Run Node.js test vectors
+node tests/cross-sdk/run_tests.js
+
+# Run Go test vectors
+go run tests/cross-sdk/run_tests.go
+
+# Run PHP test vectors
+php tests/cross-sdk/run_tests.php
+
+# Run .NET test vectors
+dotnet run --project tests/cross-sdk/run_tests.csproj
+
+# Run Rust test vectors
+cargo run --bin run_tests
+```
+
+Test vectors cover:
+- JSON canonicalization (20 vectors)
+- URL-encoded canonicalization (6 vectors)
+- Binding normalization (7 vectors)
+- Timing-safe comparison (5 vectors)
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Install pre-commit hooks: `pip install pre-commit && pre-commit install`
+3. Make your changes
+4. Run tests: `pytest tests/security_assurance/`
+5. Run cross-SDK tests to verify interoperability
+6. Submit a pull request
 
 ---
 

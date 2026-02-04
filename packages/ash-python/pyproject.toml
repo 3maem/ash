@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ash-sdk"
-version = "2.3.3"
+version = "2.3.4"
 description = "ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets"
 readme = "README.md"
 license = {text = "Proprietary"}
@@ -38,6 +38,10 @@ dev = [
     "redis>=4.0.0",
     "mypy>=1.0.0",
     "ruff>=0.1.0",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=2.0.0",
 ]
 
 [project.urls]

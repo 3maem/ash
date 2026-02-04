@@ -15,8 +15,8 @@ Fail-closed verification following the ASH-Spec-v1.0 order:
 import time
 from typing import Any, Callable
 
-from ash.core.canonicalize import canonicalize_json, canonicalize_url_encoded
-from ash.core.compare import timing_safe_compare
+from ash.core.canonicalize import ash_canonicalize_json, ash_canonicalize_url_encoded
+from ash.core.compare import ash_timing_safe_equal
 from ash.core.errors import (
     ContextExpiredError,
     EndpointMismatchError,
@@ -25,7 +25,7 @@ from ash.core.errors import (
     ReplayDetectedError,
     UnsupportedContentTypeError,
 )
-from ash.core.proof import build_proof
+from ash.core.proof import ash_build_proof
 from ash.core.types import BuildProofInput, SupportedContentType
 from ash.server.types import ContextStore, VerifyOptions
 
@@ -84,7 +84,7 @@ async def verify_request(
     canonical_payload = _canonicalize_payload(payload, options.content_type)
 
     # Step 6: Recompute expected proof
-    expected_proof = build_proof(
+    expected_proof = ash_build_proof(
         BuildProofInput(
             mode=context.mode,
             binding=context.binding,
@@ -96,7 +96,7 @@ async def verify_request(
 
     # Step 7: Constant-time compare proofs
     provided_proof = options.extract_proof(req)
-    if not isinstance(provided_proof, str) or not timing_safe_compare(
+    if not isinstance(provided_proof, str) or not ash_timing_safe_equal(
         expected_proof, provided_proof
     ):
         raise IntegrityFailedError()
@@ -115,13 +115,13 @@ async def verify_request(
 def _canonicalize_payload(payload: Any, content_type: SupportedContentType) -> str:
     """Canonicalize payload based on content type."""
     if content_type == "application/json":
-        return canonicalize_json(payload)
+        return ash_canonicalize_json(payload)
 
     if content_type == "application/x-www-form-urlencoded":
         if isinstance(payload, str):
-            return canonicalize_url_encoded(payload)
+            return ash_canonicalize_url_encoded(payload)
         if isinstance(payload, dict):
-            return canonicalize_url_encoded(payload)
+            return ash_canonicalize_url_encoded(payload)
         raise UnsupportedContentTypeError(
             "Invalid payload for URL-encoded content type"
         )

@@ -30,8 +30,8 @@ Example:
 
 from typing import Any, Dict, Optional
 
-from ash.core.canonicalize import canonicalize_json, canonicalize_url_encoded
-from ash.core.proof import build_proof
+from ash.core.canonicalize import ash_canonicalize_json, ash_canonicalize_url_encoded
+from ash.core.proof import ash_build_proof
 from ash.core.types import AshMode, BuildProofInput, SupportedContentType
 
 
@@ -77,14 +77,14 @@ class AshClient:
         """
         # Canonicalize payload
         if content_type == "application/json":
-            canonical_payload = canonicalize_json(payload)
+            canonical_payload = ash_canonicalize_json(payload)
         elif content_type == "application/x-www-form-urlencoded":
-            canonical_payload = canonicalize_url_encoded(payload)
+            canonical_payload = ash_canonicalize_url_encoded(payload)
         else:
             raise ValueError(f"Unsupported content type: {content_type}")
 
         # Build proof
-        return build_proof(
+        return ash_build_proof(
             BuildProofInput(
                 mode=mode,
                 binding=binding,

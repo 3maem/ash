@@ -67,7 +67,7 @@ final class ProofTest extends TestCase
             binding: 'POST /api/update',
             contextId: 'test-context-123',
             canonicalPayload: '{"name":"test"}',
-            nonce: 'server-nonce-456',
+            nonce: 'abcd1234abcd1234abcd1234abcd1234',
         );
 
         $proofWithout = Proof::build($withoutNonce);

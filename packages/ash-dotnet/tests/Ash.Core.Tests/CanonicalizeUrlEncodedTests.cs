@@ -30,10 +30,11 @@ public class CanonicalizeUrlEncodedTests
     }
 
     [Fact]
-    public void DuplicateKeys_PreservesValueOrder()
+    public void DuplicateKeys_SortedByValue()
     {
+        // Per ASH spec: duplicate keys should be sorted by value (byte-wise)
         var result = Canonicalize.UrlEncoded("a=2&a=1&a=3");
-        Assert.Equal("a=2&a=1&a=3", result);
+        Assert.Equal("a=1&a=2&a=3", result);
     }
 
     [Fact]
@@ -44,10 +45,11 @@ public class CanonicalizeUrlEncodedTests
     }
 
     [Fact]
-    public void PlusAsSpace_DecodesAndReencodes()
+    public void PlusAsLiteral_PreservesPlus()
     {
+        // ASH protocol treats + as literal plus, not space
         var result = Canonicalize.UrlEncoded("a=hello+world");
-        Assert.Equal("a=hello%20world", result);
+        Assert.Equal("a=hello%2Bworld", result);
     }
 
     [Fact]

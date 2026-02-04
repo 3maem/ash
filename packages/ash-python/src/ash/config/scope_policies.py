@@ -6,25 +6,26 @@ without requiring client-side scope management.
 
 Example:
     # Register policies at application startup
-    register_scope_policy('POST|/api/transfer|', ['amount', 'recipient'])
-    register_scope_policy('POST|/api/payment|', ['amount', 'card_last4'])
-    register_scope_policy('PUT|/api/users/<id>|', ['role', 'permissions'])
+    ash_register_scope_policy('POST|/api/transfer|', ['amount', 'recipient'])
+    ash_register_scope_policy('POST|/api/payment|', ['amount', 'card_last4'])
+    ash_register_scope_policy('PUT|/api/users/<id>|', ['role', 'permissions'])
 
     # Later, get policy for a binding
-    scope = get_scope_policy('POST|/api/transfer|')
+    scope = ash_get_scope_policy('POST|/api/transfer|')
     # Returns: ['amount', 'recipient']
 """
 
 from __future__ import annotations
 
 import re
+import warnings
 from typing import Dict, List
 
 # Internal storage for scope policies
 _policies: Dict[str, List[str]] = {}
 
 
-def register_scope_policy(binding: str, fields: List[str]) -> None:
+def ash_register_scope_policy(binding: str, fields: List[str]) -> None:
     """
     Register a scope policy for a binding pattern.
 
@@ -33,13 +34,13 @@ def register_scope_policy(binding: str, fields: List[str]) -> None:
         fields: The fields that must be protected
 
     Example:
-        register_scope_policy('POST|/api/transfer|', ['amount', 'recipient'])
-        register_scope_policy('PUT|/api/users/<id>|', ['role', 'permissions'])
+        ash_register_scope_policy('POST|/api/transfer|', ['amount', 'recipient'])
+        ash_register_scope_policy('PUT|/api/users/<id>|', ['role', 'permissions'])
     """
     _policies[binding] = fields
 
 
-def register_scope_policies(policies: Dict[str, List[str]]) -> None:
+def ash_register_scope_policies(policies: Dict[str, List[str]]) -> None:
     """
     Register multiple scope policies at once.
 
@@ -47,7 +48,7 @@ def register_scope_policies(policies: Dict[str, List[str]]) -> None:
         policies: Map of binding => fields
 
     Example:
-        register_scope_policies({
+        ash_register_scope_policies({
             'POST|/api/transfer|': ['amount', 'recipient'],
             'POST|/api/payment|': ['amount', 'card_last4'],
         })
@@ -56,7 +57,7 @@ def register_scope_policies(policies: Dict[str, List[str]]) -> None:
         _policies[binding] = fields
 
 
-def get_scope_policy(binding: str) -> List[str]:
+def ash_get_scope_policy(binding: str) -> List[str]:
     """
     Get the scope policy for a binding.
 
@@ -81,7 +82,7 @@ def get_scope_policy(binding: str) -> List[str]:
     return []
 
 
-def has_scope_policy(binding: str) -> bool:
+def ash_has_scope_policy(binding: str) -> bool:
     """
     Check if a binding has a scope policy defined.
 
@@ -101,7 +102,7 @@ def has_scope_policy(binding: str) -> bool:
     return False
 
 
-def get_all_scope_policies() -> Dict[str, List[str]]:
+def ash_get_all_scope_policies() -> Dict[str, List[str]]:
     """
     Get all registered policies.
 
@@ -111,7 +112,7 @@ def get_all_scope_policies() -> Dict[str, List[str]]:
     return dict(_policies)
 
 
-def clear_scope_policies() -> None:
+def ash_clear_scope_policies() -> None:
     """
     Clear all registered policies.
 
@@ -153,3 +154,85 @@ def _matches_pattern(binding: str, pattern: str) -> bool:
     regex = re.sub(r'\\<[a-zA-Z_][a-zA-Z0-9_]*\\>', '[^|/]+', regex)
 
     return re.match(f'^{regex}$', binding) is not None
+
+
+# =========================================================================
+# Deprecated Aliases for Backward Compatibility
+# =========================================================================
+
+def register_scope_policy(binding: str, fields: List[str]) -> None:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_register_scope_policy` instead.
+    """
+    warnings.warn(
+        "register_scope_policy is deprecated, use ash_register_scope_policy instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_register_scope_policy(binding, fields)
+
+
+def register_scope_policies(policies: Dict[str, List[str]]) -> None:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_register_scope_policies` instead.
+    """
+    warnings.warn(
+        "register_scope_policies is deprecated, use ash_register_scope_policies instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_register_scope_policies(policies)
+
+
+def get_scope_policy(binding: str) -> List[str]:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_get_scope_policy` instead.
+    """
+    warnings.warn(
+        "get_scope_policy is deprecated, use ash_get_scope_policy instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_get_scope_policy(binding)
+
+
+def has_scope_policy(binding: str) -> bool:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_has_scope_policy` instead.
+    """
+    warnings.warn(
+        "has_scope_policy is deprecated, use ash_has_scope_policy instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_has_scope_policy(binding)
+
+
+def get_all_scope_policies() -> Dict[str, List[str]]:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_get_all_scope_policies` instead.
+    """
+    warnings.warn(
+        "get_all_scope_policies is deprecated, use ash_get_all_scope_policies instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_get_all_scope_policies()
+
+
+def clear_scope_policies() -> None:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_clear_scope_policies` instead.
+    """
+    warnings.warn(
+        "clear_scope_policies is deprecated, use ash_clear_scope_policies instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_clear_scope_policies()

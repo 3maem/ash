@@ -13,6 +13,6 @@ class EndpointMismatchException extends AshException
 {
     public function __construct(string $message = 'Context binding does not match requested endpoint')
     {
-        parent::__construct(AshErrorCode::EndpointMismatch, 400, $message);
+        parent::__construct(AshErrorCode::BindingMismatch, $message);
     }
 }

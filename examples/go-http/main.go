@@ -30,7 +30,7 @@ import (
 
 // =============================================================================
 // ASH Implementation (simplified for demonstration)
-// In production, use the github.com/3meam/ash-go package
+// In production, use the github.com/3maem/ash-go package
 // =============================================================================
 
 const ASHVersion = "ASHv1"

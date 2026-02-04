@@ -99,3 +99,42 @@ def ash_verify_proof(expected: str, actual: str) -> bool:
     from .compare import ash_timing_safe_equal
 
     return ash_timing_safe_equal(expected, actual)
+
+
+# =========================================================================
+# Deprecated Aliases for Backward Compatibility
+# =========================================================================
+
+import warnings
+
+
+def build_proof(
+    mode: "AshMode",
+    binding: str,
+    context_id: str,
+    nonce: str | None,
+    canonical_payload: str,
+) -> str:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_build_proof` instead.
+    """
+    warnings.warn(
+        "build_proof is deprecated, use ash_build_proof instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_build_proof(mode, binding, context_id, nonce, canonical_payload)
+
+
+def verify_proof(expected: str, actual: str) -> bool:
+    """
+    .. deprecated:: 2.4.0
+        Use :func:`ash_verify_proof` instead.
+    """
+    warnings.warn(
+        "verify_proof is deprecated, use ash_verify_proof instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return ash_verify_proof(expected, actual)

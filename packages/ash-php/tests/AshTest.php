@@ -71,6 +71,6 @@ final class AshTest extends TestCase
     #[Test]
     public function versionConstantExists(): void
     {
-        $this->assertSame('2.3.1', Ash::VERSION);
+        $this->assertSame('2.3.4', Ash::VERSION);
     }
 }

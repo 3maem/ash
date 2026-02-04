@@ -13,7 +13,7 @@ public static class AshVersion
     /// <summary>
     /// Current ASH SDK version.
     /// </summary>
-    public const string Version = "2.3.2";
+    public const string Version = "2.3.4";
 
     /// <summary>
     /// ASH v1 protocol version prefix.

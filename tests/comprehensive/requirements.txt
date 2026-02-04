@@ -1,0 +1,13 @@
+# ASH Comprehensive Test Suite Requirements
+
+# Testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-xdist>=3.0.0
+
+# ASH SDK (install from local package)
+# pip install -e ../../packages/ash-python
+
+# Optional for timing tests
+numpy>=1.20.0
+scipy>=1.7.0

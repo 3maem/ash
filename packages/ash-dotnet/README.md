@@ -1,5 +1,10 @@
 # ASH SDK for .NET
 
+[![NuGet](https://img.shields.io/nuget/v/Ash.Core.svg)](https://www.nuget.org/packages/Ash.Core)
+[![.NET](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0-brightgreen)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](../../LICENSE)
+[![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
+
 **Developed by 3maem Co. | شركة عمائم**
 
 ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets. This package provides JCS canonicalization, proof generation, and ASP.NET Core middleware for .NET applications.
@@ -268,19 +273,90 @@ public enum AshMode
 | `Balanced` | Recommended for most applications |
 | `Strict` | Maximum security with server nonce |
 
-## Error Codes
+## Input Validation (v2.3.4)
+
+All SDKs now implement consistent input validation in `Proof.AshDeriveClientSecret()`. Invalid inputs throw `ValidationException`.
+
+### Validation Rules
+
+| Parameter | Rule | Code |
+|-----------|------|------|
+| `nonce` | Minimum 32 hex characters | SEC-014 |
+| `nonce` | Maximum 128 characters | SEC-NONCE-001 |
+| `nonce` | Hexadecimal only (0-9, a-f, A-F) | BUG-004 |
+| `contextId` | Cannot be empty | BUG-041 |
+| `contextId` | Maximum 256 characters | SEC-CTX-001 |
+| `contextId` | Alphanumeric, underscore, hyphen, dot only | SEC-CTX-001 |
+| `binding` | Maximum 8192 bytes | SEC-AUDIT-004 |
+
+### Example
 
 ```csharp
-public enum AshErrorCode
+using Ash.Core;
+using Ash.Core.Exceptions;
+
+try
 {
-    InvalidContext,         // Invalid or missing context
-    ContextExpired,         // Context has expired
-    ReplayDetected,         // Replay attack detected
-    IntegrityFailed,        // Proof verification failed
-    EndpointMismatch,       // Binding mismatch
-    CanonicalizationFailed  // Failed to canonicalize payload
+    var secret = Proof.AshDeriveClientSecret(nonce, contextId, binding);
+}
+catch (ValidationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+    Console.WriteLine($"Error code: {ex.Code}");  // ASH_VALIDATION_ERROR
 }
 ```
+
+### Validation Constants
+
+```csharp
+public const int MinNonceHexChars = 32;    // Minimum nonce length
+public const int MaxNonceLength = 128;     // Maximum nonce length
+public const int MaxContextIdLength = 256; // Maximum context ID length
+public const int MaxBindingLength = 8192;  // Maximum binding length (8KB)
+```
+
+## Error Codes (v2.3.4 - Unique HTTP Status Codes)
+
+ASH uses unique HTTP status codes in the 450-499 range for precise error identification.
+
+```csharp
+public static class AshErrorCode
+{
+    // Context errors (450-459)
+    public const string CtxNotFound = "ASH_CTX_NOT_FOUND";       // HTTP 450
+    public const string CtxExpired = "ASH_CTX_EXPIRED";          // HTTP 451
+    public const string CtxAlreadyUsed = "ASH_CTX_ALREADY_USED"; // HTTP 452
+
+    // Seal/Proof errors (460-469)
+    public const string ProofInvalid = "ASH_PROOF_INVALID";      // HTTP 460
+
+    // Binding errors (461)
+    public const string BindingMismatch = "ASH_BINDING_MISMATCH"; // HTTP 461
+    public const string ScopeMismatch = "ASH_SCOPE_MISMATCH";     // HTTP 473
+    public const string ChainBroken = "ASH_CHAIN_BROKEN";         // HTTP 474
+
+    // Format/Protocol errors (480-489)
+    public const string TimestampInvalid = "ASH_TIMESTAMP_INVALID"; // HTTP 482
+    public const string ProofMissing = "ASH_PROOF_MISSING";         // HTTP 483
+
+    // Standard HTTP codes
+    public const string CanonicalizationError = "ASH_CANONICALIZATION_ERROR"; // HTTP 422
+    public const string ModeViolation = "ASH_MODE_VIOLATION";                 // HTTP 400
+    public const string ValidationError = "ASH_VALIDATION_ERROR";             // HTTP 400
+}
+```
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `CtxNotFound` | 450 | Context not found |
+| `CtxExpired` | 451 | Context expired |
+| `CtxAlreadyUsed` | 452 | Replay detected |
+| `ProofInvalid` | 460 | Proof invalid |
+| `BindingMismatch` | 461 | Binding mismatch |
+| `ScopeMismatch` | 473 | Scope mismatch |
+| `ChainBroken` | 474 | Chain broken |
+| `TimestampInvalid` | 482 | Timestamp invalid |
+| `ProofMissing` | 483 | Proof missing |
 
 ## Context Stores
 
@@ -327,6 +403,15 @@ public class AshMiddlewareOptions
     // Paths to protect with ASH verification
     // Supports wildcards (e.g., "/api/*")
     public List<string> ProtectedPaths { get; set; }
+
+    // Verify client IP matches context metadata (v2.3.4)
+    public bool EnforceIp { get; set; }
+
+    // Verify user ID matches context metadata (v2.3.4)
+    public bool EnforceUser { get; set; }
+
+    // Extract user ID from HttpContext (v2.3.4)
+    public Func<HttpContext, string?>? UserIdExtractor { get; set; }
 }
 ```
 
@@ -344,6 +429,71 @@ app.UseAsh(ash, new AshMiddlewareOptions
 {
     ProtectedPaths = new List<string> { "/api/*", "/secure/*" }
 });
+
+// With IP and user binding enforcement (v2.3.4)
+app.UseAsh(ash, new AshMiddlewareOptions
+{
+    ProtectedPaths = new List<string> { "/api/*" },
+    EnforceIp = true,
+    EnforceUser = true,
+    UserIdExtractor = ctx => ctx.User.Identity?.Name
+});
+```
+
+### IP and User Binding (v2.3.4)
+
+Store client IP and user ID in context metadata, then enforce matching on verification:
+
+```csharp
+// Store client IP and user ID when creating context
+app.MapPost("/ash/context", async (AshService ash, HttpContext ctx) =>
+{
+    var context = await ash.AshIssueContextAsync(
+        binding: "POST /api/transfer",
+        ttlMs: 30000,
+        metadata: new Dictionary<string, object>
+        {
+            ["ip"] = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            ["user_id"] = ctx.User.Identity?.Name ?? "anonymous"
+        }
+    );
+
+    return Results.Ok(new { contextId = context.Id });
+});
+
+// Verify binding in middleware
+app.UseAsh(ash, new AshMiddlewareOptions
+{
+    ProtectedPaths = new List<string> { "/api/*" },
+    EnforceIp = true,
+    EnforceUser = true
+});
+```
+
+If the IP or user doesn't match, the middleware returns HTTP 461 (`ASH_BINDING_MISMATCH`).
+
+### Environment Configuration (v2.3.4)
+
+The SDK supports environment-based configuration:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ASH_TRUST_PROXY` | `false` | Enable X-Forwarded-For handling |
+| `ASH_TRUSTED_PROXIES` | (empty) | Comma-separated trusted proxy IPs |
+| `ASH_RATE_LIMIT_WINDOW` | `60` | Rate limit window in seconds |
+| `ASH_RATE_LIMIT_MAX` | `10` | Max contexts per window per IP |
+| `ASH_TIMESTAMP_TOLERANCE` | `30` | Clock skew tolerance in seconds |
+
+```csharp
+// Load configuration from environment
+var config = new AshConfig();
+
+// Get client IP with proxy support
+var clientIP = config.GetClientIP(
+    Request.Headers["X-Forwarded-For"],
+    Request.Headers["X-Real-IP"],
+    Request.HttpContext.Connection.RemoteIpAddress?.ToString()
+);
 ```
 
 ## Complete Example

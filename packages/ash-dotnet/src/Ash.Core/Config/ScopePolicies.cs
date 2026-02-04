@@ -14,12 +14,12 @@ namespace Ash.Core.Config;
 /// <example>
 /// <code>
 /// // Register policies at application startup
-/// ScopePolicies.Register("POST|/api/transfer|", new[] { "amount", "recipient" });
-/// ScopePolicies.Register("POST|/api/payment|", new[] { "amount", "card_last4" });
-/// ScopePolicies.Register("PUT|/api/users/{id}|", new[] { "role", "permissions" });
+/// ScopePolicies.AshRegister("POST|/api/transfer|", new[] { "amount", "recipient" });
+/// ScopePolicies.AshRegister("POST|/api/payment|", new[] { "amount", "card_last4" });
+/// ScopePolicies.AshRegister("PUT|/api/users/{id}|", new[] { "role", "permissions" });
 ///
 /// // Later, get policy for a binding
-/// var scope = ScopePolicies.Get("POST|/api/transfer|");
+/// var scope = ScopePolicies.AshGet("POST|/api/transfer|");
 /// // Returns: ["amount", "recipient"]
 /// </code>
 /// </example>
@@ -35,15 +35,53 @@ public static class ScopePolicies
     /// <param name="fields">The fields that must be protected</param>
     /// <example>
     /// <code>
-    /// ScopePolicies.Register("POST|/api/transfer|", new[] { "amount", "recipient" });
-    /// ScopePolicies.Register("PUT|/api/users/{id}|", new[] { "role", "permissions" });
+    /// ScopePolicies.AshRegister("POST|/api/transfer|", new[] { "amount", "recipient" });
+    /// ScopePolicies.AshRegister("PUT|/api/users/{id}|", new[] { "role", "permissions" });
     /// </code>
     /// </example>
-    public static void Register(string binding, string[] fields)
+    public static void AshRegister(string binding, string[] fields)
     {
         lock (_lock)
         {
             _policies[binding] = fields;
+        }
+    }
+
+    /// <summary>
+    /// Register a scope policy for a binding pattern.
+    /// </summary>
+    /// <param name="binding">The binding pattern (supports {param} and * wildcards)</param>
+    /// <param name="fields">The fields that must be protected</param>
+    /// <example>
+    /// <code>
+    /// ScopePolicies.Register("POST|/api/transfer|", new[] { "amount", "recipient" });
+    /// ScopePolicies.Register("PUT|/api/users/{id}|", new[] { "role", "permissions" });
+    /// </code>
+    /// </example>
+    [Obsolete("Use AshRegister instead")]
+    public static void Register(string binding, string[] fields) => AshRegister(binding, fields);
+
+    /// <summary>
+    /// Register multiple scope policies at once.
+    /// </summary>
+    /// <param name="policies">Dictionary of binding => fields</param>
+    /// <example>
+    /// <code>
+    /// ScopePolicies.AshRegisterMany(new Dictionary&lt;string, string[]&gt;
+    /// {
+    ///     { "POST|/api/transfer|", new[] { "amount", "recipient" } },
+    ///     { "POST|/api/payment|", new[] { "amount", "card_last4" } }
+    /// });
+    /// </code>
+    /// </example>
+    public static void AshRegisterMany(Dictionary<string, string[]> policies)
+    {
+        lock (_lock)
+        {
+            foreach (var (binding, fields) in policies)
+            {
+                _policies[binding] = fields;
+            }
         }
     }
 
@@ -60,16 +98,8 @@ public static class ScopePolicies
     /// });
     /// </code>
     /// </example>
-    public static void RegisterMany(Dictionary<string, string[]> policies)
-    {
-        lock (_lock)
-        {
-            foreach (var (binding, fields) in policies)
-            {
-                _policies[binding] = fields;
-            }
-        }
-    }
+    [Obsolete("Use AshRegisterMany instead")]
+    public static void RegisterMany(Dictionary<string, string[]> policies) => AshRegisterMany(policies);
 
     /// <summary>
     /// Get the scope policy for a binding.
@@ -77,7 +107,7 @@ public static class ScopePolicies
     /// </summary>
     /// <param name="binding">The normalized binding string</param>
     /// <returns>The fields that must be protected</returns>
-    public static string[] Get(string binding)
+    public static string[] AshGet(string binding)
     {
         lock (_lock)
         {
@@ -102,11 +132,20 @@ public static class ScopePolicies
     }
 
     /// <summary>
+    /// Get the scope policy for a binding.
+    /// Returns empty array if no policy is defined (full payload protection).
+    /// </summary>
+    /// <param name="binding">The normalized binding string</param>
+    /// <returns>The fields that must be protected</returns>
+    [Obsolete("Use AshGet instead")]
+    public static string[] Get(string binding) => AshGet(binding);
+
+    /// <summary>
     /// Check if a binding has a scope policy defined.
     /// </summary>
     /// <param name="binding">The normalized binding string</param>
     /// <returns>True if a policy exists</returns>
-    public static bool Has(string binding)
+    public static bool AshHas(string binding)
     {
         lock (_lock)
         {
@@ -128,10 +167,18 @@ public static class ScopePolicies
     }
 
     /// <summary>
+    /// Check if a binding has a scope policy defined.
+    /// </summary>
+    /// <param name="binding">The normalized binding string</param>
+    /// <returns>True if a policy exists</returns>
+    [Obsolete("Use AshHas instead")]
+    public static bool Has(string binding) => AshHas(binding);
+
+    /// <summary>
     /// Get all registered policies.
     /// </summary>
     /// <returns>Copy of all registered scope policies</returns>
-    public static Dictionary<string, string[]> GetAll()
+    public static Dictionary<string, string[]> AshGetAll()
     {
         lock (_lock)
         {
@@ -140,16 +187,30 @@ public static class ScopePolicies
     }
 
     /// <summary>
+    /// Get all registered policies.
+    /// </summary>
+    /// <returns>Copy of all registered scope policies</returns>
+    [Obsolete("Use AshGetAll instead")]
+    public static Dictionary<string, string[]> GetAll() => AshGetAll();
+
+    /// <summary>
     /// Clear all registered policies.
     /// Useful for testing.
     /// </summary>
-    public static void Clear()
+    public static void AshClear()
     {
         lock (_lock)
         {
             _policies.Clear();
         }
     }
+
+    /// <summary>
+    /// Clear all registered policies.
+    /// Useful for testing.
+    /// </summary>
+    [Obsolete("Use AshClear instead")]
+    public static void Clear() => AshClear();
 
     /// <summary>
     /// Check if a binding matches a pattern with wildcards.

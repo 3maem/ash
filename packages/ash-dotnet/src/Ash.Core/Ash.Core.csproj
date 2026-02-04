@@ -9,7 +9,7 @@
 
     <!-- Package metadata -->
     <PackageId>Ash.Core</PackageId>
-    <Version>2.3.1</Version>
+    <Version>2.3.4</Version>
     <Authors>3maem</Authors>
     <Company>3maem Co.</Company>
     <Description>ASH Protocol Core - Authenticity and Stateless Hardening for .NET. Deterministic integrity verification for web requests.</Description>

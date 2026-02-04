@@ -5,15 +5,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Ash</RootNamespace>
-    <PackageId>Ash.Security</PackageId>
-    <Version>2.3.3</Version>
-    <Authors>3meam Co.</Authors>
-    <Company>3meam Co. | شركة عمائم</Company>
+    <PackageId>Ash.Core</PackageId>
+    <Version>2.3.4</Version>
+    <Authors>3maem Co.</Authors>
+    <Company>3maem Co. | شركة عمائم</Company>
     <Product>ASH Security</Product>
     <Description>ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets</Description>
     <PackageTags>ash;security;integrity;anti-tamper;replay-prevention;cryptography;middleware;aspnetcore</PackageTags>
     <PackageLicenseExpression>Proprietary</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/3meam/ash</RepositoryUrl>
+    <RepositoryUrl>https://github.com/3maem/ash</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 

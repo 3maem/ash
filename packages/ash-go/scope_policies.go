@@ -8,12 +8,12 @@
 // Example:
 //
 //	// Register policies at application startup
-//	ash.RegisterScopePolicy("POST|/api/transfer|", []string{"amount", "recipient"})
-//	ash.RegisterScopePolicy("POST|/api/payment|", []string{"amount", "card_last4"})
-//	ash.RegisterScopePolicy("PUT|/api/users/:id|", []string{"role", "permissions"})
+//	ash.AshRegisterScopePolicy("POST|/api/transfer|", []string{"amount", "recipient"})
+//	ash.AshRegisterScopePolicy("POST|/api/payment|", []string{"amount", "card_last4"})
+//	ash.AshRegisterScopePolicy("PUT|/api/users/:id|", []string{"role", "permissions"})
 //
 //	// Later, get policy for a binding
-//	scope := ash.GetScopePolicy("POST|/api/transfer|")
+//	scope := ash.AshGetScopePolicy("POST|/api/transfer|")
 //	// Returns: []string{"amount", "recipient"}
 package ash
 
@@ -29,7 +29,7 @@ var (
 	scopePoliciesMu   sync.RWMutex
 )
 
-// RegisterScopePolicy registers a scope policy for a binding pattern.
+// AshRegisterScopePolicy registers a scope policy for a binding pattern.
 //
 // Parameters:
 //   - binding: The binding pattern (supports <param>, :param, {param}, *, ** wildcards)
@@ -37,9 +37,9 @@ var (
 //
 // Example:
 //
-//	ash.RegisterScopePolicy("POST|/api/transfer|", []string{"amount", "recipient"})
-//	ash.RegisterScopePolicy("PUT|/api/users/:id|", []string{"role", "permissions"})
-func RegisterScopePolicy(binding string, fields []string) {
+//	ash.AshRegisterScopePolicy("POST|/api/transfer|", []string{"amount", "recipient"})
+//	ash.AshRegisterScopePolicy("PUT|/api/users/:id|", []string{"role", "permissions"})
+func AshRegisterScopePolicy(binding string, fields []string) {
 	scopePoliciesMu.Lock()
 	defer scopePoliciesMu.Unlock()
 
@@ -49,18 +49,18 @@ func RegisterScopePolicy(binding string, fields []string) {
 	scopePolicies[binding] = fieldsCopy
 }
 
-// RegisterScopePolicies registers multiple scope policies at once.
+// AshRegisterScopePolicies registers multiple scope policies at once.
 //
 // Parameters:
 //   - policies: Map of binding => fields
 //
 // Example:
 //
-//	ash.RegisterScopePolicies(map[string][]string{
+//	ash.AshRegisterScopePolicies(map[string][]string{
 //		"POST|/api/transfer|": {"amount", "recipient"},
 //		"POST|/api/payment|":  {"amount", "card_last4"},
 //	})
-func RegisterScopePolicies(policies map[string][]string) {
+func AshRegisterScopePolicies(policies map[string][]string) {
 	scopePoliciesMu.Lock()
 	defer scopePoliciesMu.Unlock()
 
@@ -71,7 +71,7 @@ func RegisterScopePolicies(policies map[string][]string) {
 	}
 }
 
-// GetScopePolicy returns the scope policy for a binding.
+// AshGetScopePolicy returns the scope policy for a binding.
 //
 // Returns empty slice if no policy is defined (full payload protection).
 //
@@ -83,9 +83,9 @@ func RegisterScopePolicies(policies map[string][]string) {
 //
 // Example:
 //
-//	scope := ash.GetScopePolicy("POST|/api/transfer|")
+//	scope := ash.AshGetScopePolicy("POST|/api/transfer|")
 //	// Returns: []string{"amount", "recipient"}
-func GetScopePolicy(binding string) []string {
+func AshGetScopePolicy(binding string) []string {
 	scopePoliciesMu.RLock()
 	defer scopePoliciesMu.RUnlock()
 
@@ -98,7 +98,7 @@ func GetScopePolicy(binding string) []string {
 
 	// Pattern match
 	for pattern, fields := range scopePolicies {
-		if matchesBindingPattern(binding, pattern) {
+		if ashMatchesBindingPattern(binding, pattern) {
 			result := make([]string, len(fields))
 			copy(result, fields)
 			return result
@@ -109,14 +109,14 @@ func GetScopePolicy(binding string) []string {
 	return []string{}
 }
 
-// HasScopePolicy checks if a binding has a scope policy defined.
+// AshHasScopePolicy checks if a binding has a scope policy defined.
 //
 // Parameters:
 //   - binding: The normalized binding string
 //
 // Returns:
 //   - True if a policy exists
-func HasScopePolicy(binding string) bool {
+func AshHasScopePolicy(binding string) bool {
 	scopePoliciesMu.RLock()
 	defer scopePoliciesMu.RUnlock()
 
@@ -125,7 +125,7 @@ func HasScopePolicy(binding string) bool {
 	}
 
 	for pattern := range scopePolicies {
-		if matchesBindingPattern(binding, pattern) {
+		if ashMatchesBindingPattern(binding, pattern) {
 			return true
 		}
 	}
@@ -133,11 +133,11 @@ func HasScopePolicy(binding string) bool {
 	return false
 }
 
-// GetAllScopePolicies returns all registered policies.
+// AshGetAllScopePolicies returns all registered policies.
 //
 // Returns:
 //   - All registered scope policies (copy)
-func GetAllScopePolicies() map[string][]string {
+func AshGetAllScopePolicies() map[string][]string {
 	scopePoliciesMu.RLock()
 	defer scopePoliciesMu.RUnlock()
 
@@ -150,17 +150,17 @@ func GetAllScopePolicies() map[string][]string {
 	return result
 }
 
-// ClearScopePolicies clears all registered policies.
+// AshClearScopePolicies clears all registered policies.
 //
 // Useful for testing.
-func ClearScopePolicies() {
+func AshClearScopePolicies() {
 	scopePoliciesMu.Lock()
 	defer scopePoliciesMu.Unlock()
 
 	scopePolicies = make(map[string][]string)
 }
 
-// matchesBindingPattern checks if a binding matches a pattern with wildcards.
+// ashMatchesBindingPattern checks if a binding matches a pattern with wildcards.
 //
 // Supports:
 //   - <param> for Flask-style route parameters
@@ -168,7 +168,7 @@ func ClearScopePolicies() {
 //   - {param} for Laravel/OpenAPI-style route parameters
 //   - * for single path segment wildcard
 //   - ** for multi-segment wildcard
-func matchesBindingPattern(binding, pattern string) bool {
+func ashMatchesBindingPattern(binding, pattern string) bool {
 	// If no wildcards or params, must be exact match
 	if !strings.Contains(pattern, "*") &&
 		!strings.Contains(pattern, "<") &&
@@ -207,4 +207,47 @@ func matchesBindingPattern(binding, pattern string) bool {
 	}
 
 	return re.MatchString(binding)
+}
+
+// ============================================================================
+// BACKWARD COMPATIBILITY ALIASES (Deprecated - use Ash-prefixed versions)
+// ============================================================================
+
+// Deprecated: Use AshRegisterScopePolicy instead.
+func RegisterScopePolicy(binding string, fields []string) {
+	AshRegisterScopePolicy(binding, fields)
+}
+
+// Deprecated: Use AshRegisterScopePolicies instead.
+func RegisterScopePolicies(policies map[string][]string) {
+	AshRegisterScopePolicies(policies)
+}
+
+// Deprecated: Use AshGetScopePolicy instead.
+func GetScopePolicy(binding string) []string {
+	return AshGetScopePolicy(binding)
+}
+
+// Deprecated: Use AshHasScopePolicy instead.
+func HasScopePolicy(binding string) bool {
+	return AshHasScopePolicy(binding)
+}
+
+// Deprecated: Use AshGetAllScopePolicies instead.
+func GetAllScopePolicies() map[string][]string {
+	return AshGetAllScopePolicies()
+}
+
+// Deprecated: Use AshClearScopePolicies instead.
+func ClearScopePolicies() {
+	AshClearScopePolicies()
+}
+
+// ============================================================================
+// INTERNAL BACKWARD COMPATIBILITY (unexported - for internal use only)
+// ============================================================================
+
+// Deprecated internal alias for unexported function.
+func matchesBindingPattern(binding, pattern string) bool {
+	return ashMatchesBindingPattern(binding, pattern)
 }

@@ -30,10 +30,18 @@ final class Canonicalize
      * @return string Canonical JSON string
      * @throws CanonicalizationException If value contains unsupported types
      */
-    public static function json(mixed $value): string
+    public static function ashCanonicalizeJson(mixed $value): string
     {
         $canonicalized = self::canonicalizeValue($value);
         return self::buildCanonicalJson($canonicalized);
+    }
+
+    /**
+     * @deprecated Use ashCanonicalizeJson() instead
+     */
+    public static function json(mixed $value): string
+    {
+        return self::ashCanonicalizeJson($value);
     }
 
     /**
@@ -43,7 +51,7 @@ final class Canonicalize
      * - Parse into key-value pairs
      * - Percent-decode consistently
      * - Sort keys lexicographically
-     * - For duplicate keys: preserve value order per key
+     * - For duplicate keys: sort by value (byte-wise)
      * - Output format: k1=v1&k1=v2&k2=v3
      * - Unicode NFC applies after decoding
      *
@@ -51,7 +59,7 @@ final class Canonicalize
      * @return string Canonical URL-encoded string
      * @throws CanonicalizationException If input cannot be parsed
      */
-    public static function urlEncoded(string|array $inputData): string
+    public static function ashCanonicalizeUrlEncoded(string|array $inputData): string
     {
         if (is_string($inputData)) {
             $pairs = self::parseUrlEncoded($inputData);
@@ -70,8 +78,8 @@ final class Canonicalize
             $normalizedPairs[] = [$normalizedKey, $normalizedValue];
         }
 
-        // Sort by key (stable sort preserves value order for same keys)
-        usort($normalizedPairs, fn($a, $b) => strcmp($a[0], $b[0]));
+        // Sort by key first, then by value for duplicate keys (byte-wise)
+        usort($normalizedPairs, fn($a, $b) => strcmp($a[0], $b[0]) ?: strcmp($a[1], $b[1]));
 
         // Encode and join (with uppercase hex per ASH spec)
         $parts = [];
@@ -80,6 +88,14 @@ final class Canonicalize
         }
 
         return implode('&', $parts);
+    }
+
+    /**
+     * @deprecated Use ashCanonicalizeUrlEncoded() instead
+     */
+    public static function urlEncoded(string|array $inputData): string
+    {
+        return self::ashCanonicalizeUrlEncoded($inputData);
     }
 
     /**
@@ -92,14 +108,14 @@ final class Canonicalize
      * 4. MUST percent-decode all keys and values
      * 5. MUST apply Unicode NFC normalization
      * 6. MUST sort pairs by key lexicographically (byte order)
-     * 7. MUST preserve order of duplicate keys
+     * 7. MUST sort duplicate keys by value (byte-wise)
      * 8. MUST re-encode with uppercase hex (%XX)
      * 9. MUST join with & separator
      *
      * @param string $query Query string (with or without leading ?)
      * @return string Canonical query string
      */
-    public static function canonicalizeQuery(string $query): string
+    public static function ashCanonicalizeQuery(string $query): string
     {
         // Rule 1: Remove leading ? if present
         if (str_starts_with($query, '?')) {
@@ -124,8 +140,8 @@ final class Canonicalize
             $normalizedPairs[] = [$normalizedKey, $normalizedValue];
         }
 
-        // Rule 6 & 7: Sort by key (stable sort preserves value order for same keys)
-        usort($normalizedPairs, fn($a, $b) => strcmp($a[0], $b[0]));
+        // Rule 6 & 7: Sort by key first, then by value for duplicate keys (byte-wise)
+        usort($normalizedPairs, fn($a, $b) => strcmp($a[0], $b[0]) ?: strcmp($a[1], $b[1]));
 
         // Rule 8 & 9: Re-encode with uppercase hex and join
         $parts = [];
@@ -134,6 +150,14 @@ final class Canonicalize
         }
 
         return implode('&', $parts);
+    }
+
+    /**
+     * @deprecated Use ashCanonicalizeQuery() instead
+     */
+    public static function canonicalizeQuery(string $query): string
+    {
+        return self::ashCanonicalizeQuery($query);
     }
 
     /**
@@ -154,7 +178,7 @@ final class Canonicalize
      * @param string $query Query string (empty string if none)
      * @return string Canonical binding string (METHOD|PATH|QUERY)
      */
-    public static function normalizeBinding(string $method, string $path, string $query = ''): string
+    public static function ashNormalizeBinding(string $method, string $path, string $query = ''): string
     {
         $normalizedMethod = strtoupper($method);
 
@@ -179,11 +203,23 @@ final class Canonicalize
             $normalizedPath = substr($normalizedPath, 0, -1);
         }
 
+        // Remove fragment from query string if present
+        $queryFragmentIndex = strpos($query, '#');
+        $cleanQuery = $queryFragmentIndex !== false ? substr($query, 0, $queryFragmentIndex) : $query;
+
         // Canonicalize query string
-        $canonicalQuery = $query !== '' ? self::canonicalizeQuery($query) : '';
+        $canonicalQuery = $cleanQuery !== '' ? self::ashCanonicalizeQuery($cleanQuery) : '';
 
         // v2.3.2 format: METHOD|PATH|CANONICAL_QUERY
         return "{$normalizedMethod}|{$normalizedPath}|{$canonicalQuery}";
+    }
+
+    /**
+     * @deprecated Use ashNormalizeBinding() instead
+     */
+    public static function normalizeBinding(string $method, string $path, string $query = ''): string
+    {
+        return self::ashNormalizeBinding($method, $path, $query);
     }
 
     /**
@@ -193,7 +229,7 @@ final class Canonicalize
      * @param string $fullPath Full URL path including query string (e.g., "/api/users?page=1")
      * @return string Canonical binding string (METHOD|PATH|QUERY)
      */
-    public static function normalizeBindingFromUrl(string $method, string $fullPath): string
+    public static function ashNormalizeBindingFromUrl(string $method, string $fullPath): string
     {
         $queryIndex = strpos($fullPath, '?');
         if ($queryIndex !== false) {
@@ -204,7 +240,15 @@ final class Canonicalize
             $query = '';
         }
 
-        return self::normalizeBinding($method, $path, $query);
+        return self::ashNormalizeBinding($method, $path, $query);
+    }
+
+    /**
+     * @deprecated Use ashNormalizeBindingFromUrl() instead
+     */
+    public static function normalizeBindingFromUrl(string $method, string $fullPath): string
+    {
+        return self::ashNormalizeBindingFromUrl($method, $fullPath);
     }
 
     /**
@@ -233,7 +277,16 @@ final class Canonicalize
             if (is_float($value) && $value == (int) $value) {
                 return (string) (int) $value;
             }
-            return (string) $value;
+            // Default string conversion
+            $str = (string) $value;
+            // If scientific notation is used, convert to decimal format
+            if (stripos($str, 'e') !== false) {
+                // Use sprintf with enough precision to avoid scientific notation
+                $formatted = sprintf('%.20f', $value);
+                // Remove trailing zeros and unnecessary decimal point
+                $str = rtrim(rtrim($formatted, '0'), '.');
+            }
+            return $str;
         }
 
         if (is_array($value)) {
@@ -253,6 +306,22 @@ final class Canonicalize
                 }
                 return '[' . implode(',', $items) . ']';
             }
+        }
+
+        // Handle objects (including empty stdClass for {} output)
+        if (is_object($value)) {
+            $arr = (array) $value;
+            if ($arr === []) {
+                return '{}';
+            }
+            // Convert to associative array and process
+            $sortedKeys = array_keys($arr);
+            sort($sortedKeys, SORT_STRING);
+            $pairs = [];
+            foreach ($sortedKeys as $key) {
+                $pairs[] = self::jsonEscapeString((string) $key) . ':' . self::buildCanonicalJson($arr[$key]);
+            }
+            return '{' . implode(',', $pairs) . '}';
         }
 
         throw new CanonicalizationException('Cannot serialize type: ' . gettype($value));
@@ -345,18 +414,26 @@ final class Canonicalize
                 $result = [];
                 foreach ($sortedKeys as $key) {
                     $val = $value[$key];
-                    if ($val !== null) {
-                        $normalizedKey = Normalizer::normalize((string) $key, Normalizer::FORM_C);
-                        if ($normalizedKey === false) {
-                            throw new CanonicalizationException('Failed to normalize Unicode key');
-                        }
-                        $result[$normalizedKey] = self::canonicalizeValue($val);
+                    $normalizedKey = Normalizer::normalize((string) $key, Normalizer::FORM_C);
+                    if ($normalizedKey === false) {
+                        throw new CanonicalizationException('Failed to normalize Unicode key');
                     }
+                    $result[$normalizedKey] = self::canonicalizeValue($val);
                 }
                 return $result;
             } else {
                 return array_map([self::class, 'canonicalizeValue'], $value);
             }
+        }
+
+        // Handle objects by converting to associative array
+        if (is_object($value)) {
+            $arr = (array) $value;
+            if ($arr === []) {
+                // Empty object - mark as associative for {} output
+                return new \stdClass();
+            }
+            return self::canonicalizeValue($arr);
         }
 
         throw new CanonicalizationException('Unsupported type: ' . gettype($value));
@@ -416,15 +493,19 @@ final class Canonicalize
                 continue;
             }
 
+            // Replace + with %2B before decoding to preserve + as literal
+            // PHP's urldecode treats + as space, but ASH protocol treats + as literal plus
+            $part = str_replace('+', '%2B', $part);
+
             $eqIndex = strpos($part, '=');
             if ($eqIndex === false) {
-                $key = urldecode(str_replace('+', ' ', $part));
+                $key = urldecode($part);
                 if ($key !== '') {
                     $pairs[] = [$key, ''];
                 }
             } else {
-                $key = urldecode(str_replace('+', ' ', substr($part, 0, $eqIndex)));
-                $value = urldecode(str_replace('+', ' ', substr($part, $eqIndex + 1)));
+                $key = urldecode(substr($part, 0, $eqIndex));
+                $value = urldecode(substr($part, $eqIndex + 1));
                 if ($key !== '') {
                     $pairs[] = [$key, $value];
                 }

@@ -6,18 +6,63 @@ from typing import Literal, Optional
 # Security modes for ASH protocol
 AshMode = Literal["minimal", "balanced", "strict"]
 
-# Error codes returned by ASH verification
+# Error codes returned by ASH verification (v2.3.4 unified specification)
 AshErrorCode = Literal[
-    "ASH_INVALID_CONTEXT",
-    "ASH_CONTEXT_EXPIRED",
-    "ASH_REPLAY_DETECTED",
-    "ASH_INTEGRITY_FAILED",
-    "ASH_ENDPOINT_MISMATCH",
+    "ASH_CTX_NOT_FOUND",
+    "ASH_CTX_EXPIRED",
+    "ASH_CTX_ALREADY_USED",
+    "ASH_PROOF_INVALID",
+    "ASH_BINDING_MISMATCH",
+    "ASH_SCOPE_MISMATCH",
+    "ASH_CHAIN_BROKEN",
+    "ASH_TIMESTAMP_INVALID",
+    "ASH_PROOF_MISSING",
+    "ASH_CANONICALIZATION_ERROR",
     "ASH_MODE_VIOLATION",
     "ASH_UNSUPPORTED_CONTENT_TYPE",
-    "ASH_MALFORMED_REQUEST",
-    "ASH_CANONICALIZATION_FAILED",
+    "ASH_VALIDATION_ERROR",
 ]
+
+
+def get_http_status(code: AshErrorCode) -> int:
+    """Get the recommended HTTP status code for an ASH error code.
+
+    v2.3.4: Uses unique HTTP status codes in the 450-499 range for ASH-specific errors.
+    This enables precise error identification, better monitoring, and targeted retry logic.
+
+    Error Categories:
+    - 450-459: Context errors
+    - 460-469: Seal/Proof errors
+    - 461, 473-479: Binding/Verification errors
+    - 480-489: Format/Protocol errors
+
+    Args:
+        code: The ASH error code string.
+
+    Returns:
+        The recommended HTTP status code.
+    """
+    status_map = {
+        # Context errors (450-459)
+        "ASH_CTX_NOT_FOUND": 450,
+        "ASH_CTX_EXPIRED": 451,
+        "ASH_CTX_ALREADY_USED": 452,
+        # Seal/Proof errors (460-469)
+        "ASH_PROOF_INVALID": 460,
+        # Verification errors (461, 473-479)
+        "ASH_BINDING_MISMATCH": 461,
+        "ASH_SCOPE_MISMATCH": 473,
+        "ASH_CHAIN_BROKEN": 474,
+        # Format/Protocol errors (480-489)
+        "ASH_TIMESTAMP_INVALID": 482,
+        "ASH_PROOF_MISSING": 483,
+        # Standard HTTP codes (preserved for semantic clarity)
+        "ASH_CANONICALIZATION_ERROR": 422,
+        "ASH_MODE_VIOLATION": 400,
+        "ASH_UNSUPPORTED_CONTENT_TYPE": 415,
+        "ASH_VALIDATION_ERROR": 400,
+    }
+    return status_map.get(code, 500)
 
 # Supported content types
 SupportedContentType = Literal["application/json", "application/x-www-form-urlencoded"]

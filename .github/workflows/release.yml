@@ -25,7 +25,7 @@ jobs:
           body: |
             ## ASH ${{ github.ref_name }}
 
-            **Ash was developed by 3meam Co. | شركة عمائم**
+            **Ash was developed by 3maem Co. | شركة عمائم**
 
             ### Packages
 
@@ -33,10 +33,10 @@ jobs:
             |---------|----------|
             | `ash-core` | crates.io |
             | `@3maem/ash-node` | npm |
-            | `ash-security` | PyPI |
-            | `3meam/ash-php` | Packagist |
-            | `github.com/3meam/ash-go` | Go Modules |
-            | `Ash.Security` | NuGet |
+            | `ash-sdk` | PyPI |
+            | `3maem/ash-sdk-php` | Packagist |
+            | `github.com/3maem/ash-go/v2` | Go Modules |
+            | `Ash.Core` | NuGet |
 
             ### Installation
 
@@ -47,22 +47,22 @@ jobs:
 
             **Python:**
             ```bash
-            pip install ash-security
+            pip install ash-sdk
             ```
 
             **PHP:**
             ```bash
-            composer require 3meam/ash-php
+            composer require 3maem/ash-sdk-php
             ```
 
             **Go:**
             ```bash
-            go get github.com/3meam/ash-go
+            go get github.com/3maem/ash-go/v2
             ```
 
             **.NET:**
             ```bash
-            dotnet add package Ash.Security
+            dotnet add package Ash.Core
             ```
 
             See CHANGELOG.md for detailed changes.
@@ -139,7 +139,7 @@ jobs:
       - name: Trigger Packagist update
         run: |
           curl -X POST "https://packagist.org/api/update-package?username=${{ secrets.PACKAGIST_USERNAME }}&apiToken=${{ secrets.PACKAGIST_TOKEN }}" \
-            -d "repository[url]=https://github.com/3meam/ash"
+            -d "repository[url]=https://github.com/3maem/ash"
 
   publish-nuget:
     name: Publish to NuGet

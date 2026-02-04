@@ -2,14 +2,15 @@ package ash
 
 import (
 	"encoding/json"
+	"math"
 	"strings"
 	"testing"
 )
 
 // TestVersionConstants tests that version constants are correctly set.
 func TestVersionConstants(t *testing.T) {
-	if Version != "2.3.1" {
-		t.Errorf("Expected Version to be \"2.3.1\", got %q", Version)
+	if Version != "2.3.4" {
+		t.Errorf("Expected Version to be \"2.3.4\", got %q", Version)
 	}
 	if AshVersionPrefix != "ASHv1" {
 		t.Errorf("Expected AshVersionPrefix to be \"ASHv1\", got %q", AshVersionPrefix)
@@ -384,9 +385,9 @@ func TestCanonicalizeJSONRejectsNaNAndInfinity(t *testing.T) {
 		name  string
 		input float64
 	}{
-		{"NaN", float64(0) / float64(0)},            // Creates NaN
-		{"positive infinity", float64(1) / float64(0)}, // Creates +Inf
-		{"negative infinity", float64(-1) / float64(0)}, // Creates -Inf
+		{"NaN", math.NaN()},           // Creates NaN
+		{"positive infinity", math.Inf(1)},  // Creates +Inf
+		{"negative infinity", math.Inf(-1)}, // Creates -Inf
 	}
 
 	for _, tt := range tests {
@@ -484,14 +485,14 @@ func TestCanonicalizeURLEncoded(t *testing.T) {
 			expected: "a=1&b=2",
 		},
 		{
-			name:     "duplicate keys preserve order",
-			input:    "a=1&a=2&a=3",
+			name:     "duplicate keys sorted by value",
+			input:    "a=3&a=1&a=2",
 			expected: "a=1&a=2&a=3",
 		},
 		{
-			name:     "plus as space",
+			name:     "plus as literal",
 			input:    "key=hello+world",
-			expected: "key=hello%20world",
+			expected: "key=hello%2Bworld",
 		},
 		{
 			name:     "percent encoded",
@@ -868,10 +869,10 @@ func TestIsValidHTTPMethod(t *testing.T) {
 
 // TestAshError tests error handling.
 func TestAshError(t *testing.T) {
-	err := NewAshError(ErrCanonicalizationFailed, "test message")
+	err := NewAshError(ErrCanonicalizationError, "test message")
 
-	if err.Code != ErrCanonicalizationFailed {
-		t.Errorf("Expected code %s, got %s", ErrCanonicalizationFailed, err.Code)
+	if err.Code != ErrCanonicalizationError {
+		t.Errorf("Expected code %s, got %s", ErrCanonicalizationError, err.Code)
 	}
 
 	if err.Message != "test message" {
@@ -879,7 +880,7 @@ func TestAshError(t *testing.T) {
 	}
 
 	errStr := err.Error()
-	if !strings.Contains(errStr, string(ErrCanonicalizationFailed)) {
+	if !strings.Contains(errStr, string(ErrCanonicalizationError)) {
 		t.Errorf("Error string should contain code: %s", errStr)
 	}
 	if !strings.Contains(errStr, "test message") {

@@ -16,7 +16,7 @@ app.use(express.json());
 
 // ============================================================================
 // ASH Implementation (simplified for demonstration)
-// In production, use the @3meam/ash-node package
+// In production, use the @3maem/ash-node package
 // ============================================================================
 
 const ASH_VERSION = 'ASHv1';
