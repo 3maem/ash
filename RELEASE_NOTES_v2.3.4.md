@@ -1,0 +1,208 @@
+# ASH SDK v2.3.4 Release Notes
+
+**Release Date:** 2026-02-04
+**Developed by 3maem Co. | شركة عمائم**
+
+---
+
+## Highlights
+
+- **Middleware Security Hardening** - Production-safe error messages and input validation across all SDKs
+- **Unique HTTP Status Codes** - ASH-specific error codes (450-483 range) for precise error identification
+- **IP & User Binding Enforcement** - Verify client IP and user identity match context metadata
+- **Environment-Based Configuration** - Unified configuration via environment variables across all SDKs
+- **Critical WASM Fixes** - Fixed binding loading and function name mismatches
+
+---
+
+## Breaking Changes (HTTP Status Codes)
+
+Unique HTTP status codes for ASH-specific errors (450-499 range). This enables precise error identification, better monitoring, and targeted retry logic.
+
+| Code | Old HTTP | New HTTP | Description |
+|------|----------|----------|-------------|
+| `ASH_CTX_NOT_FOUND` | 404 | 450 | Context not found |
+| `ASH_CTX_EXPIRED` | 401 | 451 | Context expired |
+| `ASH_CTX_ALREADY_USED` | 409 | 452 | Replay detected |
+| `ASH_PROOF_INVALID` | 401 | 460 | Proof verification failed |
+| `ASH_BINDING_MISMATCH` | 403 | 461 | Endpoint mismatch |
+| `ASH_SCOPE_MISMATCH` | 403 | 473 | Scope hash mismatch |
+| `ASH_CHAIN_BROKEN` | 403 | 474 | Chain verification failed |
+| `ASH_TIMESTAMP_INVALID` | 400 | 482 | Timestamp validation failed |
+| `ASH_PROOF_MISSING` | 401 | 483 | Missing proof header |
+
+**Preserved standard HTTP codes:** `ASH_CANONICALIZATION_ERROR` (422), `ASH_MODE_VIOLATION` (400), `ASH_UNSUPPORTED_CONTENT_TYPE` (415), `ASH_VALIDATION_ERROR` (400), `ASH_INTERNAL_ERROR` (500).
+
+**Migration:** Update client error handling to check for new status codes.
+
+---
+
+## New Features
+
+### Middleware Security Hardening
+
+All middleware implementations now include:
+
+- **Production-safe error messages**: Generic messages in production, detailed in development
+- **Input validation before store lookup**: Context ID and proof format validated before database queries
+- **Environment detection**: Automatic mode based on `NODE_ENV`, `APP_ENV`, `GIN_MODE`, `ASPNETCORE_ENVIRONMENT`, etc.
+
+| SDK | Middleware | Status |
+|-----|-----------|--------|
+| **Node.js** | Express | Complete |
+| **Node.js** | Fastify | Complete (added IP/User binding, production-safe errors) |
+| **Python** | Flask | Complete (added validation, production-safe errors) |
+| **Python** | FastAPI | Complete with all v2.3 features |
+| **Python** | Django | Complete with all v2.3 features |
+| **Go** | Gin | Complete (added production-safe errors, TTL for MemoryStore) |
+| **PHP** | Laravel | Complete (added validation, production-safe errors) |
+| **PHP** | WordPress | Complete (added scope policies, validation) |
+| **PHP** | CodeIgniter | Complete with all v2.3 features |
+| **PHP** | Drupal | Complete with all v2.3 features |
+| **.NET** | ASP.NET Core | Complete (added validation, scope hash validation) |
+
+### Environment-Based Configuration
+
+All SDKs now support unified configuration via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ASH_TRUST_PROXY` | `false` | Enable X-Forwarded-For header processing |
+| `ASH_TRUSTED_PROXIES` | (empty) | Comma-separated list of trusted proxy IPs |
+| `ASH_RATE_LIMIT_WINDOW` | `60` | Rate limiting window in seconds |
+| `ASH_RATE_LIMIT_MAX` | `10` | Maximum requests per window |
+| `ASH_TIMESTAMP_TOLERANCE` | `30` | Clock skew tolerance in seconds |
+
+### IP and User Binding Enforcement
+
+Middleware options for binding verification:
+
+```javascript
+// Node.js Express
+ashExpressMiddleware({ enforceIp: true, enforceUser: true })
+
+// Python Flask
+@middleware.flask(store, enforce_ip=True, enforce_user=True)
+
+// Go Gin
+AshGinMiddleware(&AshMiddlewareOptions{EnforceIP: true, EnforceUser: true})
+
+// PHP Laravel
+middleware('ash:enforce_ip,enforce_user')
+
+// .NET Core
+UseAsh(ash, new AshMiddlewareOptions { EnforceIp = true, EnforceUser = true })
+```
+
+---
+
+## Security
+
+### Cross-SDK Validation Alignment
+
+All SDKs now validate inputs consistently in `ash_derive_client_secret`:
+
+- **SEC-014**: Nonce minimum length (32 hex chars = 128 bits entropy)
+- **SEC-NONCE-001**: Nonce maximum length (128 chars)
+- **BUG-004**: Nonce must be valid hexadecimal
+- **BUG-041**: Context ID cannot be empty
+- **SEC-CTX-001**: Context ID max length (256 chars), charset validation
+- **SEC-AUDIT-004**: Binding max length (8KB)
+
+### Critical WASM Fixes
+
+- **BUG-LOGIC-130**: WASM bindings called wrong ash_core function names (missing `ash_` prefix)
+- **BUG-LOGIC-129**: WASM initialization never loaded the binary module
+- **PENTEST-001**: Query string sorting used UTF-16 instead of bytes (Node.js)
+- **PENTEST-002**: Content-Type handling inconsistency in middleware
+
+---
+
+## Bug Fixes
+
+Over 40 documented bug fixes including:
+
+- **Go**: Fixed weak IP validation (now uses `net.ParseIP()`)
+- **Go**: Added TTL/expiration to `AshMemoryStore` with background cleanup
+- **Python**: Fixed scope sorting to use byte-wise sorting
+- **PHP**: Fixed scope sorting to use byte-wise sorting
+- **.NET**: Fixed scope sorting with `ByteWiseComparer`
+- **Node.js**: Memory Store returns defensive copies to prevent mutation attacks
+- **Node.js**: Redis Lua script handles type confusion and JSON corruption
+- **Node.js**: SQL Store prevents SQL injection via identifier validation
+- **Node.js**: Prototype pollution prevention in all stores
+
+See [CHANGELOG.md](CHANGELOG.md) for the complete list of fixes.
+
+---
+
+## Installation
+
+### Node.js
+```bash
+npm install @3maem/ash-node@2.3.4
+```
+
+### Python
+```bash
+pip install ash-sdk==2.3.4
+```
+
+### Go
+```bash
+go get github.com/3maem/ash-go/v2@v2.3.4
+```
+
+### PHP
+```bash
+composer require 3maem/ash-sdk-php:^2.3.4
+```
+
+### .NET
+```bash
+dotnet add package Ash.Core --version 2.3.4
+```
+
+### Rust
+```bash
+cargo add ash-core@2.3.4
+```
+
+---
+
+## Upgrade Guide
+
+1. Update your package to v2.3.4
+2. **Important**: Update client error handling for new HTTP status codes (450-483 range)
+3. Configure environment variables for production deployment
+4. Enable IP/user binding enforcement if needed
+5. Run cross-SDK test vectors to verify compatibility
+
+---
+
+## Packages
+
+| Registry | Package | Version |
+|----------|---------|---------|
+| npm | [@3maem/ash-node](https://www.npmjs.com/package/@3maem/ash-node) | 2.3.4 |
+| PyPI | [ash-sdk](https://pypi.org/project/ash-sdk/) | 2.3.4 |
+| crates.io | [ash-core](https://crates.io/crates/ash-core) | 2.3.4 |
+| Packagist | [3maem/ash-sdk-php](https://packagist.org/packages/3maem/ash-sdk-php) | 2.3.4 |
+| NuGet | [Ash.Core](https://www.nuget.org/packages/Ash.Core) | 2.3.4 |
+| Go | [github.com/3maem/ash-go/v2](https://pkg.go.dev/github.com/3maem/ash-go/v2) | 2.3.4 |
+
+---
+
+## Links
+
+- [Main Repository](https://github.com/3maem/ash)
+- [Documentation](https://github.com/3maem/ash/tree/main/docs)
+- [Security Policy](https://github.com/3maem/ash/blob/main/SECURITY.md)
+- [Troubleshooting](https://github.com/3maem/ash/blob/main/TROUBLESHOOTING.md)
+- [Full Changelog](https://github.com/3maem/ash/blob/main/CHANGELOG.md)
+
+---
+
+**ASH Source-Available License (ASAL-1.0)**
+
+3maem Co. | شركة عمائم
