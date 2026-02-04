@@ -37,8 +37,12 @@ venv/
 ENV/
 
 # PHP
-/vendor/
+**/vendor/
 composer.lock
+composer.phar
+*.phpunit.result.cache
+.phpunit.cache/
+phpunit.xml.bak
 
 # Go
 *.exe
@@ -94,12 +98,23 @@ enhancements/
 guidance/
 analysis/
 meetings/
+sessions/
+reports/
 checklist/
 tutorials/
 docs/NEW_README*.md
 BUSINESS_PLAN.md
 outcome.md
 PUBLISHING.md
+PUBLISHING_PREPARATION_GUIDE.md
+ASH_CLOUD_GUIDE.md
+ASH_LIBRARY_FULL_REVIEW_REPORT.md
+CROSS_SDK_CONSISTENCY_REPORT.md
+FINAL_VERIFICATION_REPORT.md
+FUNCTION_RENAMES.md
+MIDDLEWARE_CONSISTENCY_REPORT.md
+RELEASE_CHECKLIST.md
+packages/ash-core/BUG_REPORT.md
 
 # Temp files
 tmpclaude-*
