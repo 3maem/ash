@@ -106,19 +106,19 @@ This document defines the standard naming convention for all ASH SDK functions a
 
 All internal functions must also use the `ash` prefix:
 
-| Category | Rust | Go | Node.js |
-|----------|------|----|---------|
-| Canonicalize Value | `ash_canonicalize_value` | `ashCanonicalizeValue` | `ashCanonicalizeValue` |
-| Canonicalize Number | `ash_canonicalize_number` | `ashCanonicalizeNumber` | `ashCanonicalizeNumber` |
-| Build Canonical JSON | `ash_build_canonical_json` | `ashBuildCanonicalJSON` | `ashBuildCanonicalJson` |
-| Escape JSON String | `ash_escape_json_string` | `ashEscapeJSONString` | `ashEscapeJsonString` |
-| Format Number | `ash_format_number` | `ashFormatNumber` | `ashFormatNumber` |
-| Parse URL Encoded | `ash_parse_urlencoded` | `ashParseURLEncoded` | `ashParseUrlEncoded` |
-| Percent Encode | `ash_percent_encode_uppercase` | `ashPercentEncodeUppercase` | `ashPercentEncodeUppercase` |
-| Uppercase Percent Encoding | `ash_uppercase_percent_encoding` | `ashUppercasePercentEncoding` | `ashUppercasePercentEncoding` |
-| To Upper Hex | `ash_to_upper_hex` | `ashToUpperHex` | `ashToUpperHex` |
-| Get Nested Value | `ash_get_nested_value` | `ashGetNestedValue` | `ashGetNestedValue` |
-| Set Nested Value | `ash_set_nested_value` | `ashSetNestedValue` | `ashSetNestedValue` |
+| Category | Rust | Go | Node.js | Python | PHP | .NET |
+|----------|------|----|---------|--------|-----|------|
+| Canonicalize Value | `ash_canonicalize_value` | `ashCanonicalizeValue` | `ashCanonicalizeValue` | `_ash_canonicalize_value` | `ashCanonicalizeValue` | `AshCanonicalizeValue` |
+| Canonicalize Number | `ash_canonicalize_number` | `ashCanonicalizeNumber` | `ashCanonicalizeNumber` | `_ash_canonicalize_number` | `ashCanonicalizeNumber` | `AshCanonicalizeNumber` |
+| Build Canonical JSON | `ash_build_canonical_json` | `ashBuildCanonicalJSON` | `ashBuildCanonicalJson` | `_ash_build_canonical_json` | `ashBuildCanonicalJson` | `AshBuildCanonicalJson` |
+| Escape JSON String | `ash_escape_json_string` | `ashEscapeJSONString` | `ashEscapeJsonString` | `_ash_escape_json_string` | `ashEscapeJsonString` | `AshEscapeJsonString` |
+| Format Number | `ash_format_number` | `ashFormatNumber` | `ashFormatNumber` | `_ash_format_number` | `ashFormatNumber` | `AshFormatNumber` |
+| Parse URL Encoded | `ash_parse_urlencoded` | `ashParseURLEncoded` | `ashParseUrlEncoded` | `_ash_parse_urlencoded` | `ashParseUrlEncoded` | `AshParseUrlEncoded` |
+| Percent Encode | `ash_percent_encode_uppercase` | `ashPercentEncodeUppercase` | `ashPercentEncodeUppercase` | `_ash_percent_encode_uppercase` | `ashPercentEncodeUppercase` | `AshPercentEncodeUppercase` |
+| Uppercase Percent Encoding | `ash_uppercase_percent_encoding` | `ashUppercasePercentEncoding` | `ashUppercasePercentEncoding` | `_ash_uppercase_percent_encoding` | `ashUppercasePercentEncoding` | `AshUppercasePercentEncoding` |
+| To Upper Hex | `ash_to_upper_hex` | `ashToUpperHex` | `ashToUpperHex` | `_ash_to_upper_hex` | `ashToUpperHex` | `AshToUpperHex` |
+| Get Nested Value | `ash_get_nested_value` | `ashGetNestedValue` | `ashGetNestedValue` | `_ash_get_nested_value` | `ashGetNestedValue` | `AshGetNestedValue` |
+| Set Nested Value | `ash_set_nested_value` | `ashSetNestedValue` | `ashSetNestedValue` | `_ash_set_nested_value` | `ashSetNestedValue` | `AshSetNestedValue` |
 
 ## Type Naming
 
