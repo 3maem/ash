@@ -747,7 +747,17 @@ See [LICENSE](LICENSE) for full terms.
 
 ---
 
-## Trademark
+## Trademark Notice
 
-"ASH" is a trademark of 3maem Co.
-Forks may not use the ASH name or logo without permission.
+"ASH" and "ASH Security SDK" are trademarks of 3maem Co.
+
+You may freely use, fork, and modify the open-source code under the Apache 2.0 license.
+
+However:
+- You may NOT use the name "ASH"
+- You may NOT use the ASH logo
+- You may NOT imply official endorsement
+
+for modified or forked versions without written permission.
+
+Forks must use a different name and branding.
