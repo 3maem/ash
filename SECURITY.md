@@ -12,6 +12,7 @@ We take all security issues seriously and respond quickly.
 If you discover a security vulnerability or potential exploit:
 
 ❌ DO NOT open a public issue
+
 ❌ DO NOT disclose it publicly
 
 Please report it privately to:
