@@ -9,11 +9,19 @@ This document visualizes common attack attempts and how ASH prevents them.
 ### Attack
 
 ```
-Attacker intercepts request
-         ↓
+┌──────────────────────┐
+│      Attacker        │
+└──────────┬───────────┘
+           ↓
+   Intercepts request
+           ↓
    Modifies body/params
-         ↓
+           ↓
    Forwards to server
+           ↓
+┌──────────────────────┐
+│       Server         │
+└──────────────────────┘
 ```
 
 ### Result
@@ -32,9 +40,17 @@ Attacker intercepts request
 ### Attack
 
 ```
-Attacker captures valid request
-         ↓
-    Resends later
+┌──────────────────────┐
+│      Attacker        │
+└──────────┬───────────┘
+           ↓
+  Captures valid request
+           ↓
+     Resends later
+           ↓
+┌──────────────────────┐
+│       Server         │
+└──────────────────────┘
 ```
 
 ### Result
@@ -53,9 +69,17 @@ Attacker captures valid request
 ### Attack
 
 ```
-Valid proof for /profile
-         ↓
-  Reused on /transfer
+┌──────────────────────┐
+│      Attacker        │
+└──────────┬───────────┘
+           ↓
+  Valid proof for /profile
+           ↓
+   Reused on /transfer
+           ↓
+┌──────────────────────┐
+│       Server         │
+└──────────────────────┘
 ```
 
 ### Result
@@ -73,7 +97,17 @@ Valid proof for /profile
 ### Attack
 
 ```
-Attacker measures comparison timing
+┌──────────────────────┐
+│      Attacker        │
+└──────────┬───────────┘
+           ↓
+  Measures comparison timing
+           ↓
+  Attempts to guess proof
+           ↓
+┌──────────────────────┐
+│       Server         │
+└──────────────────────┘
 ```
 
 ### Result
@@ -91,7 +125,17 @@ Attacker measures comparison timing
 ### Attack
 
 ```
-Extract secrets from process memory
+┌──────────────────────┐
+│      Attacker        │
+└──────────┬───────────┘
+           ↓
+  Access process memory
+           ↓
+  Extract secrets
+           ↓
+┌──────────────────────┐
+│    Server Memory     │
+└──────────────────────┘
 ```
 
 ### Result
