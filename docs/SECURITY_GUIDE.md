@@ -65,15 +65,21 @@ If these assumptions do not hold, additional controls are required.
 ASH provides:
 
 ✅ Request integrity validation
+
 ✅ Single-use enforcement
+
 ✅ Replay protection
+
 ✅ Binding validation
 
 ASH does NOT provide:
 
 ❌ Authentication
+
 ❌ Authorization
+
 ❌ Malware protection
+
 ❌ Full intrusion detection
 
 ASH validates **whether a request was altered or replayed**, not whether it is logically safe.
