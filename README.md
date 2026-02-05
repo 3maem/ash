@@ -4,7 +4,7 @@
 [![Cross-SDK Tests](https://img.shields.io/badge/cross--SDK-passing-brightgreen)](tests/cross-sdk/)
 [![Security Rating](https://img.shields.io/badge/security-10%2F10-brightgreen)](reports/security-audit/SECURITY_AUDIT_REPORT.md)
 [![Tests](https://img.shields.io/badge/tests-134%20passed-brightgreen)](tests/security_assurance/)
-[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Version](https://img.shields.io/badge/version-2.3.3-blue)](CHANGELOG.md)
 [![Docs](https://img.shields.io/badge/docs-available-blue)](docs/)
 
@@ -719,9 +719,27 @@ this scope is incidental and must not be relied upon.
 
 ---
 
-## License
+## License Strategy
 
-**ASH Source-Available License (ASAL-1.0)**
+ASH follows a "Free Core + Commercial Extensions" model.
+
+### Core (Open Source)
+The ASH core SDK is released under the Apache 2.0 license.
+You are free to:
+- use
+- modify
+- distribute
+- use commercially
+
+### Pro / Enterprise
+Advanced features, enterprise tooling, and support are provided under a commercial license.
+
+This allows:
+- fast adoption
+- community contributions
+- sustainable development
+
+We believe security infrastructure should be accessible to everyone.
 
 See [LICENSE](LICENSE) for full terms.
 

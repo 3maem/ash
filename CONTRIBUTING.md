@@ -24,4 +24,4 @@ When committing code to this repository:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the ASH Source-Available License (ASAL-1.0).
+By contributing, you agree that your contributions will be licensed under the Apache License 2.0.
