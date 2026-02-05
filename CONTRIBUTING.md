@@ -1,27 +1,164 @@
-# Contributing to ASH Protocol
+# Contributing to ASH
 
-## Development Guidelines
+First of all — thank you ❤️
+ASH exists because of its community.
 
-### Commit Messages
+Whether you fix a bug, improve documentation, suggest an idea, or submit code — you are helping make security better for everyone.
 
-When committing code to this repository:
+We welcome contributions of **any size**.
 
-1. Use clear, descriptive commit messages
-2. Follow conventional commit format (feat, fix, docs, etc.)
+---
+
+## 🌟 Ways to Contribute
+
+You don't need to write code to help.
+
+You can contribute by:
+
+- 💻 Code (features, fixes, refactors)
+- 🐛 Bug reports
+- 🧪 Tests
+- 📖 Documentation improvements
+- 💡 Ideas & discussions
+- 🔐 Security reviews
+- 🎨 UX/design
+- ⚡ Performance optimizations
+
+Every contribution matters.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Fork the repository
+Click "Fork" on GitHub.
+
+### 2. Create a feature branch
+```bash
+git checkout -b feat/your-feature-name
+```
+
+### 3. Make your changes
+Follow existing code style and patterns.
+
+### 4. Run tests
+Make sure everything passes before submitting.
+
+### 5. Submit a Pull Request
+Provide a clear description:
+- What changed
+- Why
+- Screenshots/logs if relevant
+
+---
+
+## 🧹 Development Guidelines
 
 ### Code Style
+- Follow existing style in each SDK
+- Keep functions small and readable
+- Prefer clarity over cleverness
 
-- Follow the existing code style in each SDK
-- Ensure all tests pass before committing
-- Update documentation when adding new features
+### Testing
+- Add tests for new behavior
+- Do not break existing tests
 
-### Pull Requests
+### Documentation
+- If you add a feature, update docs as well
+- Good documentation = good adoption
 
-1. Create a feature branch
-2. Make your changes
-3. Run tests
-4. Submit PR with clear description
+---
 
-## License
+## 📝 Commit Messages
 
-By contributing, you agree that your contributions will be licensed under the Apache License 2.0.
+Use conventional commits.
+
+**Examples:**
+- `feat: add request signing middleware`
+- `fix: prevent replay attack edge case`
+- `docs: update README examples`
+- `test: add verification tests`
+
+**Format:**
+```
+type: short description
+```
+
+**Common types:**
+- `feat`
+- `fix`
+- `docs`
+- `refactor`
+- `test`
+- `chore`
+
+---
+
+## 🔐 Security Contributions
+
+ASH is a security-focused project.
+
+If you discover a vulnerability:
+
+- ❌ Do NOT open a public issue
+- ✅ Email us privately at **security@ash-framework.com**
+
+We practice responsible disclosure and will respond quickly.
+
+---
+
+## 🎖 Contributors Recognition
+
+We deeply value our contributors.
+
+All contributors receive public recognition:
+- Name listed in README
+- GitHub avatar shown in Contributors section
+- Credit in release notes
+- Listed on the official website (future)
+
+We use the [All Contributors](https://allcontributors.org/) specification to automatically credit everyone.
+
+After your PR is merged, you will be added to the contributors list ✨
+
+**Top contributors may also receive:**
+- Early access to Pro features
+- Priority PR reviews
+- Direct communication with maintainers
+- Invitations to roadmap discussions
+- Potential maintainer status
+
+Outstanding contributors may be invited to join the core team.
+
+ASH grows with its community.
+
+---
+
+## ❤️ Community Values
+
+We aim to build:
+- Respectful discussions
+- Helpful reviews
+- Beginner-friendly issues
+- A welcoming environment
+
+Be kind. Be constructive. Help others grow.
+
+---
+
+## 📜 License
+
+By contributing, you agree that your contributions will be licensed under the **Apache License 2.0**.
+
+This ensures:
+- Open collaboration
+- Commercial adoption
+- Long-term sustainability
+
+---
+
+## 🙌 Thank You
+
+Every line of code, every typo fix, every idea helps.
+
+Thanks for helping make the web safer with ASH.
