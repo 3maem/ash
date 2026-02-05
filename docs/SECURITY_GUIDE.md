@@ -5,7 +5,7 @@ This document provides a technical overview of ASH's security design, assumption
 If you are looking to report a vulnerability, please see:
 👉 [SECURITY.md](../SECURITY.md)
 
-This guide focuses on **how ASH works internally** and **how to use it securely**.
+This guide focuses on how ASH works internally and how to use it securely.
 
 ---
 
@@ -18,9 +18,9 @@ ASH is designed to protect applications from:
 - Data manipulation
 - Client-side parameter abuse
 
-ASH enforces **request integrity and single-use validation**.
+ASH enforces request integrity and single-use validation.
 
-It is designed to be used **alongside** existing security controls such as:
+It is designed to be used alongside existing security controls such as:
 
 - HTTPS/TLS
 - Authentication
@@ -28,7 +28,8 @@ It is designed to be used **alongside** existing security controls such as:
 - Input validation
 - WAF/Firewall
 
-ASH is not a replacement for full application security. It serves as an additional protection layer.
+ASH is not a replacement for full application security.
+It serves as an additional protection layer.
 
 ---
 
@@ -42,7 +43,6 @@ ASH is not a replacement for full application security. It serves as an addition
 | < 2.1   | ❌ No     |
 
 Security patches are only provided for actively supported versions.
-
 Please upgrade regularly.
 
 ---
@@ -62,27 +62,21 @@ If these assumptions do not hold, additional controls are required.
 
 ## Security Boundaries
 
-ASH provides:
+### ASH provides
 
-✅ Request integrity validation
+- ✅ Request integrity validation
+- ✅ Single-use enforcement
+- ✅ Replay protection
+- ✅ Binding validation
 
-✅ Single-use enforcement
+### ASH does NOT provide
 
-✅ Replay protection
+- ❌ Authentication
+- ❌ Authorization
+- ❌ Malware protection
+- ❌ Intrusion detection
 
-✅ Binding validation
-
-ASH does NOT provide:
-
-❌ Authentication
-
-❌ Authorization
-
-❌ Malware protection
-
-❌ Full intrusion detection
-
-ASH validates **whether a request was altered or replayed**, not whether it is logically safe.
+ASH validates whether a request was altered or replayed, not whether it is logically safe.
 
 ---
 
@@ -127,31 +121,29 @@ These reduce the feasibility of side-channel and replay attacks.
 
 ---
 
-## Secure Configuration Best Practices
+## ⚙️ Secure Configuration Best Practices
 
 ### 1. Keep Dependencies Updated
 
-**Node.js:**
+#### Node.js
 ```bash
 npm audit && npm update
 ```
 
-**Python:**
+#### Python
 ```bash
 pip install --upgrade ash-sdk-python
 ```
 
-**Rust:**
+#### Rust
 ```bash
 cargo update && cargo audit
 ```
 
-**Go:**
+#### Go
 ```bash
 go get -u && govulncheck ./...
 ```
-
----
 
 ### 2. Context TTL Configuration
 
@@ -161,19 +153,17 @@ go get -u && govulncheck ./...
 
 Shorter TTLs reduce replay risk.
 
----
-
 ### 3. Storage Recommendations
 
-**Production:**
+#### Production
+
 - Redis with TLS
 - SQL with encryption at rest
 
-**Avoid:**
+#### Avoid
+
 - In-memory stores in clusters
 - Shared state without synchronization
-
----
 
 ### 4. Binding Validation
 
@@ -187,28 +177,18 @@ if context.binding != expected_binding:
 
 This prevents endpoint substitution attacks.
 
----
-
 ### 5. Secure Memory Usage (High Security Environments)
 
-**Python:**
+#### Python
 ```python
-from ash.core import SecureString, secure_derive_client_secret
-
 with secure_derive_client_secret(nonce, ctx_id, binding) as secret:
     proof = build_proof_v21(secret.get(), timestamp, binding, body_hash)
 ```
 
-Memory is automatically cleared after use.
-
----
-
-**Node.js:**
+#### Node.js
 ```typescript
-import { SecureString, withSecureString } from '@3maem/ash-node'
-
 const proof = await withSecureString(clientSecret, (secret) => {
-    return buildProofV21(secret, timestamp, binding, bodyHash)
+  return buildProofV21(secret, timestamp, binding, bodyHash)
 })
 ```
 
