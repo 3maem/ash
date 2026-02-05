@@ -8,10 +8,6 @@ When committing code to this repository:
 
 1. Use clear, descriptive commit messages
 2. Follow conventional commit format (feat, fix, docs, etc.)
-3. **IMPORTANT: Do NOT include any AI assistant attribution in commits**
-   - No "Co-Authored-By" lines for AI tools
-   - No mentions of Claude, GPT, or other AI assistants as contributors
-   - All commits should be attributed to human contributors only
 
 ### Code Style
 
