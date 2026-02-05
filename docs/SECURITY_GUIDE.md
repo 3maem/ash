@@ -28,7 +28,7 @@ It is designed to be used **alongside** existing security controls such as:
 - Input validation
 - WAF/Firewall
 
-ASH is not a replacement for full application security — it is an additional protection layer.
+ASH is not a replacement for full application security. It serves as an additional protection layer.
 
 ---
 
