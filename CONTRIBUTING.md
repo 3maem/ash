@@ -95,7 +95,7 @@ If you discover a vulnerability:
 
 Do NOT open a public issue.
 
-Email us privately at: **security@ash-framework.com**
+Email us privately at: **security@ash-sdk.com**
 
 We practice responsible disclosure and will respond quickly.
 
