@@ -5,9 +5,15 @@
 
 This document defines the standard error codes used across all ASH SDK implementations to ensure interoperability and consistent error handling.
 
-## What's New in v2.0.0
+## What's New in v2.3.4
 
-**Unique HTTP Status Codes (450-499 range)**: ASH now uses dedicated HTTP status codes to enable:
+**Complete Error Code Coverage**: All SDKs now implement the full set of error codes with unique HTTP status codes (450-499 range):
+
+- `ASH_TIMESTAMP_INVALID` (HTTP 482) — Timestamp validation failures
+- `ASH_VALIDATION_ERROR` (HTTP 400) — Input validation failures
+- `ASH_INTERNAL_ERROR` (HTTP 500) — Internal server errors
+
+**Benefits:**
 - Better monitoring and alerting
 - Targeted retry strategies
 - Faster debugging and root cause analysis
