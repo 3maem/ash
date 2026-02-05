@@ -60,18 +60,43 @@ Responsible for:
 ## System Flow
 
 ```
-Client SDK
-   ↓ create context
-   ↓ sign request
-Internet (untrusted)
-   ↓
-Server Verification
-   ↓ validate proof
-   ↓ consume context
-Context Store
+┌─────────────┐
+│ Client SDK  │
+└──────┬──────┘
+       ↓
+   Sign + Hash
+       ↓
+┌─────────────────────┐
+│ Internet (untrusted)│
+└──────────┬──────────┘
+           ↓
+┌─────────────────────┐
+│ Verification Server │
+└──────────┬──────────┘
+           ↓
+     Validate Proof
+           ↓
+┌─────────────────────┐
+│    Context Store    │
+└──────────┬──────────┘
+           ↓
+   Consume & Destroy
 ```
 
 If tampered or replayed → verification fails.
+
+---
+
+## Security Guarantees
+
+At the architecture level, ASH guarantees:
+
+- Request integrity
+- Single-use enforcement
+- Replay prevention
+- Endpoint binding
+
+These guarantees hold only when TLS and proper server configuration are present.
 
 ---
 
