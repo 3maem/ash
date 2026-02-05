@@ -1,5 +1,7 @@
 # ASH — Application Security Hash
 
+**Version:** 2.3.4
+
 Request integrity and replay protection for modern applications.
 
 ASH ensures that every request is:
