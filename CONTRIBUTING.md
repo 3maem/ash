@@ -5,7 +5,19 @@ ASH exists because of its community.
 
 Whether you fix a bug, improve documentation, suggest an idea, or submit code — you are helping make security better for everyone.
 
-We welcome contributions of **any size**.
+We welcome contributions of any size.
+
+---
+
+## 🚀 Quick Start
+
+1. Fork the repository
+2. Create a branch
+3. Make your changes
+4. Run tests
+5. Open a Pull Request
+
+That's it ✨
 
 ---
 
@@ -28,30 +40,6 @@ Every contribution matters.
 
 ---
 
-## 🚀 Getting Started
-
-### 1. Fork the repository
-Click "Fork" on GitHub.
-
-### 2. Create a feature branch
-```bash
-git checkout -b feat/your-feature-name
-```
-
-### 3. Make your changes
-Follow existing code style and patterns.
-
-### 4. Run tests
-Make sure everything passes before submitting.
-
-### 5. Submit a Pull Request
-Provide a clear description:
-- What changed
-- Why
-- Screenshots/logs if relevant
-
----
-
 ## 🧹 Development Guidelines
 
 ### Code Style
@@ -64,8 +52,9 @@ Provide a clear description:
 - Do not break existing tests
 
 ### Documentation
-- If you add a feature, update docs as well
-- Good documentation = good adoption
+If you add a feature, update docs as well.
+
+Good documentation = good adoption.
 
 ---
 
@@ -73,24 +62,19 @@ Provide a clear description:
 
 Use conventional commits.
 
-**Examples:**
-- `feat: add request signing middleware`
-- `fix: prevent replay attack edge case`
-- `docs: update README examples`
-- `test: add verification tests`
+Examples:
 
-**Format:**
-```
+- feat: add request signing middleware
+- fix: prevent replay attack edge case
+- docs: update README examples
+- test: add verification tests
+
+Format:
+
 type: short description
-```
 
-**Common types:**
-- `feat`
-- `fix`
-- `docs`
-- `refactor`
-- `test`
-- `chore`
+Common types:
+feat, fix, docs, refactor, test, chore
 
 ---
 
@@ -100,8 +84,8 @@ ASH is a security-focused project.
 
 If you discover a vulnerability:
 
-- ❌ Do NOT open a public issue
-- ✅ Email us privately at **security@ash-framework.com**
+❌ Do NOT open a public issue
+✅ Email us privately at security@ash-framework.com
 
 We practice responsible disclosure and will respond quickly.
 
@@ -111,19 +95,21 @@ We practice responsible disclosure and will respond quickly.
 
 We deeply value our contributors.
 
-All contributors receive public recognition:
+All contributions are publicly recognized:
+
 - Name listed in README
 - GitHub avatar shown in Contributors section
 - Credit in release notes
 - Listed on the official website (future)
 
-We use the [All Contributors](https://allcontributors.org/) specification to automatically credit everyone.
+We use the All Contributors specification to automatically credit everyone.
 
 After your PR is merged, you will be added to the contributors list ✨
 
-**Top contributors may also receive:**
+Top contributors may receive:
+
 - Early access to Pro features
-- Priority PR reviews
+- Priority reviews
 - Direct communication with maintainers
 - Invitations to roadmap discussions
 - Potential maintainer status
@@ -137,6 +123,7 @@ ASH grows with its community.
 ## ❤️ Community Values
 
 We aim to build:
+
 - Respectful discussions
 - Helpful reviews
 - Beginner-friendly issues
@@ -144,13 +131,16 @@ We aim to build:
 
 Be kind. Be constructive. Help others grow.
 
+Please follow our Code of Conduct to keep the community safe and professional.
+
 ---
 
 ## 📜 License
 
-By contributing, you agree that your contributions will be licensed under the **Apache License 2.0**.
+By contributing, you agree that your contributions will be licensed under the Apache License 2.0.
 
 This ensures:
+
 - Open collaboration
 - Commercial adoption
 - Long-term sustainability
