@@ -726,3 +726,10 @@ this scope is incidental and must not be relied upon.
 See [LICENSE](LICENSE) for full terms.
 
 © 3maem Co. | شركة عمائم
+
+---
+
+## Trademark
+
+"ASH" is a trademark of 3maem Co.
+Forks may not use the ASH name or logo without permission.
