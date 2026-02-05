@@ -1,6 +1,6 @@
-# Migration Guide: Pre-2.3.3 to 2.3.x
+# Migration Guide: Pre-2.3.4 to 2.3.x
 
-This guide helps you migrate from ASH versions prior to 2.3.3 to the current 2.3.x release.
+This guide helps you migrate from ASH versions prior to 2.3.4 to the current 2.3.x release.
 
 ---
 

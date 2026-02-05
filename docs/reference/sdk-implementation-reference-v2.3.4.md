@@ -1,4 +1,4 @@
-# ASH SDK Implementation Reference v2.3.3
+# ASH SDK Implementation Reference v2.3.4
 
 This document provides the authoritative reference for implementing ASH SDKs across all languages. All SDKs (Node.js, Python, Go, .NET, PHP) and middlewares MUST implement these specifications to ensure cross-SDK interoperability.
 
@@ -47,7 +47,7 @@ SHA256_HEX_LENGTH         = 64        // Expected length of SHA-256 hex output
 ### 1.2 Protocol Constants
 
 ```
-ASH_SDK_VERSION           = "2.3.3"
+ASH_SDK_VERSION           = "2.3.4"
 ASH_VERSION_PREFIX        = "ASHv2.1"
 SCOPE_FIELD_DELIMITER     = '\x1F'    // Unit separator (U+001F) - CRITICAL for cross-SDK
 ```
@@ -594,7 +594,7 @@ Expected:      HMAC-SHA256(client_secret_bytes, message_bytes)
 
 ## Appendix B: Migration Notes
 
-### B.1 From Pre-2.3.3 SDKs
+### B.1 From Pre-2.3.4 SDKs
 
 1. **Add new constants**: MAX_NONCE_LENGTH, MAX_CONTEXT_ID_LENGTH, MAX_SCOPE_FIELD_NAME_LENGTH, MAX_TOTAL_SCOPE_LENGTH
 
@@ -614,8 +614,8 @@ Expected:      HMAC-SHA256(client_secret_bytes, message_bytes)
 
 | Version | Date       | Changes |
 |---------|------------|---------|
-| 2.3.3   | 2026-01-31 | Added security guardrails (SEC-CTX-001, SEC-NONCE-001, SEC-SCOPE-001), BUG-050 fix |
-| 2.3.3   | 2026-01-29 | Initial comprehensive reference |
+| 2.3.4   | 2026-01-31 | Added security guardrails (SEC-CTX-001, SEC-NONCE-001, SEC-SCOPE-001), BUG-050 fix |
+| 2.3.4   | 2026-01-29 | Initial comprehensive reference |
 
 ---
 

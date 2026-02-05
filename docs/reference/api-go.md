@@ -1,12 +1,12 @@
 # ASH Go SDK API Reference
 
-**Version:** 2.3.3
+**Version:** 2.3.4
 **Package:** `github.com/3maem/ash-go/v2`
 
 ## Installation
 
 ```bash
-go get github.com/3maem/ash-go/v2@v2.3.3
+go get github.com/3maem/ash-go/v2@v2.3.4
 ```
 
 ## Package Import
@@ -23,7 +23,7 @@ import ash "github.com/3maem/ash-go/v2"
 
 ```go
 const (
-    Version           = "2.3.3"
+    Version           = "2.3.4"
     ProtocolVersion   = "ASHv2.3"
     ProtocolVersionV1 = "ASHv1"
     ProtocolVersionV21 = "ASHv2.1"

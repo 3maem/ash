@@ -1,6 +1,6 @@
 # ASH PHP SDK API Reference
 
-**Version:** 2.3.3
+**Version:** 2.3.4
 **Package:** `3maem/ash-sdk-php`
 
 ## Installation
