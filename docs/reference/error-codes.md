@@ -1,7 +1,7 @@
 # ASH Error Code Specification
 
-**Version:** 2.0.0
-**Date:** 2026-02-02
+**Version:** 2.3.4
+**Date:** 2026-02-05
 
 This document defines the standard error codes used across all ASH SDK implementations to ensure interoperability and consistent error handling.
 
@@ -267,50 +267,59 @@ Each SDK MUST define constants/enums for all error codes:
 **Rust:**
 ```rust
 pub enum AshErrorCode {
-    CtxNotFound,
-    CtxExpired,
-    CtxAlreadyUsed,
-    BindingMismatch,
-    ProofMissing,
-    ProofInvalid,
-    CanonicalizationError,
-    ModeViolation,
-    UnsupportedContentType,
-    ScopeMismatch,
-    ChainBroken,
+    CtxNotFound,           // HTTP 450
+    CtxExpired,            // HTTP 451
+    CtxAlreadyUsed,        // HTTP 452
+    ProofInvalid,          // HTTP 460
+    BindingMismatch,       // HTTP 461
+    ScopeMismatch,         // HTTP 473
+    ChainBroken,           // HTTP 474
+    TimestampInvalid,      // HTTP 482
+    ProofMissing,          // HTTP 483
+    CanonicalizationError, // HTTP 422
+    ModeViolation,         // HTTP 400
+    UnsupportedContentType,// HTTP 415
+    ValidationError,       // HTTP 400
+    InternalError,         // HTTP 500
 }
 ```
 
 **TypeScript/JavaScript:**
 ```typescript
 type AshErrorCode =
-  | 'ASH_CTX_NOT_FOUND'
-  | 'ASH_CTX_EXPIRED'
-  | 'ASH_CTX_ALREADY_USED'
-  | 'ASH_BINDING_MISMATCH'
-  | 'ASH_PROOF_MISSING'
-  | 'ASH_PROOF_INVALID'
-  | 'ASH_CANONICALIZATION_ERROR'
-  | 'ASH_MODE_VIOLATION'
-  | 'ASH_UNSUPPORTED_CONTENT_TYPE'
-  | 'ASH_SCOPE_MISMATCH'
-  | 'ASH_CHAIN_BROKEN';
+  | 'ASH_CTX_NOT_FOUND'           // HTTP 450
+  | 'ASH_CTX_EXPIRED'             // HTTP 451
+  | 'ASH_CTX_ALREADY_USED'        // HTTP 452
+  | 'ASH_PROOF_INVALID'           // HTTP 460
+  | 'ASH_BINDING_MISMATCH'        // HTTP 461
+  | 'ASH_SCOPE_MISMATCH'          // HTTP 473
+  | 'ASH_CHAIN_BROKEN'            // HTTP 474
+  | 'ASH_TIMESTAMP_INVALID'       // HTTP 482
+  | 'ASH_PROOF_MISSING'           // HTTP 483
+  | 'ASH_CANONICALIZATION_ERROR'  // HTTP 422
+  | 'ASH_MODE_VIOLATION'          // HTTP 400
+  | 'ASH_UNSUPPORTED_CONTENT_TYPE'// HTTP 415
+  | 'ASH_VALIDATION_ERROR'        // HTTP 400
+  | 'ASH_INTERNAL_ERROR';         // HTTP 500
 ```
 
 **Python:**
 ```python
 class AshErrorCode(str, Enum):
-    CTX_NOT_FOUND = "ASH_CTX_NOT_FOUND"
-    CTX_EXPIRED = "ASH_CTX_EXPIRED"
-    CTX_ALREADY_USED = "ASH_CTX_ALREADY_USED"
-    BINDING_MISMATCH = "ASH_BINDING_MISMATCH"
-    PROOF_MISSING = "ASH_PROOF_MISSING"
-    PROOF_INVALID = "ASH_PROOF_INVALID"
-    CANONICALIZATION_ERROR = "ASH_CANONICALIZATION_ERROR"
-    MODE_VIOLATION = "ASH_MODE_VIOLATION"
-    UNSUPPORTED_CONTENT_TYPE = "ASH_UNSUPPORTED_CONTENT_TYPE"
-    SCOPE_MISMATCH = "ASH_SCOPE_MISMATCH"
-    CHAIN_BROKEN = "ASH_CHAIN_BROKEN"
+    CTX_NOT_FOUND = "ASH_CTX_NOT_FOUND"              # HTTP 450
+    CTX_EXPIRED = "ASH_CTX_EXPIRED"                  # HTTP 451
+    CTX_ALREADY_USED = "ASH_CTX_ALREADY_USED"        # HTTP 452
+    PROOF_INVALID = "ASH_PROOF_INVALID"              # HTTP 460
+    BINDING_MISMATCH = "ASH_BINDING_MISMATCH"        # HTTP 461
+    SCOPE_MISMATCH = "ASH_SCOPE_MISMATCH"            # HTTP 473
+    CHAIN_BROKEN = "ASH_CHAIN_BROKEN"                # HTTP 474
+    TIMESTAMP_INVALID = "ASH_TIMESTAMP_INVALID"      # HTTP 482
+    PROOF_MISSING = "ASH_PROOF_MISSING"              # HTTP 483
+    CANONICALIZATION_ERROR = "ASH_CANONICALIZATION_ERROR"  # HTTP 422
+    MODE_VIOLATION = "ASH_MODE_VIOLATION"            # HTTP 400
+    UNSUPPORTED_CONTENT_TYPE = "ASH_UNSUPPORTED_CONTENT_TYPE"  # HTTP 415
+    VALIDATION_ERROR = "ASH_VALIDATION_ERROR"        # HTTP 400
+    INTERNAL_ERROR = "ASH_INTERNAL_ERROR"            # HTTP 500
 ```
 
 **Go:**
@@ -318,17 +327,20 @@ class AshErrorCode(str, Enum):
 type AshErrorCode string
 
 const (
-    ErrCtxNotFound           AshErrorCode = "ASH_CTX_NOT_FOUND"
-    ErrCtxExpired            AshErrorCode = "ASH_CTX_EXPIRED"
-    ErrCtxAlreadyUsed        AshErrorCode = "ASH_CTX_ALREADY_USED"
-    ErrBindingMismatch       AshErrorCode = "ASH_BINDING_MISMATCH"
-    ErrProofMissing          AshErrorCode = "ASH_PROOF_MISSING"
-    ErrProofInvalid          AshErrorCode = "ASH_PROOF_INVALID"
-    ErrCanonicalizationError AshErrorCode = "ASH_CANONICALIZATION_ERROR"
-    ErrModeViolation         AshErrorCode = "ASH_MODE_VIOLATION"
-    ErrUnsupportedContentType AshErrorCode = "ASH_UNSUPPORTED_CONTENT_TYPE"
-    ErrScopeMismatch         AshErrorCode = "ASH_SCOPE_MISMATCH"
-    ErrChainBroken           AshErrorCode = "ASH_CHAIN_BROKEN"
+    ErrCtxNotFound            AshErrorCode = "ASH_CTX_NOT_FOUND"            // HTTP 450
+    ErrCtxExpired             AshErrorCode = "ASH_CTX_EXPIRED"              // HTTP 451
+    ErrCtxAlreadyUsed         AshErrorCode = "ASH_CTX_ALREADY_USED"         // HTTP 452
+    ErrProofInvalid           AshErrorCode = "ASH_PROOF_INVALID"            // HTTP 460
+    ErrBindingMismatch        AshErrorCode = "ASH_BINDING_MISMATCH"         // HTTP 461
+    ErrScopeMismatch          AshErrorCode = "ASH_SCOPE_MISMATCH"           // HTTP 473
+    ErrChainBroken            AshErrorCode = "ASH_CHAIN_BROKEN"             // HTTP 474
+    ErrTimestampInvalid       AshErrorCode = "ASH_TIMESTAMP_INVALID"        // HTTP 482
+    ErrProofMissing           AshErrorCode = "ASH_PROOF_MISSING"            // HTTP 483
+    ErrCanonicalizationError  AshErrorCode = "ASH_CANONICALIZATION_ERROR"   // HTTP 422
+    ErrModeViolation          AshErrorCode = "ASH_MODE_VIOLATION"           // HTTP 400
+    ErrUnsupportedContentType AshErrorCode = "ASH_UNSUPPORTED_CONTENT_TYPE" // HTTP 415
+    ErrValidationError        AshErrorCode = "ASH_VALIDATION_ERROR"         // HTTP 400
+    ErrInternalError          AshErrorCode = "ASH_INTERNAL_ERROR"           // HTTP 500
 )
 ```
 
@@ -336,17 +348,20 @@ const (
 ```php
 enum AshErrorCode: string
 {
-    case CtxNotFound = 'ASH_CTX_NOT_FOUND';
-    case CtxExpired = 'ASH_CTX_EXPIRED';
-    case CtxAlreadyUsed = 'ASH_CTX_ALREADY_USED';
-    case BindingMismatch = 'ASH_BINDING_MISMATCH';
-    case ProofMissing = 'ASH_PROOF_MISSING';
-    case ProofInvalid = 'ASH_PROOF_INVALID';
-    case CanonicalizationError = 'ASH_CANONICALIZATION_ERROR';
-    case ModeViolation = 'ASH_MODE_VIOLATION';
-    case UnsupportedContentType = 'ASH_UNSUPPORTED_CONTENT_TYPE';
-    case ScopeMismatch = 'ASH_SCOPE_MISMATCH';
-    case ChainBroken = 'ASH_CHAIN_BROKEN';
+    case CtxNotFound = 'ASH_CTX_NOT_FOUND';              // HTTP 450
+    case CtxExpired = 'ASH_CTX_EXPIRED';                 // HTTP 451
+    case CtxAlreadyUsed = 'ASH_CTX_ALREADY_USED';        // HTTP 452
+    case ProofInvalid = 'ASH_PROOF_INVALID';             // HTTP 460
+    case BindingMismatch = 'ASH_BINDING_MISMATCH';       // HTTP 461
+    case ScopeMismatch = 'ASH_SCOPE_MISMATCH';           // HTTP 473
+    case ChainBroken = 'ASH_CHAIN_BROKEN';               // HTTP 474
+    case TimestampInvalid = 'ASH_TIMESTAMP_INVALID';     // HTTP 482
+    case ProofMissing = 'ASH_PROOF_MISSING';             // HTTP 483
+    case CanonicalizationError = 'ASH_CANONICALIZATION_ERROR';  // HTTP 422
+    case ModeViolation = 'ASH_MODE_VIOLATION';           // HTTP 400
+    case UnsupportedContentType = 'ASH_UNSUPPORTED_CONTENT_TYPE';  // HTTP 415
+    case ValidationError = 'ASH_VALIDATION_ERROR';       // HTTP 400
+    case InternalError = 'ASH_INTERNAL_ERROR';           // HTTP 500
 }
 ```
 
@@ -354,17 +369,20 @@ enum AshErrorCode: string
 ```csharp
 public static class AshErrorCode
 {
-    public const string CtxNotFound = "ASH_CTX_NOT_FOUND";
-    public const string CtxExpired = "ASH_CTX_EXPIRED";
-    public const string CtxAlreadyUsed = "ASH_CTX_ALREADY_USED";
-    public const string BindingMismatch = "ASH_BINDING_MISMATCH";
-    public const string ProofMissing = "ASH_PROOF_MISSING";
-    public const string ProofInvalid = "ASH_PROOF_INVALID";
-    public const string CanonicalizationError = "ASH_CANONICALIZATION_ERROR";
-    public const string ModeViolation = "ASH_MODE_VIOLATION";
-    public const string UnsupportedContentType = "ASH_UNSUPPORTED_CONTENT_TYPE";
-    public const string ScopeMismatch = "ASH_SCOPE_MISMATCH";
-    public const string ChainBroken = "ASH_CHAIN_BROKEN";
+    public const string CtxNotFound = "ASH_CTX_NOT_FOUND";              // HTTP 450
+    public const string CtxExpired = "ASH_CTX_EXPIRED";                 // HTTP 451
+    public const string CtxAlreadyUsed = "ASH_CTX_ALREADY_USED";        // HTTP 452
+    public const string ProofInvalid = "ASH_PROOF_INVALID";             // HTTP 460
+    public const string BindingMismatch = "ASH_BINDING_MISMATCH";       // HTTP 461
+    public const string ScopeMismatch = "ASH_SCOPE_MISMATCH";           // HTTP 473
+    public const string ChainBroken = "ASH_CHAIN_BROKEN";               // HTTP 474
+    public const string TimestampInvalid = "ASH_TIMESTAMP_INVALID";     // HTTP 482
+    public const string ProofMissing = "ASH_PROOF_MISSING";             // HTTP 483
+    public const string CanonicalizationError = "ASH_CANONICALIZATION_ERROR";  // HTTP 422
+    public const string ModeViolation = "ASH_MODE_VIOLATION";           // HTTP 400
+    public const string UnsupportedContentType = "ASH_UNSUPPORTED_CONTENT_TYPE";  // HTTP 415
+    public const string ValidationError = "ASH_VALIDATION_ERROR";       // HTTP 400
+    public const string InternalError = "ASH_INTERNAL_ERROR";           // HTTP 500
 }
 ```
 
@@ -437,6 +455,7 @@ If your SDK uses different error codes, map them to the standard codes:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.3.4 | 2026-02-05 | Added ASH_VALIDATION_ERROR, ASH_TIMESTAMP_INVALID, ASH_INTERNAL_ERROR |
 | 2.0.0 | 2026-02-02 | Unique HTTP status codes (450-499 range) for all ASH errors |
 | 1.1.0 | 2026-01-29 | Updated HTTP status codes for better semantics |
 | 1.0.0 | 2026-01-28 | Initial specification |
