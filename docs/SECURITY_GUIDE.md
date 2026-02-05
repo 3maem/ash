@@ -37,7 +37,7 @@ ASH is not a replacement for full application security. It serves as an addition
 | Version | Supported |
 |---------|-----------|
 | 2.3.x   | ✅ Yes    |
-| 2.2.x   | ✅ Yes    |
+| 2.2.x   | ❌ No     |
 | 2.1.x   | ❌ No     |
 | < 2.1   | ❌ No     |
 
