@@ -152,6 +152,14 @@ It is an additional security layer.
 
 ---
 
+## Troubleshooting
+
+Common integration issues and solutions are documented here:
+
+[docs/troubleshooting.md](docs/troubleshooting.md)
+
+---
+
 ## License
 
 Apache 2.0
