@@ -371,27 +371,6 @@ enum AshErrorCode: string
 }
 ```
 
-**C#:**
-```csharp
-public static class AshErrorCode
-{
-    public const string CtxNotFound = "ASH_CTX_NOT_FOUND";              // HTTP 450
-    public const string CtxExpired = "ASH_CTX_EXPIRED";                 // HTTP 451
-    public const string CtxAlreadyUsed = "ASH_CTX_ALREADY_USED";        // HTTP 452
-    public const string ProofInvalid = "ASH_PROOF_INVALID";             // HTTP 460
-    public const string BindingMismatch = "ASH_BINDING_MISMATCH";       // HTTP 461
-    public const string ScopeMismatch = "ASH_SCOPE_MISMATCH";           // HTTP 473
-    public const string ChainBroken = "ASH_CHAIN_BROKEN";               // HTTP 474
-    public const string TimestampInvalid = "ASH_TIMESTAMP_INVALID";     // HTTP 482
-    public const string ProofMissing = "ASH_PROOF_MISSING";             // HTTP 483
-    public const string CanonicalizationError = "ASH_CANONICALIZATION_ERROR";  // HTTP 422
-    public const string ModeViolation = "ASH_MODE_VIOLATION";           // HTTP 400
-    public const string UnsupportedContentType = "ASH_UNSUPPORTED_CONTENT_TYPE";  // HTTP 415
-    public const string ValidationError = "ASH_VALIDATION_ERROR";       // HTTP 400
-    public const string InternalError = "ASH_INTERNAL_ERROR";           // HTTP 500
-}
-```
-
 ---
 
 ## Error Response Format

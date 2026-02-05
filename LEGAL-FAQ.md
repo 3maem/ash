@@ -19,8 +19,7 @@ function as an attack prevention, detection, or threat mitigation system.
 
 ## Can ASH be considered a security control?
 
-ASH is a **technical integrity mechanism**, not a security control
-for preventing attacks.
+ASH is a **technical integrity mechanism** and should be used as part of a layered security architecture.
 
 It must not be relied upon as a substitute for authentication,
 authorization, firewalls, or secure coding practices.
@@ -75,9 +74,12 @@ ASH is designed to complement these mechanisms.
 
 Yes, subject to the license terms.
 
-ASH may be used in personal and commercial projects, but modification,
-redistribution, or forking is prohibited unless explicitly permitted
-by 3maem Co.
+ASH Core is released under the Apache License 2.0.
+
+You are free to use, modify, and distribute the open-source code in accordance with the license terms.
+
+However, "ASH" and "ASH Security SDK" are trademarks of 3maem Co.
+Forked or modified versions may not use the ASH name, logo, or imply official endorsement without written permission.
 
 ---
 
@@ -94,12 +96,13 @@ ASH is provided "as is".
 
 ---
 
-## Why is the source code available if it is proprietary?
+## Why is the source code open?
 
-The source code is made available for transparency and auditability.
+The source code is open under the Apache 2.0 license for transparency, auditability, and community contribution.
 
-Availability of source code does not imply permission to modify,
-redistribute, or create derivative works.
+You may use, modify, and distribute the code in accordance with the license terms.
+
+The ASH name and branding remain trademarks of 3maem Co.
 
 ---
 

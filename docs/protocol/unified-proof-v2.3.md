@@ -1,5 +1,7 @@
 # ASH Unified Proof API (v2.3)
 
+**Version:** 2.3.4
+
 ## Overview
 
 The Unified Proof API combines context scoping and request chaining into a single, flexible function. This simplifies the API while supporting all use cases.
@@ -25,7 +27,6 @@ proof      = HMAC-SHA256(clientSecret, timestamp|binding|bodyHash|scopeHash|chai
 | PHP | `Proof::buildUnified($clientSecret, $timestamp, $binding, $payload, $scope, $previousProof)` |
 | Python | `build_proof_unified(client_secret, timestamp, binding, payload, scope, previous_proof)` |
 | Go | `BuildProofUnified(clientSecret, timestamp, binding, payload, scope, previousProof)` |
-| C# | `ProofV23.BuildProofUnified(clientSecret, timestamp, binding, payload, scope, previousProof)` |
 
 ### Verify Proof (Server-side)
 
@@ -37,7 +38,6 @@ proof      = HMAC-SHA256(clientSecret, timestamp|binding|bodyHash|scopeHash|chai
 | PHP | `Proof::verifyUnified(...)` |
 | Python | `verify_proof_unified(...)` |
 | Go | `VerifyProofUnified(...)` |
-| C# | `ProofV23.VerifyProofUnified(...)` |
 
 ## Usage Modes
 

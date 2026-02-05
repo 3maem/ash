@@ -3,7 +3,10 @@
 This document provides a technical overview of ASH's security design, assumptions, and best practices.
 
 If you are looking to report a vulnerability, please see:
-👉 [SECURITY.md](../SECURITY.md)
+👉 [SECURITY.md](../../SECURITY.md)
+
+For system architecture, see:
+👉 [architecture.md](architecture.md)
 
 This guide focuses on how ASH works internally and how to use it securely.
 

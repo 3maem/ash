@@ -2,8 +2,8 @@
 
 This document explains the system-level security architecture of ASH and how its components interact to provide request integrity and replay protection.
 
-For cryptographic and protocol details, see:
-👉 [SECURITY_TECHNICAL_DETAILS.md](SECURITY_TECHNICAL_DETAILS.md)
+For security best practices, see:
+👉 [security-checklist.md](security-checklist.md)
 
 ---
 

@@ -58,12 +58,6 @@ go get -u github.com/3maem/ash-go
 composer update 3maem/ash-php
 ```
 
-#### .NET
-
-```bash
-dotnet add package Ash.SDK --version 2.3.*
-```
-
 ---
 
 ### Step 2: Update Function Calls

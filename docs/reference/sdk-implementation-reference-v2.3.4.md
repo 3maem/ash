@@ -1,6 +1,6 @@
 # ASH SDK Implementation Reference v2.3.4
 
-This document provides the authoritative reference for implementing ASH SDKs across all languages. All SDKs (Node.js, Python, Go, .NET, PHP) and middlewares MUST implement these specifications to ensure cross-SDK interoperability.
+This document provides the authoritative reference for implementing ASH SDKs across all languages. All SDKs (Node.js, Python, Go, PHP, WASM) and middlewares MUST implement these specifications to ensure cross-SDK interoperability.
 
 **Reference Implementation**: Rust `ash-core` (packages/ash-core)
 
@@ -477,21 +477,20 @@ Note: Inputs > 2048 bytes only compare first 2048 bytes (documented limitation)
 ```
 Code                      HTTP Status   Description
 ─────────────────────────────────────────────────────────────────
-ASH_CTX_NOT_FOUND         404          Context not found in store
-ASH_CTX_EXPIRED           401          Context has expired
-ASH_CTX_ALREADY_USED      409          Context already consumed (replay)
-ASH_BINDING_MISMATCH      403          Endpoint doesn't match context
-ASH_PROOF_MISSING         401          Required proof not provided
-ASH_PROOF_INVALID         401          Proof verification failed
+ASH_CTX_NOT_FOUND         450          Context not found in store
+ASH_CTX_EXPIRED           451          Context has expired
+ASH_CTX_ALREADY_USED      452          Context already consumed (replay)
+ASH_PROOF_INVALID         460          Proof verification failed
+ASH_BINDING_MISMATCH      461          Endpoint doesn't match context
+ASH_SCOPE_MISMATCH        473          Scope hash mismatch (v2.2+)
+ASH_CHAIN_BROKEN          474          Chain verification failed (v2.3+)
+ASH_TIMESTAMP_INVALID     482          Timestamp validation failed
+ASH_PROOF_MISSING         483          Required proof not provided
 ASH_CANONICALIZATION_ERROR 422         Payload cannot be canonicalized
-ASH_MALFORMED_REQUEST     400          Invalid request format
 ASH_MODE_VIOLATION        400          Mode requirements not met
 ASH_UNSUPPORTED_CONTENT_TYPE 415       Content type not supported
-ASH_SCOPE_MISMATCH        403          Scope hash mismatch (v2.2+)
-ASH_CHAIN_BROKEN          403          Chain verification failed (v2.3+)
+ASH_VALIDATION_ERROR      400          Input validation failed
 ASH_INTERNAL_ERROR        500          Internal error (RNG failure, etc.)
-ASH_TIMESTAMP_INVALID     400          Timestamp validation failed
-ASH_SCOPED_FIELD_MISSING  422          Required scoped field missing
 ```
 
 ### 8.2 Error Message Guidelines

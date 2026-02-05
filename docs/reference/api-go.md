@@ -427,6 +427,56 @@ type ContextStore interface {
 
 ---
 
+## Gin Middleware
+
+```go
+import (
+    ash "github.com/3maem/ash-go/v2"
+    "github.com/3maem/ash-go/v2/middleware"
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+    store := ash.NewMemoryStore()
+
+    r := gin.Default()
+
+    // Apply ASH middleware to specific routes
+    api := r.Group("/api")
+    api.Use(middleware.AshGin(store, middleware.AshGinOptions{
+        GetBinding: func(c *gin.Context) string {
+            binding, _ := ash.NormalizeBinding(c.Request.Method, c.Request.URL.Path, c.Request.URL.RawQuery)
+            return binding
+        },
+    }))
+
+    api.POST("/transfer", func(c *gin.Context) {
+        // Access verified context
+        ctx := c.MustGet("ashContext").(*ash.StoredContext)
+        c.JSON(200, gin.H{"status": "success", "contextId": ctx.ContextID})
+    })
+
+    r.Run(":8080")
+}
+```
+
+### AshGinOptions
+
+```go
+type AshGinOptions struct {
+    // GetBinding extracts binding from request (required)
+    GetBinding func(c *gin.Context) string
+
+    // Skip determines if request should skip verification (optional)
+    Skip func(c *gin.Context) bool
+
+    // OnError handles verification errors (optional)
+    OnError func(c *gin.Context, err *ash.AshError)
+}
+```
+
+---
+
 ## HTTP Headers
 
 | Header | Description |
