@@ -64,25 +64,27 @@ We follow **Conventional Commits**.
 
 ### Examples
 
+```
 feat: add request signing middleware
 fix: prevent replay attack edge case
 docs: update README examples
 test: add verification tests
 refactor: simplify hash logic
-
+```
 
 ### Format
 
+```
 type: short description
-
+```
 
 ### Common types
-- feat
-- fix
-- docs
-- refactor
-- test
-- chore
+- `feat`
+- `fix`
+- `docs`
+- `refactor`
+- `test`
+- `chore`
 
 ---
 
@@ -93,7 +95,8 @@ ASH is a security-focused project.
 If you discover a vulnerability:
 
 ❌ Do NOT open a public issue
-✅ Email us privately at: security@ash-framework.com
+
+✅ Email us privately at: **security@ash-framework.com**
 
 We practice responsible disclosure and will respond quickly.
 
@@ -144,7 +147,7 @@ Please follow our Code of Conduct to keep the community safe and professional.
 
 ## 📜 License
 
-By contributing, you agree that your contributions will be licensed under the Apache License 2.0.
+By contributing, you agree that your contributions will be licensed under the **Apache License 2.0**.
 
 This ensures:
 
