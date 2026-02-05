@@ -110,7 +110,6 @@ All contributions receive **public recognition**:
 - Name listed in README
 - GitHub avatar shown in the Contributors section
 - Credit in release notes
-- Listed on the official website (future)
 
 We use the **All Contributors** specification to automatically credit everyone.
 
