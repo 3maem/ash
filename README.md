@@ -50,17 +50,20 @@ app.use(express.json());
 // Issue context
 app.post('/ash/context', async (req, res) => {
   const ctx = await store.create({
-    binding: 'POST /api/transfer',
+    binding: 'POST|/api/transfer|',
     ttlMs: 30000,
     mode: 'balanced'
   });
-  res.json({ contextId: ctx.id, mode: ctx.mode });
+  res.json({
+    contextId: ctx.id,
+    nonce: ctx.nonce
+  });
 });
 
 // Protected endpoint
 app.post(
   '/api/transfer',
-  ashExpressMiddleware({ store, expectedBinding: 'POST /api/transfer' }),
+  ashExpressMiddleware({ store, expectedBinding: 'POST|/api/transfer|' }),
   (req, res) => {
     res.json({ success: true });
   }
@@ -72,21 +75,32 @@ app.listen(3000);
 ### Client
 
 ```javascript
-import { ashInit, ashCanonicalizeJson, ashBuildProof } from '@3maem/ash-node';
+import {
+  ashInit,
+  ashCanonicalizeJson,
+  ashDeriveClientSecret,
+  ashHashBody,
+  ashBuildProofHmac,
+  ashNormalizeBinding
+} from '@3maem/ash-node';
 
 ashInit();
 
-// 1. Get context
-const { contextId, mode } = await fetch('/ash/context', {
+// 1. Get context from server
+const { contextId, nonce } = await fetch('/ash/context', {
   method: 'POST'
 }).then(r => r.json());
 
-// 2. Prepare payload
+// 2. Prepare request
 const payload = { amount: 100, to: 'account123' };
+const binding = ashNormalizeBinding('POST', '/api/transfer', '');
 const canonical = ashCanonicalizeJson(JSON.stringify(payload));
+const bodyHash = ashHashBody(canonical);
+const timestamp = Date.now().toString();
 
-// 3. Build proof
-const proof = ashBuildProof(mode, 'POST /api/transfer', contextId, null, canonical);
+// 3. Derive secret and build proof
+const clientSecret = ashDeriveClientSecret(nonce, contextId, binding);
+const proof = ashBuildProofHmac(clientSecret, bodyHash, timestamp, binding);
 
 // 4. Send protected request
 await fetch('/api/transfer', {
@@ -94,7 +108,8 @@ await fetch('/api/transfer', {
   headers: {
     'Content-Type': 'application/json',
     'X-ASH-Context-ID': contextId,
-    'X-ASH-Proof': proof
+    'X-ASH-Proof': proof,
+    'X-ASH-Timestamp': timestamp
   },
   body: JSON.stringify(payload)
 });
