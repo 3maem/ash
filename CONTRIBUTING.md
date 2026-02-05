@@ -33,7 +33,6 @@ You can contribute by:
 - 📖 Documentation improvements
 - 💡 Ideas & discussions
 - 🔐 Security reviews
-- 🎨 UX/design
 - ⚡ Performance optimizations
 
 Every contribution matters.
