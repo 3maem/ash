@@ -13,14 +13,15 @@ This guide covers common issues and their solutions when integrating ASH into yo
 5. [Cross-SDK Compatibility](#cross-sdk-compatibility)
 6. [Performance Issues](#performance-issues)
 7. [Debugging Tips](#debugging-tips)
+8. [HTTP Status Code Reference](#http-status-code-reference)
 
 ---
 
 ## Proof Verification Failures
 
-### ASH_PROOF_INVALID
+### ASH_PROOF_INVALID (HTTP 460)
 
-**Symptom:** Server returns `ASH_PROOF_INVALID` error despite correct implementation.
+**Symptom:** Server returns `ASH_PROOF_INVALID` error (HTTP 460) despite correct implementation.
 
 **Common Causes:**
 
@@ -29,12 +30,13 @@ This guide covers common issues and their solutions when integrating ASH into yo
    // WRONG: Modifying after canonicalization
    const canonical = ashCanonicalizeJson(payload);
    payload.timestamp = Date.now(); // Modifies original!
-   const proof = ashBuildProof(..., canonical);
+   const bodyHash = ashHashBody(canonical);
 
    // CORRECT: Canonicalize final payload
    payload.timestamp = Date.now();
    const canonical = ashCanonicalizeJson(JSON.stringify(payload));
-   const proof = ashBuildProof(..., canonical);
+   const bodyHash = ashHashBody(canonical);
+   const proof = ashBuildProofHmac(clientSecret, bodyHash, timestamp, binding);
    ```
 
 2. **JSON serialization differences**
@@ -81,7 +83,7 @@ This guide covers common issues and their solutions when integrating ASH into yo
    ```python
    # Both should produce identical output
    # Python
-   canonical = canonicalize_json('{"z":1,"a":2}')
+   canonical = ash_canonicalize_json('{"z":1,"a":2}')
    print(repr(canonical))  # '{"a":2,"z":1}'
 
    # Node.js
@@ -111,9 +113,9 @@ This guide covers common issues and their solutions when integrating ASH into yo
 
 ## Context Errors
 
-### ASH_CTX_NOT_FOUND
+### ASH_CTX_NOT_FOUND (HTTP 450)
 
-**Symptom:** Context not found even though it was just created.
+**Symptom:** Context not found (HTTP 450) even though it was just created.
 
 **Causes:**
 
@@ -147,9 +149,9 @@ console.log('Using context:', contextId);
 
 ---
 
-### ASH_CTX_EXPIRED
+### ASH_CTX_EXPIRED (HTTP 451)
 
-**Symptom:** Context expires before request reaches server.
+**Symptom:** Context expires (HTTP 451) before request reaches server.
 
 **Causes:**
 
@@ -175,11 +177,11 @@ console.log('Using context:', contextId);
 
 ---
 
-### ASH_CTX_ALREADY_USED
+### ASH_CTX_ALREADY_USED (HTTP 452)
 
-**Symptom:** Second request with same context fails.
+**Symptom:** Second request with same context fails (HTTP 452).
 
-**This is expected behavior!** Contexts are single-use.
+**This is expected behavior!** Contexts are single-use (replay protection).
 
 **Solutions:**
 
@@ -212,9 +214,9 @@ console.log('Using context:', contextId);
 
 ## Canonicalization Issues
 
-### ASH_CANONICALIZATION_ERROR
+### ASH_CANONICALIZATION_ERROR (HTTP 422)
 
-**Symptom:** Payload cannot be canonicalized.
+**Symptom:** Payload cannot be canonicalized (HTTP 422).
 
 **Common Causes:**
 
@@ -342,11 +344,13 @@ Before deploying, verify:
 
 1. **Use appropriate security mode**
    ```javascript
-   // Minimal mode for low-risk operations
-   const proof = ashBuildProof('minimal', ...);
+   // Create context with appropriate mode
+   const ctx = await store.create({ binding, ttlMs: 30000, mode: 'balanced' });
 
-   // Balanced for normal operations
-   const proof = ashBuildProof('balanced', ...);
+   // Generate proof using v2.1+ HMAC style
+   const clientSecret = ashDeriveClientSecret(nonce, contextId, binding);
+   const bodyHash = ashHashBody(canonical);
+   const proof = ashBuildProofHmac(clientSecret, bodyHash, timestamp, binding);
    ```
 
 2. **Pre-canonicalize static payloads**
@@ -442,7 +446,7 @@ python verify_sdk.py --sdk node
 
 If you've tried the above and still have issues:
 
-1. **Check the error code** - See [ERROR_CODE_SPECIFICATION.md](docs/ERROR_CODE_SPECIFICATION.md)
+1. **Check the error code** - See [Error Codes Reference](docs/reference/error-codes.md)
 2. **Search existing issues** - [GitHub Issues](https://github.com/3maem/ash/issues)
 3. **Open a new issue** with:
    - SDK version
@@ -452,5 +456,22 @@ If you've tried the above and still have issues:
 
 ---
 
-**Document Version:** 1.0.0
-**Last Updated:** 2026-01-28
+## HTTP Status Code Reference
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 450 | `ASH_CTX_NOT_FOUND` | Context not found |
+| 451 | `ASH_CTX_EXPIRED` | Context expired |
+| 452 | `ASH_CTX_ALREADY_USED` | Replay detected |
+| 460 | `ASH_PROOF_INVALID` | Proof verification failed |
+| 461 | `ASH_BINDING_MISMATCH` | Endpoint mismatch |
+| 473 | `ASH_SCOPE_MISMATCH` | Scope hash mismatch |
+| 474 | `ASH_CHAIN_BROKEN` | Chain verification failed |
+| 482 | `ASH_TIMESTAMP_INVALID` | Timestamp validation failed |
+| 483 | `ASH_PROOF_MISSING` | Missing proof header |
+| 422 | `ASH_CANONICALIZATION_ERROR` | Canonicalization failed |
+
+---
+
+**Document Version:** 2.3.4
+**Last Updated:** 2026-02-06
