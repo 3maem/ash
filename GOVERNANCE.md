@@ -16,6 +16,8 @@ The company provides:
 - Security oversight
 - Commercial sustainability
 
+Community contributions are welcome and reviewed through the public contribution process.
+
 ---
 
 ## Maintainers
@@ -30,7 +32,9 @@ Responsibilities include:
 - Setting technical direction
 - Ensuring code quality
 
-Maintainers are appointed based on long-term contribution and trust.
+Maintainers are appointed by the project owners based on long-term contribution, technical expertise, and trust.
+
+ASH follows a maintainer-led open source model, where community contributions are encouraged while maintainers ensure security, stability, and long-term consistency of the project.
 
 ---
 
