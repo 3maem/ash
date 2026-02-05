@@ -5,7 +5,7 @@ ASH exists because of its community.
 
 Whether you fix a bug, improve documentation, suggest an idea, or submit code — you are helping make security better for everyone.
 
-We welcome contributions of any size.
+We welcome contributions of **any size**.
 
 ---
 
@@ -43,7 +43,7 @@ Every contribution matters.
 ## 🧹 Development Guidelines
 
 ### Code Style
-- Follow existing style in each SDK
+- Follow the existing style in each SDK
 - Keep functions small and readable
 - Prefer clarity over cleverness
 
@@ -52,7 +52,7 @@ Every contribution matters.
 - Do not break existing tests
 
 ### Documentation
-If you add a feature, update docs as well.
+If you add a feature, update documentation as well.
 
 Good documentation = good adoption.
 
@@ -60,21 +60,29 @@ Good documentation = good adoption.
 
 ## 📝 Commit Messages
 
-Use conventional commits.
+We follow **Conventional Commits**.
 
-Examples:
+### Examples
 
-- feat: add request signing middleware
-- fix: prevent replay attack edge case
-- docs: update README examples
-- test: add verification tests
+feat: add request signing middleware
+fix: prevent replay attack edge case
+docs: update README examples
+test: add verification tests
+refactor: simplify hash logic
 
-Format:
+
+### Format
 
 type: short description
 
-Common types:
-feat, fix, docs, refactor, test, chore
+
+### Common types
+- feat
+- fix
+- docs
+- refactor
+- test
+- chore
 
 ---
 
@@ -85,7 +93,7 @@ ASH is a security-focused project.
 If you discover a vulnerability:
 
 ❌ Do NOT open a public issue
-✅ Email us privately at security@ash-framework.com
+✅ Email us privately at: security@ash-framework.com
 
 We practice responsible disclosure and will respond quickly.
 
@@ -95,19 +103,18 @@ We practice responsible disclosure and will respond quickly.
 
 We deeply value our contributors.
 
-All contributions are publicly recognized:
+All contributions receive **public recognition**:
 
 - Name listed in README
-- GitHub avatar shown in Contributors section
+- GitHub avatar shown in the Contributors section
 - Credit in release notes
 - Listed on the official website (future)
 
-We use the All Contributors specification to automatically credit everyone.
+We use the **All Contributors** specification to automatically credit everyone.
 
 After your PR is merged, you will be added to the contributors list ✨
 
-Top contributors may receive:
-
+### Top contributors may receive
 - Early access to Pro features
 - Priority reviews
 - Direct communication with maintainers
@@ -149,6 +156,6 @@ This ensures:
 
 ## 🙌 Thank You
 
-Every line of code, every typo fix, every idea helps.
+Every line of code, every typo fix, and every idea helps.
 
 Thanks for helping make the web safer with ASH.
