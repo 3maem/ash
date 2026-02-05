@@ -121,7 +121,7 @@ These reduce the feasibility of side-channel and replay attacks.
 
 ---
 
-## ⚙️ Secure Configuration Best Practices
+## Secure Configuration Best Practices
 
 ### 1. Keep Dependencies Updated
 
