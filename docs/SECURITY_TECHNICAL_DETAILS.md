@@ -264,10 +264,8 @@ For maximum protection:
 
 ASH is a protocol-level integrity system.
 
-It strengthens request security but does not replace full application security architecture.
+- **Additional layer** — ASH strengthens request security
+- **Not a replacement** — Does not replace authentication, authorization, or TLS
+- **Shared responsibility** — Security requires proper configuration and infrastructure
 
-Security is layered.
-
-ASH is one layer.
-
-Use it together with authentication, authorization, and secure infrastructure.
+Use ASH together with authentication, authorization, and secure infrastructure.
