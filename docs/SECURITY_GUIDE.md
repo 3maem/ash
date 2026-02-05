@@ -126,24 +126,30 @@ These reduce the feasibility of side-channel and replay attacks.
 ### 1. Keep Dependencies Updated
 
 #### Node.js
+
 ```bash
 npm audit && npm update
 ```
 
 #### Python
+
 ```bash
 pip install --upgrade ash-sdk-python
 ```
 
 #### Rust
+
 ```bash
 cargo update && cargo audit
 ```
 
 #### Go
+
 ```bash
 go get -u && govulncheck ./...
 ```
+
+---
 
 ### 2. Context TTL Configuration
 
@@ -152,6 +158,8 @@ go get -u && govulncheck ./...
 - Use shorter TTLs for high-value operations
 
 Shorter TTLs reduce replay risk.
+
+---
 
 ### 3. Storage Recommendations
 
@@ -165,6 +173,8 @@ Shorter TTLs reduce replay risk.
 - In-memory stores in clusters
 - Shared state without synchronization
 
+---
+
 ### 4. Binding Validation
 
 Always verify request binding on the server:
@@ -177,15 +187,19 @@ if context.binding != expected_binding:
 
 This prevents endpoint substitution attacks.
 
+---
+
 ### 5. Secure Memory Usage (High Security Environments)
 
 #### Python
+
 ```python
 with secure_derive_client_secret(nonce, ctx_id, binding) as secret:
     proof = build_proof_v21(secret.get(), timestamp, binding, body_hash)
 ```
 
 #### Node.js
+
 ```typescript
 const proof = await withSecureString(clientSecret, (secret) => {
   return buildProofV21(secret, timestamp, binding, bodyHash)
