@@ -1,6 +1,6 @@
 # Contributing to ASH
 
-First of all — thank you ❤️
+First of all — thank you.
 ASH exists because of its community.
 
 Whether you fix a bug, improve documentation, suggest an idea, or submit code — you are helping make security better for everyone.
@@ -9,7 +9,7 @@ We welcome contributions of **any size**.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 1. Fork the repository
 2. Create a branch
@@ -17,11 +17,11 @@ We welcome contributions of **any size**.
 4. Run tests
 5. Open a Pull Request
 
-That's it ✨
+That's it.
 
 ---
 
-## 🌟 Ways to Contribute
+## Ways to Contribute
 
 You don't need to write code to help.
 
@@ -40,7 +40,7 @@ Every contribution matters.
 
 ---
 
-## 🧹 Development Guidelines
+## Development Guidelines
 
 ### Code Style
 - Follow the existing style in each SDK
@@ -58,7 +58,7 @@ Good documentation = good adoption.
 
 ---
 
-## 📝 Commit Messages
+## Commit Messages
 
 We follow **Conventional Commits**.
 
@@ -88,21 +88,21 @@ type: short description
 
 ---
 
-## 🔐 Security Contributions
+## Security Contributions
 
 ASH is a security-focused project.
 
 If you discover a vulnerability:
 
-❌ Do NOT open a public issue
+Do NOT open a public issue.
 
-✅ Email us privately at: **security@ash-framework.com**
+Email us privately at: **security@ash-framework.com**
 
 We practice responsible disclosure and will respond quickly.
 
 ---
 
-## 🎖 Contributors Recognition
+## Contributors Recognition
 
 We deeply value our contributors.
 
@@ -115,7 +115,7 @@ All contributions receive **public recognition**:
 
 We use the **All Contributors** specification to automatically credit everyone.
 
-After your PR is merged, you will be added to the contributors list ✨
+After your PR is merged, you will be added to the contributors list.
 
 ### Top contributors may receive
 - Early access to Pro features
@@ -130,7 +130,7 @@ ASH grows with its community.
 
 ---
 
-## ❤️ Community Values
+## Community Values
 
 We aim to build:
 
@@ -145,7 +145,7 @@ Please follow our Code of Conduct to keep the community safe and professional.
 
 ---
 
-## 📜 License
+## License
 
 By contributing, you agree that your contributions will be licensed under the **Apache License 2.0**.
 
@@ -157,7 +157,7 @@ This ensures:
 
 ---
 
-## 🙌 Thank You
+## Thank You
 
 Every line of code, every typo fix, and every idea helps.
 
