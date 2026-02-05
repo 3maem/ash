@@ -233,14 +233,24 @@ Sensitive secrets are cleared after use.
 ### Python
 
 ```python
-with secure_derive_client_secret(...) as secret:
-    ...
+from ash.core import SecureString
+
+with SecureString(client_secret) as secret:
+    proof = ash_build_proof_hmac(secret.get(), timestamp, binding, body_hash)
+# Memory is automatically cleared
 ```
 
 ### Node.js
 
 ```typescript
-withSecureString(...)
+import { SecureString } from '@3maem/ash-node';
+
+const secret = new SecureString(clientSecret);
+try {
+    const proof = ashBuildProofHmac(secret.get(), timestamp, binding, bodyHash);
+} finally {
+    secret.clear();
+}
 ```
 
 This reduces memory forensics risk.

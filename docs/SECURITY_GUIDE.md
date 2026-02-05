@@ -194,16 +194,24 @@ This prevents endpoint substitution attacks.
 #### Python
 
 ```python
-with secure_derive_client_secret(nonce, ctx_id, binding) as secret:
-    proof = build_proof_v21(secret.get(), timestamp, binding, body_hash)
+from ash.core import SecureString
+
+with SecureString(client_secret) as secret:
+    proof = ash_build_proof_hmac(secret.get(), timestamp, binding, body_hash)
+# Memory is automatically cleared
 ```
 
 #### Node.js
 
 ```typescript
-const proof = await withSecureString(clientSecret, (secret) => {
-  return buildProofV21(secret, timestamp, binding, bodyHash)
-})
+import { SecureString } from '@3maem/ash-node';
+
+const secret = new SecureString(clientSecret);
+try {
+    const proof = ashBuildProofHmac(secret.get(), timestamp, binding, bodyHash);
+} finally {
+    secret.clear();
+}
 ```
 
 ---
