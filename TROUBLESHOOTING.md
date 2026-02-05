@@ -107,7 +107,7 @@ This guide covers common issues and their solutions when integrating ASH into yo
 |-------|-------|----------|
 | Different body hash | Encoding differences | Ensure UTF-8 encoding |
 | Different proof | Algorithm mismatch | Verify HMAC-SHA256 implementation |
-| Binding format | Version mismatch | Use v2.3.2+ binding format `METHOD\|PATH\|QUERY` |
+| Binding format | Version mismatch | Use binding format `METHOD\|PATH\|QUERY` |
 
 ---
 
