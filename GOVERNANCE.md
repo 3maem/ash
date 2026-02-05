@@ -38,6 +38,8 @@ Maintainers are appointed based on long-term contribution and trust.
 
 We welcome contributions from everyone.
 
+Community contributions are essential to ASH and directly influence the evolution of the open-source core.
+
 Community members may:
 
 - Submit issues
