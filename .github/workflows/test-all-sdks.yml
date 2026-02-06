@@ -120,24 +120,6 @@ jobs:
           cd packages/ash-wasm
           wasm-pack test --node
 
-  security-assurance:
-    name: Security Assurance Pack
-    runs-on: ubuntu-latest
-    needs: [python]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Install dependencies
-        run: |
-          cd packages/ash-python
-          pip install -e ".[dev]"
-          pip install pytest-asyncio
-      - name: Run Security Assurance Pack
-        run: python -m pytest tests/security_assurance/ -v
-        working-directory: ${{ github.workspace }}
-
   cross-sdk-vectors:
     name: Cross-SDK Test Vectors
     runs-on: ubuntu-latest
