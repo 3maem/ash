@@ -22,6 +22,7 @@ jobs:
   node:
     name: Node.js Tests
     runs-on: ubuntu-latest
+    needs: [wasm]
     strategy:
       matrix:
         node-version: [18, 20, 22]
@@ -30,10 +31,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+      - name: Build ash-wasm
+        run: |
+          cd packages/ash-wasm
+          wasm-pack build --target nodejs
       - name: Install and test ash-node
         run: |
           cd packages/ash-node
-          npm install --legacy-peer-deps
+          npm pkg set dependencies.@3maem/ash-wasm=file:../ash-wasm/pkg
+          npm install
           npm test
 
   python:
