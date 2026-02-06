@@ -30,9 +30,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      - run: npm ci
-      - run: npm test -w packages/ash-node
+      - name: Install and test ash-node
+        run: |
+          cd packages/ash-node
+          npm install --legacy-peer-deps
+          npm test
 
   python:
     name: Python Tests
