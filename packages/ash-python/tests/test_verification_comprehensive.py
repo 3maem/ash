@@ -550,11 +550,17 @@ class TestVerificationConsistency:
 
     def test_build_and_verify_roundtrip(self):
         """Build and verify should be inverse operations."""
-        for _ in range(10):
-            nonce = ash_generate_nonce()
-            context_id = ash_generate_context_id()
+        # Use deterministic test data to avoid flaky tests
+        test_cases = [
+            ("a" * 64, "ctx_" + "b" * 28, {"key": "value1"}),
+            ("c" * 64, "ctx_" + "d" * 28, {"key": "value2"}),
+            ("e" * 64, "ctx_" + "f" * 28, {"key": "value3"}),
+            ("1" * 64, "ctx_" + "2" * 28, {"number": 123}),
+            ("abcd" * 16, "ctx_" + "efgh" * 7, {"nested": {"a": 1}}),
+        ]
+
+        for nonce, context_id, payload in test_cases:
             binding = "POST|/api/test|"
-            payload = {"random": nonce[:16]}
 
             client_secret = ash_derive_client_secret(nonce, context_id, binding)
             proof, _, _ = ash_build_proof_unified(
@@ -565,11 +571,12 @@ class TestVerificationConsistency:
             result = ash_verify_proof_unified(
                 nonce, context_id, binding, TEST_TIMESTAMP, payload, proof
             )
-            assert result is True
+            assert result is True, f"Verification failed for nonce={nonce[:8]}..."
 
-            # Verify with wrong nonce should always fail (different valid hex nonce)
-            wrong_nonce = "f" + nonce[1:]  # Change first char to get different valid nonce
-            wrong_result = ash_verify_proof_unified(
-                wrong_nonce, context_id, binding, TEST_TIMESTAMP, payload, proof
-            )
-            assert wrong_result is False
+            # Verify with wrong nonce should always fail
+            wrong_nonce = "0" + nonce[1:]  # Change first char
+            if wrong_nonce != nonce:  # Only test if actually different
+                wrong_result = ash_verify_proof_unified(
+                    wrong_nonce, context_id, binding, TEST_TIMESTAMP, payload, proof
+                )
+                assert wrong_result is False
