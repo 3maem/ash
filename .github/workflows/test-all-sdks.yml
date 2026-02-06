@@ -135,8 +135,8 @@ jobs:
           pip install -e ".[dev]"
           pip install pytest-asyncio
       - name: Run Security Assurance Pack
-        run: |
-          python -m pytest tests/security_assurance/ -v
+        run: python -m pytest tests/security_assurance/ -v
+        working-directory: ${{ github.workspace }}
 
   cross-sdk-vectors:
     name: Cross-SDK Test Vectors
