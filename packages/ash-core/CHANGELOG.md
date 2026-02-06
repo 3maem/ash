@@ -5,7 +5,30 @@ All notable changes to ASH Core are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.3] - 2024-01-30
+## [2.3.4] - 2026-02-04
+
+### Security
+- Fixed timing attack vulnerability in query string sorting (byte-wise comparison)
+- Added input validation before store lookup to prevent enumeration attacks
+- Production-safe error messages to prevent information disclosure
+
+### Added
+- Unique HTTP status codes (450-483 range) for ASH-specific errors
+- Environment-based configuration support
+- Cross-SDK validation alignment in `ash_derive_client_secret`
+
+### Changed
+- **Breaking**: HTTP status codes changed for ASH errors (see migration guide)
+- License changed to Apache 2.0
+
+### Fixed
+- WASM bindings now call correct function names (missing `ash_` prefix)
+- TTL overflow validation in all stores
+- Scope sorting consistency (byte-wise)
+
+---
+
+## [2.3.3] - 2026-01-29
 
 ### Added
 
