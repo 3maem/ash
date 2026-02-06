@@ -1,7 +1,7 @@
 # ASH SDK for Go
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/3maem/ash-go/v2.svg)](https://pkg.go.dev/github.com/3maem/ash-go/v2)
-[![Go](https://img.shields.io/badge/go-%3E%3D1.21-brightgreen)](https://golang.org/)
+[![Go](https://img.shields.io/badge/go-%3E%3D1.24-brightgreen)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](../../LICENSE)
 [![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
 
@@ -15,7 +15,7 @@ ASH (Application Security Hash) - RFC 8785 compliant request integrity verificat
 go get github.com/3maem/ash-go/v2@v2.3.4
 ```
 
-**Requirements:** Go 1.21 or later
+**Requirements:** Go 1.24 or later
 
 ## Quick Start
 
