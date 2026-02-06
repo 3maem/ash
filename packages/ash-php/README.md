@@ -2,7 +2,7 @@
 
 [![Packagist](https://img.shields.io/packagist/v/3maem/ash-sdk-php.svg)](https://packagist.org/packages/3maem/ash-sdk-php)
 [![PHP](https://img.shields.io/badge/php-%3E%3D8.1-brightgreen)](https://www.php.net/)
-[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](../../LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](../../LICENSE)
 [![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
 
 **Developed by 3maem Co. | شركة عمائم**
@@ -635,7 +635,7 @@ $response = file_get_contents('https://api.example.com/api/update', false, $cont
 
 ## License
 
-**ASH Source-Available License (ASAL-1.0)**
+**Apache License 2.0**
 
 See the [LICENSE](https://github.com/3maem/ash/blob/main/LICENSE) for full terms.
 

@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/ash-wasm.svg)](https://crates.io/crates/ash-wasm)
 [![npm](https://img.shields.io/npm/v/@3maem/ash-wasm)](https://www.npmjs.com/package/@3maem/ash-wasm)
-[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](../../LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](../../LICENSE)
 
 **Developed by 3maem Co. | شركة عمائم**
 
@@ -321,7 +321,7 @@ wasm-pack build --target deno --out-dir pkg-deno
 
 ## License
 
-ASH Source-Available License (ASAL-1.0)
+Apache License 2.0
 
 See [LICENSE](../../LICENSE) for full terms.
 

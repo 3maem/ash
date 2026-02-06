@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/@3maem/ash-node.svg)](https://www.npmjs.com/package/@3maem/ash-node)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](../../LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](../../LICENSE)
 [![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
 
 **Developed by 3maem Co. | شركة عمائم**
@@ -647,7 +647,7 @@ ASH uses unique HTTP status codes in the 450-499 range for precise error identif
 
 ## License
 
-**ASH Source-Available License (ASAL-1.0)**
+**Apache License 2.0**
 
 See the [LICENSE](https://github.com/3maem/ash/blob/main/LICENSE) for full terms.
 

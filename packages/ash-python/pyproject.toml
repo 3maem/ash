@@ -7,14 +7,14 @@ name = "ash-sdk"
 version = "2.3.4"
 description = "ASH (Application Security Hash) - RFC 8785 compliant request integrity verification with server-signed seals, anti-replay protection, and zero client secrets"
 readme = "README.md"
-license = {text = "Proprietary"}
+license = {text = "Apache-2.0"}
 authors = [
     { name = "3maem" }
 ]
 keywords = ["security", "integrity", "verification", "anti-replay", "flask"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "License :: Other/Proprietary License",
+    "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
     "Framework :: Flask",
     "Programming Language :: Python :: 3",

@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/ash-sdk.svg)](https://pypi.org/project/ash-sdk/)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-brightgreen)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-ASAL--1.0-blue)](../../LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](../../LICENSE)
 [![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
 
 **Developed by 3maem Co. | شركة عمائم**
@@ -615,7 +615,7 @@ def process_context(ctx: AshContext) -> None:
 
 ## License
 
-**ASH Source-Available License (ASAL-1.0)**
+**Apache License 2.0**
 
 See the [LICENSE](https://github.com/3maem/ash/blob/main/LICENSE) for full terms.
 

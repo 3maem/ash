@@ -36,7 +36,7 @@
     "middleware"
   ],
   "author": "3maem Co. | شركة عمائم",
-  "license": "Proprietary",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/3maem/ash.git",
