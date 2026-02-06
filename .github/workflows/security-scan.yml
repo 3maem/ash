@@ -29,9 +29,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - name: Run npm audit
-        run: npm audit --audit-level=high
+      - name: Install and audit ash-node
+        run: |
+          cd packages/ash-node
+          npm install --package-lock-only --ignore-scripts --legacy-peer-deps
+          npm audit --audit-level=high
         continue-on-error: true
 
   python-safety:
