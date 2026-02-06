@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "2.3.1",
-  "created": "2026-01-19",
-  "description": "ASH v2.3.1 Conformance Test Vectors",
+  "version": "2.3.4",
+  "created": "2026-02-06",
+  "description": "ASH v2.3.4 Conformance Test Vectors",
 
   "jcs_vectors": [
     {

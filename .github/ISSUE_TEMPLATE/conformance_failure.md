@@ -15,7 +15,7 @@ An SDK is not producing the expected output for a test vector.
 - [ ] ash-python (Python)
 - [ ] ash-php (PHP)
 - [ ] ash-go (Go)
-- [ ] ash-dotnet (.NET)
+- [ ] ash-wasm (WebAssembly)
 
 ## Test Vector
 Which test vector is failing?

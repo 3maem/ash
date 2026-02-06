@@ -173,7 +173,7 @@
   },
 
   "binding_normalization": {
-    "description": "HTTP binding normalization test vectors (v2.3.2+ format)",
+    "description": "HTTP binding normalization test vectors",
     "vectors": [
       {
         "id": "bind-001",
@@ -380,8 +380,8 @@
   },
 
   "metadata": {
-    "generatedAt": "2026-01-28T00:00:00Z",
-    "ashVersion": "2.3.3",
+    "generatedAt": "2026-02-06T00:00:00Z",
+    "ashVersion": "2.3.4",
     "maintainer": "3maem Co. | شركة عمائم",
     "usage": "Run these test vectors against each SDK to verify cross-platform compatibility"
   }

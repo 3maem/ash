@@ -3,6 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/ash-wasm.svg)](https://crates.io/crates/ash-wasm)
 [![npm](https://img.shields.io/npm/v/@3maem/ash-wasm)](https://www.npmjs.com/package/@3maem/ash-wasm)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](../../LICENSE)
+[![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
 
 **Developed by 3maem Co. | شركة عمائم**
 

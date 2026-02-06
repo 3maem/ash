@@ -92,21 +92,20 @@ jobs:
           cd packages/ash-php
           vendor/bin/phpunit
 
-  dotnet:
-    name: .NET Tests
+  wasm:
+    name: WASM Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        dotnet-version: ['6.0', '7.0', '8.0']
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
       - name: Run tests
         run: |
-          cd packages/ash-dotnet
-          dotnet test --verbosity normal
+          cd packages/ash-wasm
+          wasm-pack test --node
 
   security-assurance:
     name: Security Assurance Pack
@@ -129,7 +128,7 @@ jobs:
   cross-sdk-vectors:
     name: Cross-SDK Test Vectors
     runs-on: ubuntu-latest
-    needs: [rust, node, python, go, php, dotnet]
+    needs: [rust, node, python, go, php, wasm]
     steps:
       - uses: actions/checkout@v4
       - name: Verify cross-SDK consistency

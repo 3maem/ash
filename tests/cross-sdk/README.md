@@ -133,7 +133,7 @@ Track which SDKs pass all test vectors:
 | ash-python (Python) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ash-go (Go) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ash-php (PHP) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| ash-dotnet (.NET) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ash-wasm (WebAssembly) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ## CI Integration
 

@@ -3,6 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/ash-core.svg)](https://crates.io/crates/ash-core)
 [![Documentation](https://docs.rs/ash-core/badge.svg)](https://docs.rs/ash-core)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](../../LICENSE)
+[![Version](https://img.shields.io/badge/version-2.3.4-blue)](../../CHANGELOG.md)
 
 **Developed by 3maem Co. | شركة عمائم**
 
@@ -284,7 +285,7 @@ match ash_derive_client_secret(&nonce, &context_id, binding) {
 }
 ```
 
-All other SDKs (Go, Python, PHP, .NET, Node.js) implement identical validation to ensure cross-SDK compatibility.
+All other SDKs (Go, Python, PHP, Node.js, WASM) implement identical validation to ensure cross-SDK compatibility.
 
 ## Thread Safety
 

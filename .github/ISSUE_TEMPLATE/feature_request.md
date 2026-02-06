@@ -23,7 +23,7 @@ Which SDK(s) should this feature be added to?
 - [ ] ash-python (Python)
 - [ ] ash-php (PHP)
 - [ ] ash-go (Go)
-- [ ] ash-dotnet (.NET)
+- [ ] ash-wasm (WebAssembly)
 - [ ] All SDKs
 
 ## Use Case

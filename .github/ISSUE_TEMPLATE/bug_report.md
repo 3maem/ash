@@ -16,7 +16,6 @@ A clear and concise description of what the bug is.
 - [ ] ash-python (Python)
 - [ ] ash-php (PHP)
 - [ ] ash-go (Go)
-- [ ] ash-dotnet (.NET)
 
 ## Framework (if applicable)
 - [ ] Express.js
@@ -28,7 +27,7 @@ A clear and concise description of what the bug is.
 - [ ] CodeIgniter
 - [ ] WordPress
 - [ ] Drupal
-- [ ] ASP.NET Core
+- [ ] Gin
 - [ ] Other: ___________
 
 ## Environment

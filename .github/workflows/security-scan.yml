@@ -72,7 +72,7 @@ jobs:
       security-events: write
     strategy:
       matrix:
-        language: [javascript, python, go, csharp]
+        language: [javascript, python, go]
     steps:
       - uses: actions/checkout@v4
       - name: Initialize CodeQL

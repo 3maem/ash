@@ -53,11 +53,9 @@ phpunit.xml.bak
 *.test
 *.out
 
-# .NET
+# Build artifacts (common)
 bin/
 obj/
-*.dll
-*.exe
 *.pdb
 *.user
 *.userosscache

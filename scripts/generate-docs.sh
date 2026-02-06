@@ -181,46 +181,26 @@ fi
 echo ""
 
 # ==========================================
-# .NET Documentation (DocFX)
+# WASM Documentation
 # ==========================================
-echo "Generating .NET documentation..."
-if [ -d "$ROOT_DIR/packages/ash-dotnet" ]; then
-    cd "$ROOT_DIR/packages/ash-dotnet"
-    if command -v dotnet &> /dev/null; then
-        # Check if DocFX is installed
-        if command -v docfx &> /dev/null; then
-            if docfx docfx.json 2>/dev/null; then
-                success ".NET documentation generated: packages/ash-dotnet/_site/"
-                # Copy to docs/generated
-                if [ -d "_site" ]; then
-                    cp -r _site "$ROOT_DIR/docs/generated/dotnet"
-                    success "Copied to docs/generated/dotnet/"
-                fi
-            else
-                warning ".NET documentation generation failed (DocFX)"
+echo "Generating WASM documentation..."
+if [ -d "$ROOT_DIR/packages/ash-wasm" ]; then
+    cd "$ROOT_DIR/packages/ash-wasm"
+    if command -v cargo &> /dev/null; then
+        if cargo doc --no-deps 2>/dev/null; then
+            success "WASM documentation generated"
+            if [ -d "target/doc" ]; then
+                cp -r target/doc "$ROOT_DIR/docs/generated/wasm"
+                success "Copied to docs/generated/wasm/"
             fi
         else
-            # Try using dotnet tool
-            if dotnet tool list -g | grep -q docfx; then
-                if dotnet docfx docfx.json 2>/dev/null; then
-                    success ".NET documentation generated"
-                    if [ -d "_site" ]; then
-                        cp -r _site "$ROOT_DIR/docs/generated/dotnet"
-                        success "Copied to docs/generated/dotnet/"
-                    fi
-                else
-                    warning ".NET documentation generation failed"
-                fi
-            else
-                warning "DocFX not installed"
-                echo "  Install with: dotnet tool install -g docfx"
-            fi
+            warning "WASM documentation generation failed"
         fi
     else
-        warning ".NET SDK not installed - skipping"
+        warning "Rust not installed - skipping WASM docs"
     fi
 else
-    warning "packages/ash-dotnet not found - skipping"
+    warning "packages/ash-wasm not found - skipping"
 fi
 echo ""
 
@@ -237,7 +217,7 @@ echo "  - Node.js: docs/generated/node/index.html"
 echo "  - Python:  docs/generated/python/index.html"
 echo "  - Go:      docs/generated/go/ (or pkg.go.dev)"
 echo "  - PHP:     docs/generated/php/index.html"
-echo "  - .NET:    docs/generated/dotnet/index.html"
+echo "  - WASM:    docs/generated/wasm/index.html"
 echo ""
 echo "Or view source locations:"
 echo "  - Rust:    target/doc/ash_core/index.html"
@@ -245,7 +225,7 @@ echo "  - Node.js: packages/ash-node/docs/index.html"
 echo "  - Python:  packages/ash-python/docs/_build/index.html"
 echo "  - Go:      pkg.go.dev/github.com/3maem/ash-go/v2"
 echo "  - PHP:     packages/ash-php/docs/api/index.html"
-echo "  - .NET:    packages/ash-dotnet/_site/index.html"
+echo "  - WASM:    packages/ash-wasm/target/doc/index.html"
 echo ""
 echo "Installation commands for documentation tools:"
 echo "  - Rust:    (included with rustup)"
@@ -253,4 +233,4 @@ echo "  - Node.js: npm install --save-dev typedoc"
 echo "  - Python:  pip install sphinx sphinx-rtd-theme"
 echo "  - Go:      go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest"
 echo "  - PHP:     composer require --dev phpdocumentor/phpdocumentor"
-echo "  - .NET:    dotnet tool install -g docfx"
+echo "  - WASM:    (uses rustdoc via cargo doc)"

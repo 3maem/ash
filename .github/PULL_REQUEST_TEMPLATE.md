@@ -25,7 +25,6 @@ Fixes #(issue number)
 - [ ] ash-python (Python)
 - [ ] ash-php (PHP)
 - [ ] ash-go (Go)
-- [ ] ash-dotnet (.NET)
 - [ ] Documentation
 - [ ] CI/CD
 
